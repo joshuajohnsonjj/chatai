@@ -17,7 +17,7 @@ const axios_1 = __importDefault(require("axios"));
 const constants_1 = require("./constants");
 class NotionWrapper {
     constructor(secret) {
-        this.testNotionConnection = () => __awaiter(this, void 0, void 0, function* () {
+        this.testConnection = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield axios_1.default.request({
                     method: constants_1.NotionEndpointMethods.SEARCH,
@@ -34,7 +34,7 @@ class NotionWrapper {
                 return false;
             }
         });
-        this.listNotionPages = (startCursor_1, ...args_1) => __awaiter(this, [startCursor_1, ...args_1], void 0, function* (startCursor, pageSize = 100) {
+        this.listPages = (startCursor_1, ...args_1) => __awaiter(this, [startCursor_1, ...args_1], void 0, function* (startCursor, pageSize = 100) {
             try {
                 const data = {
                     page_size: pageSize,

@@ -3,7 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CreateDataSourceResponseDto, CreateDataSourceQueryDto, TestDataSourceResponseDto } from './dto/dataSource.dto';
 // import { decrypt } from 'src/services/secretMananger';
 import { DataSourceTypeName } from '@prisma/client';
-import { testNotionConnection, testSlackConnection } from 'src/services/dataSources';
+import { NotionWrapper } from '@joshuajohnsonjj38/notion';
+import { SlackWrapper } from '@joshuajohnsonjj38/slack';
 
 @Injectable()
 export class DataSourceService {
@@ -52,9 +53,9 @@ export class DataSourceService {
 
 		switch (dataSourceType?.name) {
 		case DataSourceTypeName.NOTION:
-			return testNotionConnection(decryptedSecret);
+			return new NotionWrapper(decryptedSecret).testConnection();
 		case DataSourceTypeName.SLACK:
-			return testSlackConnection(decryptedSecret);
+			return new SlackWrapper(decryptedSecret).testConnection();
 		default:
 			return false;
 		}

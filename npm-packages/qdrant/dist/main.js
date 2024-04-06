@@ -18,7 +18,7 @@ const types_1 = require("./types");
 const compact_1 = __importDefault(require("lodash/compact"));
 class QdrantWrapper {
     constructor(hostUrl, port, collection) {
-        this.queryQdrant = (vectorizedQuery, entityId) => __awaiter(this, void 0, void 0, function* () {
+        this.query = (vectorizedQuery, entityId) => __awaiter(this, void 0, void 0, function* () {
             const searchResult = yield this.client.search(this.collection, {
                 vector: vectorizedQuery,
                 filter: {
@@ -31,7 +31,7 @@ class QdrantWrapper {
             });
             return (0, compact_1.default)(searchResult.map((result) => { var _a; return (_a = result.payload) === null || _a === void 0 ? void 0 : _a.text; }));
         });
-        this.upsertQdrant = (recordId, vectorizedText, text, dataSourceId, ownerEntityId) => __awaiter(this, void 0, void 0, function* () {
+        this.upsert = (recordId, vectorizedText, text, dataSourceId, ownerEntityId) => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.client.upsert(this.collection, {
                     points: [
@@ -53,7 +53,7 @@ class QdrantWrapper {
                 return false;
             }
         });
-        this.deleteQdrantVectorById = (recordId) => __awaiter(this, void 0, void 0, function* () {
+        this.deleteVectorById = (recordId) => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.client.delete(this.collection, {
                     points: [recordId]
@@ -65,7 +65,7 @@ class QdrantWrapper {
                 return false;
             }
         });
-        this.deleteQdrantVectorsByEntityId = (entityId) => __awaiter(this, void 0, void 0, function* () {
+        this.deleteVectorsByEntityId = (entityId) => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.client.delete(this.collection, {
                     filter: {

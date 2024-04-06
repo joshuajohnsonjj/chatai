@@ -17,7 +17,7 @@ const axios_1 = __importDefault(require("axios"));
 const constants_1 = require("./constants");
 class SlackWrapper {
     constructor(secret) {
-        this.testSlackConnection = () => __awaiter(this, void 0, void 0, function* () {
+        this.testConnection = () => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield axios_1.default.request({
                     method: 'post',

@@ -9,7 +9,7 @@ export class NotionWrapper {
 		this.secret = secret;
 	}
 
-	public testNotionConnection = async (): Promise<boolean> => {
+	public testConnection = async (): Promise<boolean> => {
 		try {
 			await axios.request({
 				method: NotionEndpointMethods.SEARCH,
@@ -29,7 +29,7 @@ export class NotionWrapper {
 		}
 	};
 
-	public listNotionPages = async (
+	public listPages = async (
 		startCursor?: string,
 		pageSize = 100,
 	): Promise<INotionSearchResponse> => {
@@ -61,7 +61,7 @@ export class NotionWrapper {
 		}
 	};
 
-	public listPageBlocks = async (blockId: string, startCursor?: string): Promise<INotionSearchResponse> => {
+	public listPageBlocks = async (blockId: string, startCursor?: string): Promise<any> => {
 		try {
 			let url = NotionEndpoints.BLOCK_DETAIL(blockId);
 

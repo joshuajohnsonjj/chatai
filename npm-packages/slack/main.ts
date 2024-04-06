@@ -9,7 +9,7 @@ export class SlackWrapper {
 		this.accessToken = secret;
 	}
 
-	public testSlackConnection = async (): Promise<boolean> => {
+	public testConnection = async (): Promise<boolean> => {
 		try {
 			await axios.request({
 				method: 'post',

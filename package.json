@@ -3,11 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "workspaces": [
-    "api",
+    "api/",
     "frontends/*",
     "lambdas/*",
     "npm-packages/*"
   ],
+  "scripts": {
+    "build:all": "lerna run build"
+  },
+  "private": true,
   "dependencies": {},
   "devDependencies": {
     "lerna": "^8.1.2"

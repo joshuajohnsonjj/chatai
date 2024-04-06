@@ -3,6 +3,8 @@
 **/*.txt
 **/*.lock
 
+npm-packages/**/dist
+
 # Logs
 logs
 *.log

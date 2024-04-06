@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { getEmbeddingsFromText, getQuestionResponseBasedOnQueryResults } from 'src/services/openai';
-import { queryQdrant } from 'src/services/qdrant';
+import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import type { GetChatResponseResponseDto, ListChatResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto } from './dto/chat.dto';
 
@@ -19,9 +19,16 @@ export class ChatService {
 				}
 			});
 
-			const questionVector = await getEmbeddingsFromText(text);
-			const queryResult = await queryQdrant(questionVector, entityId);
-			const generatedResponse = await getQuestionResponseBasedOnQueryResults(
+			const openai = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
+
+			const questionVector = await openai.getTextEmbedding(text);
+			const queryResult = await new QdrantWrapper(
+				process.env.QDRANT_URL as string,
+				parseInt(process.env.QDRANT_PORT as string, 10),
+				process.env.QDRANT_COLLECTION as string,
+			).query(questionVector, entityId);
+
+			const generatedResponse = await openai.getGptReponseFromSourceData(
 				text,
 				queryResult
 			);

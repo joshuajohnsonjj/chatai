@@ -11,7 +11,7 @@ export class QdrantWrapper {
         this.collection = collection;
     }
  
-    public queryQdrant = async (
+    public query = async (
         vectorizedQuery: number[],
         entityId: string
     ): Promise<string[]> => {
@@ -29,7 +29,7 @@ export class QdrantWrapper {
         return compact(searchResult.map((result) => result.payload?.text)) as string[];
     };
 
-    public upsertQdrant = async (
+    public upsert = async (
         recordId: string,
         vectorizedText: number[],
         text: string,
@@ -57,7 +57,7 @@ export class QdrantWrapper {
         }
     };
 
-    public deleteQdrantVectorById = async (recordId: string): Promise<boolean> => {
+    public deleteVectorById = async (recordId: string): Promise<boolean> => {
         try {
             await this.client.delete(this.collection, {
                 points: [recordId]
@@ -69,7 +69,7 @@ export class QdrantWrapper {
         }
     };
 
-    public deleteQdrantVectorsByEntityId = async (
+    public deleteVectorsByEntityId = async (
         entityId: string
     ): Promise<boolean> => {
         try {
