@@ -9,9 +9,12 @@ export const NotionEndpoints = {
     SEARCH: '/v1/search',
     BLOCK_DETAIL: (blockId: string) => `/v1/blocks/${blockId}/children?page_size=100`,
     BLOCK_DETAIL_WITH_CURSOR: (blockId: string, cursor: string) => `/v1/blocks/${blockId}/children?page_size=100&cursor=${cursor}`,
-}
+    USER_DETAIL: (userId: string) => `/v1/users/${userId}`,
+};
 
 export enum NotionEndpointMethods {
     SEARCH = 'post',
-    BLOCK_DETAIL  ='get',
+    BLOCK_DETAIL = 'get',
+    USER_DETAIL = 'get',
 }
+

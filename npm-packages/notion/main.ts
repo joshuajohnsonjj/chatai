@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { NotionBaseUrl, NotionEndpointMethods, NotionEndpoints, NotionHeaders } from './constants';
-import { INotionSearchPayload, INotionSearchResponse } from './types';
+import { INotionSearchPayload, INotionSearchResponse, INotionUserDetailResponse } from './types';
 
 export class NotionWrapper {
 	private readonly secret: string;
@@ -33,32 +33,29 @@ export class NotionWrapper {
 		startCursor?: string,
 		pageSize = 100,
 	): Promise<INotionSearchResponse> => {
-		try {
-			const data: INotionSearchPayload = {
-				page_size: pageSize,
-				filter: {
-					value: 'page',
-					property: 'object',
-				},
-			};
+		const data: INotionSearchPayload = {
+			page_size: pageSize,
+			filter: {
+				value: 'page',
+				property: 'object',
+			},
+		};
 
-			if (startCursor) {
-				data.start_cursor = startCursor;
-			}
-
-			return axios.request({
-				method: NotionEndpointMethods.SEARCH,
-				baseURL: NotionBaseUrl,
-				url: NotionEndpoints.SEARCH,
-				headers: {
-					...NotionHeaders,
-					Authorization: `Bearer ${this.secret}`,
-				},
-				data,
-			});
-		} catch (error) {
-			return {};
+		if (startCursor) {
+			data.start_cursor = startCursor;
 		}
+
+		const resp = await axios.request({
+			method: NotionEndpointMethods.SEARCH,
+			baseURL: NotionBaseUrl,
+			url: NotionEndpoints.SEARCH,
+			headers: {
+				...NotionHeaders,
+				Authorization: `Bearer ${this.secret}`,
+			},
+			data,
+		});
+		return resp.data;
 	};
 
 	public listPageBlocks = async (blockId: string, startCursor?: string): Promise<any> => {
@@ -69,7 +66,7 @@ export class NotionWrapper {
 				url = NotionEndpoints.BLOCK_DETAIL_WITH_CURSOR(blockId, startCursor);
 			}
 
-			return axios.request({
+			const resp = await axios.request({
 				method: NotionEndpointMethods.BLOCK_DETAIL,
 				baseURL: NotionBaseUrl,
 				url,
@@ -78,8 +75,22 @@ export class NotionWrapper {
 					Authorization: `Bearer ${this.secret}`,
 				},
 			});
+			return resp.data;
 		} catch (error) {
 			return {};
 		}
+	};
+
+	public getUserInfo = async (userId: string): Promise<INotionUserDetailResponse> => {
+		const resp = await axios.request({
+			method: NotionEndpointMethods.USER_DETAIL,
+			baseURL: NotionBaseUrl,
+			url: NotionEndpoints.USER_DETAIL(userId),
+			headers: {
+				...NotionHeaders,
+				Authorization: `Bearer ${this.secret}`,
+			},
+		});
+		return resp.data;
 	};
 }

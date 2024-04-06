@@ -6,7 +6,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@joshuajohnsonjj38/notion": "^1.0.0",
+    "@joshuajohnsonjj38/notion": "^1.0.1",
     "@joshuajohnsonjj38/qdrant": "^1.0.0"
   },
   "devDependencies": {
