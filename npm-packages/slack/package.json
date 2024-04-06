@@ -1,0 +1,18 @@
+{
+  "name": "@joshuajohnsonjj38/slack",
+  "version": "1.0.2",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": ["dist/*"],
+  "dependencies": {
+    "axios": "^1.6.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

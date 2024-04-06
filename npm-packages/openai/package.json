@@ -1,0 +1,20 @@
+{
+  "name": "@joshuajohnsonjj38/openai",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "dependencies": {
+    "openai": "^4.33.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

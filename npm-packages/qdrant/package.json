@@ -1,0 +1,23 @@
+{
+  "name": "@joshuajohnsonjj38/qdrant",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.8.1",
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.0",
+    "@types/node": "^20.12.5",
+    "typescript": "^5.4.4"
+  },
+  "description": "Node wrapper Qdrant vector db",
+  "author": "",
+  "license": "ISC"
+}

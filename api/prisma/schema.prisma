@@ -1,0 +1,116 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EntityType {
+  INDIVIDUAL
+  ORGANIZATION
+}
+
+enum DataSourceTypeName {
+  SLACK
+  NOTION
+  GOOGLE_DRIVE
+  FILE_UPLOAD
+}
+
+enum UserType {
+  INDIVIDUAL
+  ORGANIZATION_MEMBER
+  ORGANIZATION_ADMIN
+  ORGANIZATION_OWNER
+}
+
+enum ChatType {
+  SYSTEM
+  SLACK
+  MICROSOFT_TEAMS
+}
+
+model DataSource {
+  id               String     @id @default(uuid())
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @default(now())
+  lastSync         DateTime?
+  dataSourceTypeId String
+  ownerEntityId    String
+  ownerEntityType  EntityType
+  secret           String
+
+  type DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
+
+  @@unique([ownerEntityId, dataSourceTypeId])
+}
+
+model DataSourceType {
+  id        String             @id @default(uuid())
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @default(now())
+  name      DataSourceTypeName @unique
+
+  linkedSources DataSource[]
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  planId    String
+
+  plan                AccountPlan? @relation(fields: [planId], references: [id])
+  organizationMembers User[]
+}
+
+model User {
+  id             String   @id
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @default(now())
+  type           UserType
+  planId         String?
+  organizationId String?
+
+  plan         AccountPlan?  @relation(fields: [planId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  chats        Chat[]
+}
+
+model AccountPlan {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  name      String
+  stripeId  String   @unique
+  isActive  Boolean
+
+  registeredOrgs  Organization[]
+  registeredUsers User[]
+}
+
+model Chat {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+  userId    String
+  title     String
+  chatType  ChatType
+
+  user        User          @relation(fields: [userId], references: [id])
+  gptMessages ChatMessage[]
+}
+
+model ChatMessage {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+  text            String
+  isSystemMessage Boolean
+  chatId          String
+
+  chat Chat @relation(fields: [chatId], references: [id])
+}
