@@ -35,28 +35,28 @@ class NotionWrapper {
             }
         });
         this.listPages = (startCursor_1, ...args_1) => __awaiter(this, [startCursor_1, ...args_1], void 0, function* (startCursor, pageSize = 100) {
-            try {
-                const data = {
-                    page_size: pageSize,
-                    filter: {
-                        value: 'page',
-                        property: 'object',
-                    },
-                };
-                if (startCursor) {
-                    data.start_cursor = startCursor;
-                }
-                return axios_1.default.request({
-                    method: constants_1.NotionEndpointMethods.SEARCH,
-                    baseURL: constants_1.NotionBaseUrl,
-                    url: constants_1.NotionEndpoints.SEARCH,
-                    headers: Object.assign(Object.assign({}, constants_1.NotionHeaders), { Authorization: `Bearer ${this.secret}` }),
-                    data,
-                });
+            const data = {
+                page_size: pageSize,
+                filter: {
+                    value: 'page',
+                    property: 'object',
+                },
+                sort: {
+                    direction: 'descending',
+                    timestamp: 'last_edited_time',
+                },
+            };
+            if (startCursor) {
+                data.start_cursor = startCursor;
             }
-            catch (error) {
-                return {};
-            }
+            const resp = yield axios_1.default.request({
+                method: constants_1.NotionEndpointMethods.SEARCH,
+                baseURL: constants_1.NotionBaseUrl,
+                url: constants_1.NotionEndpoints.SEARCH,
+                headers: Object.assign(Object.assign({}, constants_1.NotionHeaders), { Authorization: `Bearer ${this.secret}` }),
+                data,
+            });
+            return resp.data;
         });
         this.listPageBlocks = (blockId, startCursor) => __awaiter(this, void 0, void 0, function* () {
             try {
@@ -64,16 +64,26 @@ class NotionWrapper {
                 if (startCursor) {
                     url = constants_1.NotionEndpoints.BLOCK_DETAIL_WITH_CURSOR(blockId, startCursor);
                 }
-                return axios_1.default.request({
+                const resp = yield axios_1.default.request({
                     method: constants_1.NotionEndpointMethods.BLOCK_DETAIL,
                     baseURL: constants_1.NotionBaseUrl,
                     url,
                     headers: Object.assign(Object.assign({}, constants_1.NotionHeaders), { Authorization: `Bearer ${this.secret}` }),
                 });
+                return resp.data;
             }
             catch (error) {
                 return {};
             }
+        });
+        this.getUserInfo = (userId) => __awaiter(this, void 0, void 0, function* () {
+            const resp = yield axios_1.default.request({
+                method: constants_1.NotionEndpointMethods.USER_DETAIL,
+                baseURL: constants_1.NotionBaseUrl,
+                url: constants_1.NotionEndpoints.USER_DETAIL(userId),
+                headers: Object.assign(Object.assign({}, constants_1.NotionHeaders), { Authorization: `Bearer ${this.secret}` }),
+            });
+            return resp.data;
         });
         this.secret = secret;
     }

@@ -1,0 +1,17 @@
+{
+  "name": "@joshuajohnsonjj38/secret-mananger",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.4.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

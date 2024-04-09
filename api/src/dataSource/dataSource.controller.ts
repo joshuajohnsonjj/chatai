@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Body, Post } from '@nestjs/common';
+import { Controller, Body, Post, Param } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 // import { AuthGuard } from '@nestjs/passport';
 // import { UseGuards } from '@nestjs/common/decorators';
@@ -11,23 +11,23 @@ export class DataSourceController {
 
 	@Post()
 	async createDataSource(
-	@Body() params: CreateDataSourceQueryDto,
+	@Body() body: CreateDataSourceQueryDto,
 	): Promise<CreateDataSourceResponseDto> {
-		try {
-			return await this.service.createDataSource(params);
-		} catch (e) {
-			throw new BadRequestException(e.message);
-		}
+		return await this.service.createDataSource(body);
 	}
 
 	@Post('test')
 	async testDataSourceCredential(
-	@Body() params: CreateDataSourceQueryDto,
+	@Body() body: CreateDataSourceQueryDto,
 	): Promise<TestDataSourceResponseDto> {
-		try {
-			return await this.service.testDataSourceCredential(params);
-		} catch (e) {
-			throw new BadRequestException(e.message);
-		}
+		return await this.service.testDataSourceCredential(body);
+	}
+
+	@Post('/:dataSourceId/sync')
+	async syncDataSource(
+	@Param() dataSourceId: string,
+	): Promise<{ success: boolean }> {
+		await this.service.syncDataSource(dataSourceId);
+		return { success: true };
 	}
 }

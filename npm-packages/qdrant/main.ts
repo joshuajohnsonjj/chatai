@@ -1,5 +1,5 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
-import { TQdrantPayloadKey } from './types';
+import { QdrantPayload, TQdrantPayloadKey } from './types';
 import compact from 'lodash/compact';
 
 export class QdrantWrapper {
@@ -32,20 +32,14 @@ export class QdrantWrapper {
     public upsert = async (
         recordId: string,
         vectorizedText: number[],
-        text: string,
-        dataSourceId: string,
-        ownerEntityId: string
+        payload: QdrantPayload,
     ): Promise<boolean> => {
         try {
             await this.client.upsert(this.collection, {
                 points: [
                     {
                         id: recordId,
-                        payload: {
-                            [TQdrantPayloadKey.TEXT]: text,
-                            [TQdrantPayloadKey.DATASOURCE_ID]: dataSourceId,
-                            [TQdrantPayloadKey.ENTITY_ID]: ownerEntityId,
-                        },
+                        payload: payload as any,
                         vector: vectorizedText
                     }
                 ]

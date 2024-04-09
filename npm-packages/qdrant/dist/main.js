@@ -31,17 +31,13 @@ class QdrantWrapper {
             });
             return (0, compact_1.default)(searchResult.map((result) => { var _a; return (_a = result.payload) === null || _a === void 0 ? void 0 : _a.text; }));
         });
-        this.upsert = (recordId, vectorizedText, text, dataSourceId, ownerEntityId) => __awaiter(this, void 0, void 0, function* () {
+        this.upsert = (recordId, vectorizedText, payload) => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.client.upsert(this.collection, {
                     points: [
                         {
                             id: recordId,
-                            payload: {
-                                [types_1.TQdrantPayloadKey.TEXT]: text,
-                                [types_1.TQdrantPayloadKey.DATASOURCE_ID]: dataSourceId,
-                                [types_1.TQdrantPayloadKey.ENTITY_ID]: ownerEntityId,
-                            },
+                            payload,
                             vector: vectorizedText
                         }
                     ]

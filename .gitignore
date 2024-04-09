@@ -5,6 +5,8 @@
 
 npm-packages/**/dist
 
+**/*.tmp
+
 # Logs
 logs
 *.log

@@ -14,3 +14,18 @@ export enum TQdrantPayloadKey {
   ENTITY_ID = 'ownerEntityId',
   DATASOURCE_ID = 'dataSourceId',
 }
+
+export enum QdrantDataSource {
+  NOTION = 'notion',
+}
+
+export interface QdrantPayload {
+  text: string;
+  date: number; // Unix timestamp
+  url?: string;
+  dataSource: QdrantDataSource;
+  sourceDataType: string;
+  authorName?: string;
+  authorEmail?: string;
+  ownerId: string;
+}

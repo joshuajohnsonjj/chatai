@@ -30,7 +30,7 @@ export class NotionWrapper {
 	};
 
 	public listPages = async (
-		startCursor?: string,
+		startCursor: string | null,
 		pageSize = 100,
 	): Promise<INotionSearchResponse> => {
 		const data: INotionSearchPayload = {
@@ -38,6 +38,10 @@ export class NotionWrapper {
 			filter: {
 				value: 'page',
 				property: 'object',
+			},
+			sort: {
+				direction: 'descending',
+				timestamp: 'last_edited_time',
 			},
 		};
 
@@ -58,7 +62,7 @@ export class NotionWrapper {
 		return resp.data;
 	};
 
-	public listPageBlocks = async (blockId: string, startCursor?: string): Promise<any> => {
+	public listPageBlocks = async (blockId: string, startCursor: string | null): Promise<any> => {
 		try {
 			let url = NotionEndpoints.BLOCK_DETAIL(blockId);
 

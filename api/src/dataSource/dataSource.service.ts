@@ -5,24 +5,32 @@ import type { CreateDataSourceResponseDto, CreateDataSourceQueryDto, TestDataSou
 import { DataSourceTypeName } from '@prisma/client';
 import { NotionWrapper } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
+import moment from 'moment';
+import { SQSClient, SendMessageBatchCommand, SendMessageBatchCommandInput, SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
+import { v4 } from 'uuid';
+import last from 'lodash/last';
+import { BadCredentialsError, ResourceNotFoundError } from 'src/exceptions';
 
 @Injectable()
 export class DataSourceService {
+	private readonly sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+
 	constructor (private readonly prisma: PrismaService) {}
 
 	async createDataSource(params: CreateDataSourceQueryDto): Promise<CreateDataSourceResponseDto> {
 		const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
 
 		if (!isValid) {
-			throw 'Connection attempt failed.';
+			throw new BadCredentialsError();
 		}
 
-		return this.prisma.dataSource.create({
+		const dataSource = await this.prisma.dataSource.create({
 			data: {
 				dataSourceTypeId: params.dataSourceTypeId,
 				ownerEntityId: params.ownerEntityId,
 				ownerEntityType: params.ownerEntityType,
 				secret: params.secret,
+				isSyncing: true,
 			},
 			select: {
 				id: true,
@@ -33,11 +41,138 @@ export class DataSourceService {
 				ownerEntityId: true,
 			}
 		});
+
+		this.syncDataSource(dataSource.id);
+
+		return dataSource;
 	}
 
 	async testDataSourceCredential(params: CreateDataSourceQueryDto): Promise<TestDataSourceResponseDto> {
 		const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
 		return { isValid };
+	}
+
+	async syncDataSource(dataSourceId: string): Promise<void> {
+		const dataSource = await this.prisma.dataSource.findUnique({
+			where: { id: dataSourceId },
+			select: { ownerEntityId: true, secret: true, type: { select: { name: true }} },
+		});
+
+		if (!dataSource) {
+			throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+		}
+
+		await this.prisma.dataSource.update({
+			where: { id: dataSourceId },
+			data: { isSyncing: true },
+		});
+
+		switch (dataSource.type.name) {
+			case DataSourceTypeName.NOTION:
+				this.initNotionSync(dataSource.secret, dataSource.ownerEntityId);
+				break;
+			case DataSourceTypeName.SLACK:
+				this.initSlackSync(dataSource.secret, dataSource.ownerEntityId);
+				break;
+			default:
+				break;
+		}
+		
+	}
+
+	private async initNotionSync(
+		secret: string,
+		ownerEntityId: string,
+	): Promise<void> {
+		const decryptedSecret = secret; //decrypt(secret);
+		const notionService = new NotionWrapper(decryptedSecret);
+		const messageGroupId = v4();
+		const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+		
+		let isComplete = false;
+		let nextCursor: string | null = null;
+		while (!isComplete) {
+			const resp = await notionService.listPages(nextCursor);
+			
+			resp.results.forEach((page) => {
+				if (moment().isAfter(moment(page.last_edited_time))) {
+					messageBatchEntries.push({
+						Id: page.id,
+						MessageBody: JSON.stringify({
+							pageId: page.id,
+							pageUrl: page.public_url,
+							ownerEntityId: ownerEntityId,
+							secret: secret,
+						}),
+						MessageGroupId: messageGroupId,
+					});
+				} else {
+					isComplete = true;
+				}
+			});
+
+			if (!isComplete) {
+				isComplete = !resp.has_more;
+				nextCursor = resp.next_cursor;
+			}
+		}
+
+		this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_NOTION_QUEUE_URL as string);
+	}
+
+	private async initSlackSync(
+		secret: string,
+		ownerEntityId: string,
+	): Promise<void> {
+		const decryptedSecret = secret; //decrypt(secret);
+		const notionService = new NotionWrapper(decryptedSecret);
+		const messageGroupId = v4();
+		const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+		
+		let isComplete = false;
+		let nextCursor: string | null = null;
+		while (!isComplete) {
+			const resp = await notionService.listPages(nextCursor);
+			
+			resp.results.forEach((page) => {
+				if (moment().isAfter(moment(page.last_edited_time))) {
+					messageBatchEntries.push({
+						Id: page.id,
+						MessageBody: JSON.stringify({
+							pageId: page.id,
+							ownerEntityId: ownerEntityId,
+							secret: secret,
+						}),
+						MessageGroupId: messageGroupId,
+					});
+				} else {
+					isComplete = true;
+				}
+			});
+
+			if (!isComplete) {
+				isComplete = !resp.has_more;
+				nextCursor = resp.next_cursor;
+			}
+		}
+
+		this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_SLACK_QUEUE_URL as string);
+	}
+
+	private sendSqsMessageBatches(messageBatchEntries: SendMessageBatchRequestEntry[], url: string): void {
+		last(messageBatchEntries)!.MessageBody = JSON.stringify({
+			...JSON.parse(last(messageBatchEntries)!.MessageBody as string),
+			isFinal: true,
+		});
+
+		const maxMessageBatchSize = 10;
+		for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
+			const sqsMessageBatchInput: SendMessageBatchCommandInput = {
+				QueueUrl: url,
+				Entries: messageBatchEntries.slice(i, i + maxMessageBatchSize),
+			};
+			this.sqsClient.send(new SendMessageBatchCommand(sqsMessageBatchInput));
+		}
 	}
 
 	private async testDataSourceConnection(dataSourceTypeId: string, secret: string): Promise<boolean> {
@@ -52,12 +187,12 @@ export class DataSourceService {
 		});
 
 		switch (dataSourceType?.name) {
-		case DataSourceTypeName.NOTION:
-			return new NotionWrapper(decryptedSecret).testConnection();
-		case DataSourceTypeName.SLACK:
-			return new SlackWrapper(decryptedSecret).testConnection();
-		default:
-			return false;
+			case DataSourceTypeName.NOTION:
+				return new NotionWrapper(decryptedSecret).testConnection();
+			case DataSourceTypeName.SLACK:
+				return new SlackWrapper(decryptedSecret).testConnection();
+			default:
+				return false;
 		}
 	}
 }

@@ -12,9 +12,28 @@ export const NotionEndpoints = {
     USER_DETAIL: (userId: string) => `/v1/users/${userId}`,
 };
 
-export enum NotionEndpointMethods {
-    SEARCH = 'post',
-    BLOCK_DETAIL = 'get',
-    USER_DETAIL = 'get',
-}
+export const NotionEndpointMethods = {
+    SEARCH: 'post',
+    BLOCK_DETAIL: 'get',
+    USER_DETAIL: 'get',
+};
 
+export const ImportableBlockTypes = [
+    'bulleted_list_item',
+    'callout',
+    'code',
+    'column_list',
+    'column',
+    'embed',
+    'equation',
+    'heading_1',
+    'heading_2',
+    'heading_3',
+    'numbered_list_item',
+    'paragraph',
+    'quote',
+    'table',
+    'table_row',
+    'to_do',
+    'toggle',
+];
