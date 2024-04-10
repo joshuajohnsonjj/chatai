@@ -1,4 +1,5 @@
 dist/*
+*/**/dist/*
 *.json
 */**/*.md
 *.md

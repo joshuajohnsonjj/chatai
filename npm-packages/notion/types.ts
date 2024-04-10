@@ -107,26 +107,8 @@ export interface NotionBlock {
     archived: boolean;
     in_trash: boolean;
     type: NotionBlockType;
-    [typeData: string]: NotionBlockData; // a key here equal to type above containing the raw text
+    [typeData: string]: unknown; // a key here equal to type above containing the raw text
 }
-
-export type NotionBlockData =
-    | NotionParagraph
-    | NotionNumberedListItem
-    | NotionBulletedListItem
-    | NotionCallout
-    | NotionQuote
-    | NotionToggle
-    | INotionHeading1
-    | INotionHeading2
-    | INotionHeading3
-    | NotionCode
-    | NotionEquation
-    | NotionToDo
-    | NotionColumn
-    | NotionColumnList
-    | NotionTable
-    | NotionTableRow;
 
 export type NotionParagraph = NotionBaseDataStore;
 export type NotionNumberedListItem = NotionBaseDataStore;
@@ -153,9 +135,6 @@ export interface NotionToDo {
     checked: boolean;
 }
 
-// TODO:
-export interface NotionColumnList {}
-export interface NotionColumn {}
 export interface NotionTable {
     table_width: number;
     has_column_header: boolean;
