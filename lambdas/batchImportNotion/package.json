@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "local": "node -e \"console.log(require('./dist/index').handler(require('./event.json')));\"",
+    "lint": "eslint \"**/*.ts\" --fix; npx prettier --write ."
   },
   "dependencies": {
     "@joshuajohnsonjj38/notion": "^1.0.1",
@@ -15,6 +17,7 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.137",
+    "prettier": "^3.2.5",
     "typescript": "^5.4.4"
   }
 }

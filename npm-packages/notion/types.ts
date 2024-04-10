@@ -3,7 +3,7 @@
  * Requests payloads/responses
  * 
  */
-export interface INotionSearchPayload {
+export interface NotionSearchPayload {
     query?: string;
     sort?: {
         direction: 'ascending' | 'descending';
@@ -17,14 +17,14 @@ export interface INotionSearchPayload {
     page_size?: number; // max 100
 }
   
-export interface INotionSearchResponse {
+export interface NotionSearchResponse {
     object: 'list';
-    results: INotionPageDetailResponse[];
+    results: NotionPageDetailResponse[];
     next_cursor: string | null;
     has_more: boolean;
 }
 
-export interface INotionPageDetailResponse {
+export interface NotionPageDetailResponse {
     object: 'page' | 'database';
     id: string;
     created_time: string;
@@ -35,13 +35,19 @@ export interface INotionPageDetailResponse {
         type: string;
         database_id: string;
     };
+    properties: {
+        title?: NotionRichTextData[];
+        Name?: {
+            title?: NotionRichTextData[];
+        };
+    };
     archived: boolean;
     in_trash: boolean;
     url: string;
     public_url: string;
 }
   
-export interface INotionUserDetailResponse {
+export interface NotionUserDetailResponse {
     object: 'user';
     id: string;
     type: string;
@@ -53,6 +59,7 @@ export interface INotionUserDetailResponse {
 }
 
 export interface NotionBlockDetailResponse {
+    object: 'list';
     results: NotionBlock[];
     next_cursor: string | null;
     has_more: boolean;
@@ -127,7 +134,6 @@ export interface NotionEquation {
 
 export interface NotionToDo {
     rich_text: NotionRichTextData[];
-    children: NotionBlock[];
     checked: boolean;
 }
 
@@ -137,13 +143,17 @@ export interface NotionColumnList {
 export interface NotionColumn {
 }
 export interface NotionTable {
+    table_width: number;
+    has_column_header: boolean;
+    has_row_header: boolean;
 }
+
 export interface NotionTableRow {
+    cells: NotionRichTextData[][];
 }
 
 export interface NotionBaseDataStore {
     rich_text: NotionRichTextData[];
-    children: NotionBlock[];
 }
 
 export interface NotionHeading {

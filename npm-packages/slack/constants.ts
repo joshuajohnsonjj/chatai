@@ -1,17 +1,11 @@
 export const SlackBaseUrl = 'https://slack.com/api';
 
 export const SlackHeaders = {
-	'Content-Type': 'application/json',
+	'Content-Type': 'application/x-www-form-urlencoded',
 };
 
 export enum TSlackEndpoints {
     CONVERSATION_HISTORY = '/conversations.history',
     CONVERSATION_LIST = '/conversations.list',
-}
-
-export enum TSlackChannelType {
-    PUBLIC = 'public_channel',
-    PRIVATE = 'private_channel',
-    MULTI_DM = 'mpim',
-    DM = 'im',
+    USERS_LIST = '/users.list',
 }

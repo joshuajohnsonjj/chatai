@@ -3,12 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import type { CreateDataSourceResponseDto, CreateDataSourceQueryDto, TestDataSourceResponseDto } from './dto/dataSource.dto';
 // import { decrypt } from 'src/services/secretMananger';
 import { DataSourceTypeName } from '@prisma/client';
-import { NotionWrapper } from '@joshuajohnsonjj38/notion';
+import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
 import moment from 'moment';
 import { SQSClient, SendMessageBatchCommand, SendMessageBatchCommandInput, SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { v4 } from 'uuid';
-import last from 'lodash/last';
+import first from 'lodash/first';
 import { BadCredentialsError, ResourceNotFoundError } from 'src/exceptions';
 
 @Injectable()
@@ -69,7 +69,7 @@ export class DataSourceService {
 
 		switch (dataSource.type.name) {
 			case DataSourceTypeName.NOTION:
-				this.initNotionSync(dataSource.secret, dataSource.ownerEntityId);
+				this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
 				break;
 			case DataSourceTypeName.SLACK:
 				this.initSlackSync(dataSource.secret, dataSource.ownerEntityId);
@@ -81,6 +81,49 @@ export class DataSourceService {
 	}
 
 	private async initNotionSync(
+		secret: string,
+		ownerEntityId: string,
+		dataSourceId: string,
+	): Promise<void> {
+		const decryptedSecret = secret; //decrypt(secret);
+		const notionService = new NotionWrapper(decryptedSecret);
+		const messageGroupId = v4();
+		const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+		
+		let isComplete = false;
+		let nextCursor: string | null = null;
+		while (!isComplete) {
+			const resp = await notionService.listPages(nextCursor);
+			
+			resp.results.forEach((page) => {
+				if (moment().isAfter(moment(page.last_edited_time))) {
+					messageBatchEntries.push({
+						Id: page.id,
+						MessageBody: JSON.stringify({
+							pageId: page.id,
+							pageUrl: page.public_url,
+							ownerEntityId: ownerEntityId,
+							pageTitle: getPageTitle(page),
+							secret: secret,
+							dataSourceId,
+						}),
+						MessageGroupId: messageGroupId,
+					});
+				} else {
+					isComplete = true;
+				}
+			});
+
+			if (!isComplete) {
+				isComplete = !resp.has_more;
+				nextCursor = resp.next_cursor;
+			}
+		}
+
+		this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_NOTION_QUEUE_URL as string, dataSourceId);
+	}
+
+	private async initSlackSync(
 		secret: string,
 		ownerEntityId: string,
 	): Promise<void> {
@@ -117,54 +160,10 @@ export class DataSourceService {
 			}
 		}
 
-		this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_NOTION_QUEUE_URL as string);
+		this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_SLACK_QUEUE_URL as string, '');
 	}
 
-	private async initSlackSync(
-		secret: string,
-		ownerEntityId: string,
-	): Promise<void> {
-		const decryptedSecret = secret; //decrypt(secret);
-		const notionService = new NotionWrapper(decryptedSecret);
-		const messageGroupId = v4();
-		const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
-		
-		let isComplete = false;
-		let nextCursor: string | null = null;
-		while (!isComplete) {
-			const resp = await notionService.listPages(nextCursor);
-			
-			resp.results.forEach((page) => {
-				if (moment().isAfter(moment(page.last_edited_time))) {
-					messageBatchEntries.push({
-						Id: page.id,
-						MessageBody: JSON.stringify({
-							pageId: page.id,
-							ownerEntityId: ownerEntityId,
-							secret: secret,
-						}),
-						MessageGroupId: messageGroupId,
-					});
-				} else {
-					isComplete = true;
-				}
-			});
-
-			if (!isComplete) {
-				isComplete = !resp.has_more;
-				nextCursor = resp.next_cursor;
-			}
-		}
-
-		this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_SLACK_QUEUE_URL as string);
-	}
-
-	private sendSqsMessageBatches(messageBatchEntries: SendMessageBatchRequestEntry[], url: string): void {
-		last(messageBatchEntries)!.MessageBody = JSON.stringify({
-			...JSON.parse(last(messageBatchEntries)!.MessageBody as string),
-			isFinal: true,
-		});
-
+	private sendSqsMessageBatches(messageBatchEntries: SendMessageBatchRequestEntry[], url: string, dataSourceId: string): void {
 		const maxMessageBatchSize = 10;
 		for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
 			const sqsMessageBatchInput: SendMessageBatchCommandInput = {
@@ -173,6 +172,15 @@ export class DataSourceService {
 			};
 			this.sqsClient.send(new SendMessageBatchCommand(sqsMessageBatchInput));
 		}
+
+		this.sqsClient.send(new SendMessageBatchCommand({
+			QueueUrl: url,
+			Entries: [{
+				Id: v4(),
+				MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
+				MessageGroupId: messageBatchEntries[0].MessageGroupId,
+			}],
+		}));
 	}
 
 	private async testDataSourceConnection(dataSourceTypeId: string, secret: string): Promise<boolean> {

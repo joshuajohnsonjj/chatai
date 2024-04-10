@@ -4,6 +4,7 @@
   "description": "Prisma service",
   "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
     "generate": "npx prisma generate",
     "postinstall": "npm run generate"
   },
