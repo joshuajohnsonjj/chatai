@@ -2,15 +2,15 @@ import { type QdrantPayload, QdrantDataSource } from '@joshuajohnsonjj38/qdrant'
 // import { QdrantWrapper, type QdrantPayload, QdrantDataSource } from '@joshuajohnsonjj38/qdrant';
 import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
 import type {
-  NotionBaseDataStore,
-  NotionBlock,
-  NotionBlockDetailResponse,
-  NotionCode,
-  NotionEquation,
-  NotionRichTextData,
-  NotionTable,
-  NotionTableRow,
-  NotionToDo,
+    NotionBaseDataStore,
+    NotionBlock,
+    NotionBlockDetailResponse,
+    NotionCode,
+    NotionEquation,
+    NotionRichTextData,
+    NotionTable,
+    NotionTableRow,
+    NotionToDo,
 } from '@joshuajohnsonjj38/notion';
 // import omit from 'lodash/omit';
 // import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
@@ -24,22 +24,29 @@ import { Handler, SQSEvent } from 'aws-lambda';
 // const prisma = new PrismaClient();
 
 const getTextFromTable = (tableBlocks: NotionBlock[], parantTableSettings: NotionTable): string => {
-    let stringifiedTable = 'Table content:\n';
+    const stringifyTableRow = (row: NotionTableRow): string => {
+        return (
+            '| ' +
+            row.cells
+                .flatMap((texts: NotionRichTextData[]) => texts.flatMap((text) => text.plain_text).join(''))
+                .join(' | ') +
+            ' |\n'
+        );
+    };
+
+    let stringifiedTable = 'Markdown formatted table:\n';
 
     if (parantTableSettings.has_column_header) {
         const firstBlock = tableBlocks.shift() as NotionBlock;
         const firstRow = firstBlock[firstBlock.type] as NotionTableRow;
-        stringifiedTable += '| ' + firstRow.cells.flatMap(
-            (texts: NotionRichTextData[]) => texts.flatMap((text) => text.plain_text).join(' | ')
-        );
-        stringifiedTable += '| ' + Array(parantTableSettings.table_width).fill('---').join(' | ');
+        stringifiedTable += stringifyTableRow(firstRow);
+        stringifiedTable += '| ' + Array(parantTableSettings.table_width).fill('---').join(' | ') + ' |';
+        stringifiedTable += '\n';
     }
 
     for (const block of tableBlocks) {
         const row = block[block.type] as NotionTableRow;
-        stringifiedTable += '| ' + row.cells.flatMap(
-            (texts: NotionRichTextData[]) => texts.flatMap((text) => text.plain_text).join(' | ')
-        );
+        stringifiedTable += stringifyTableRow(row);
     }
 
     return stringifiedTable;
@@ -71,39 +78,39 @@ const getTextFromBlock = (block: NotionBlock): string => {
 };
 
 const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: NotionWrapper): Promise<NotionBlock[]> => {
-  const allChildren: NotionBlock[] = [rootBlock];
+    const allChildren: NotionBlock[] = [rootBlock];
 
-  const collectChildren = async (block: NotionBlock): Promise<void> => {
-    if (block.has_children) {
-      const children: NotionBlock[] = [];
-      let isComplete = false;
-      let nextCursor: string | null = null;
+    const collectChildren = async (block: NotionBlock): Promise<void> => {
+        if (block.has_children) {
+            const children: NotionBlock[] = [];
+            let isComplete = false;
+            let nextCursor: string | null = null;
 
-      while (!isComplete) {
-        const blockResponse: NotionBlockDetailResponse = await notionAPI.listPageBlocks(block.id, nextCursor);
-        children.push(...blockResponse.results);
+            while (!isComplete) {
+                const blockResponse: NotionBlockDetailResponse = await notionAPI.listPageBlocks(block.id, nextCursor);
+                children.push(...blockResponse.results);
 
-        isComplete = !blockResponse.has_more;
-        nextCursor = blockResponse.next_cursor;
-      }
+                isComplete = !blockResponse.has_more;
+                nextCursor = blockResponse.next_cursor;
+            }
 
-      for (const child of children) {
-        allChildren.push(child);
-        await collectChildren(child);
-      }
-    }
-  };
+            for (const child of children) {
+                allChildren.push(child);
+                await collectChildren(child);
+            }
+        }
+    };
 
-  await collectChildren(rootBlock);
-  return allChildren;
+    await collectChildren(rootBlock);
+    return allChildren;
 };
 
 const processBlockList = async (
-  notionAPI: NotionWrapper,
-  blocks: NotionBlock[],
-  ownerId: string,
-  pageUrl: string,
-  pageTitle: string,
+    notionAPI: NotionWrapper,
+    blocks: NotionBlock[],
+    ownerId: string,
+    pageUrl: string,
+    pageTitle: string,
 ) => {
     for (const parentBlock of blocks) {
         if (!ImportableBlockTypes.includes(parentBlock.type) || parentBlock.in_trash) {
@@ -116,7 +123,7 @@ const processBlockList = async (
         if (parentBlock.type === NotionBlockType.TABLE) {
             aggregatedBlockText = getTextFromTable(
                 aggregatedNestedBlocks.slice(1),
-                parentBlock[parentBlock.type] as NotionTable
+                parentBlock[parentBlock.type] as NotionTable,
             );
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
             // ...
@@ -134,7 +141,6 @@ const processBlockList = async (
             text,
             url: pageUrl,
             dataSource: QdrantDataSource.NOTION,
-            sourceDataType: parentBlock.type,
             ownerId,
         };
 
@@ -146,24 +152,24 @@ const processBlockList = async (
 };
 
 const processPage = async (
-  notionAPI: NotionWrapper,
-  pageId: string,
-  ownerId: string,
-  pageUrl: string,
-  pageTitle: string,
+    notionAPI: NotionWrapper,
+    pageId: string,
+    ownerId: string,
+    pageUrl: string,
+    pageTitle: string,
 ) => {
-  let isComplete = false;
-  let nextCursor: string | null = null;
-  const processingBlockPromises: Promise<void>[] = [];
+    let isComplete = false;
+    let nextCursor: string | null = null;
+    const processingBlockPromises: Promise<void>[] = [];
 
-  while (!isComplete) {
-    const blockResponse: NotionBlockDetailResponse = await notionAPI.listPageBlocks(pageId, nextCursor);
-    processingBlockPromises.push(processBlockList(notionAPI, blockResponse.results, ownerId, pageUrl, pageTitle));
-    isComplete = !blockResponse.has_more;
-    nextCursor = blockResponse.next_cursor;
-  }
+    while (!isComplete) {
+        const blockResponse: NotionBlockDetailResponse = await notionAPI.listPageBlocks(pageId, nextCursor);
+        processingBlockPromises.push(processBlockList(notionAPI, blockResponse.results, ownerId, pageUrl, pageTitle));
+        isComplete = !blockResponse.has_more;
+        nextCursor = blockResponse.next_cursor;
+    }
 
-  await Promise.all(processingBlockPromises);
+    await Promise.all(processingBlockPromises);
 };
 
 // TODO: handle deletion/archived
@@ -186,33 +192,39 @@ const processPage = async (
  *      secret: string,
  */
 export const handler: Handler = async (event: SQSEvent) => {
-  const processingPagePromises: Promise<void>[] = [];
-  const completedDataSources: string[] = [];
+    const processingPagePromises: Promise<void>[] = [];
+    const completedDataSources: string[] = [];
 
-  for (const record of event.Records) {
-    const messageBody = JSON.parse(record.body);
-    const notionKey = messageBody.secret; //secretMananger.decrypt(messageBody.secret);
-    const notionAPI = new NotionWrapper(notionKey);
+    for (const record of event.Records) {
+        const messageBody = JSON.parse(record.body);
+        const notionKey = messageBody.secret; //secretMananger.decrypt(messageBody.secret);
+        const notionAPI = new NotionWrapper(notionKey);
 
-    processingPagePromises.push(
-      processPage(notionAPI, messageBody.pageId, messageBody.ownerEntityId, messageBody.pageUrl, messageBody.pageTitle),
-    );
+        processingPagePromises.push(
+            processPage(
+                notionAPI,
+                messageBody.pageId,
+                messageBody.ownerEntityId,
+                messageBody.pageUrl,
+                messageBody.pageTitle,
+            ),
+        );
 
-    if (messageBody.isFinal) {
-      completedDataSources.push(messageBody.dataSourceId);
+        if (messageBody.isFinal) {
+            completedDataSources.push(messageBody.dataSourceId);
+        }
     }
-  }
 
-  await Promise.all(processingPagePromises);
-  // await prisma.dataSource.updateMany({
-  //     where: {
-  //         id: {
-  //             in: completedDataSources,
-  //         },
-  //     },
-  //     data: {
-  //         lastSync: new Date(),
-  //         isSyncing: false,
-  //     },
-  // });
+    await Promise.all(processingPagePromises);
+    // await prisma.dataSource.updateMany({
+    //     where: {
+    //         id: {
+    //             in: completedDataSources,
+    //         },
+    //     },
+    //     data: {
+    //         lastSync: new Date(),
+    //         isSyncing: false,
+    //     },
+    // });
 };

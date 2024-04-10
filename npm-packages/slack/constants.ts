@@ -1,7 +1,7 @@
 export const SlackBaseUrl = 'https://slack.com/api';
 
 export const SlackHeaders = {
-	'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Type': 'application/x-www-form-urlencoded',
 };
 
 export enum TSlackEndpoints {

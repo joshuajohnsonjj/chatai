@@ -1,9 +1,9 @@
 import { IsString } from 'class-validator';
 
 export class AuthenticateRequestDto {
-  @IsString()
-  	username: string;
+    @IsString()
+    username: string;
 
-  @IsString()
-  	password: string;
+    @IsString()
+    password: string;
 }

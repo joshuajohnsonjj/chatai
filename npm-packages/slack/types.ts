@@ -24,7 +24,7 @@ export interface SlackConversationListResponse {
         next_cursor: string;
     };
 }
-  
+
 export interface SlackUserListRequestParams {
     limit?: number;
     cursor?: string;
@@ -49,7 +49,7 @@ export interface SimplifiedSlackUser {
     name: string;
     email: string | null;
 }
- 
+
 export interface SlackConversationHistoryRequestParams {
     limit?: number;
     cursor?: string;
@@ -70,5 +70,5 @@ export interface SlackConversationHistoryResponse {
     has_more: boolean;
     response_metadata: {
         next_cursor: string;
-    };    
+    };
 }

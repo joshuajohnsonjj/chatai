@@ -9,7 +9,7 @@ async function main() {
             name: 'Basic month-to-month',
             stripeId: 'xyz',
             isActive: true,
-        }
+        },
     });
 
     // users
@@ -18,9 +18,9 @@ async function main() {
             id: v4(),
             type: UserType.INDIVIDUAL,
             planId: accountPlan.id,
-        }
+        },
     });
-	
+
     // data source types
     await prisma.dataSourceType.createMany({
         data: [
@@ -41,7 +41,7 @@ async function main() {
             dataSourceTypeId: dataSourceType?.id as string,
             ownerEntityId: user.id,
             ownerEntityType: EntityType.INDIVIDUAL,
-            secret: 'SECRET_HASH'
+            secret: 'SECRET_HASH',
         },
     });
 
@@ -50,17 +50,17 @@ async function main() {
         data: {
             userId: user.id,
             chatType: ChatType.SLACK,
-            title: 'Slack Chat'
-        }
+            title: 'Slack Chat',
+        },
     });
 }
 
 main()
-	.then(async () => {
-		await prisma.$disconnect();
-	})
-	.catch(async (e) => {
-		console.error(e);
-		await prisma.$disconnect();
-		process.exit(1);
-	});
+    .then(async () => {
+        await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+        console.error(e);
+        await prisma.$disconnect();
+        process.exit(1);
+    });

@@ -1,9 +1,9 @@
 import { IsString } from 'class-validator';
 
 export class ConfirmUserRequestDto {
-  @IsString()
-  	code: string;
+    @IsString()
+    code: string;
 
-  @IsString()
-  	username: string;
+    @IsString()
+    username: string;
 }

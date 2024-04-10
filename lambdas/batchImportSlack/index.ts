@@ -25,14 +25,14 @@ const getWorkspaceUserInfo = async (service: SlackWrapper): Promise<{ [id: strin
         }
 
         users.push(
-            ...resp.members.map((member) => ([
+            ...resp.members.map((member) => [
                 member.id,
                 {
                     id: member.id,
                     name: member.real_name,
                     email: member.profile.email,
-                }
-            ])),
+                },
+            ]),
         );
 
         nextCursor = resp.response_metadata.next_cursor;
@@ -48,7 +48,7 @@ export const handler: Handler = async (event) => {
     const messageData = JSON.parse(event.body);
     const slackKey = secretMananger.decrypt(messageData.secret);
     const slackService = new SlackWrapper(slackKey);
-    
+
     const users = await getWorkspaceUserInfo(slackService);
 
     if (messageData.isFinal) {

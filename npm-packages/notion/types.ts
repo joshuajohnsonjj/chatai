@@ -1,7 +1,7 @@
 /**
- * 
+ *
  * Requests payloads/responses
- * 
+ *
  */
 export interface NotionSearchPayload {
     query?: string;
@@ -16,7 +16,7 @@ export interface NotionSearchPayload {
     start_cursor?: string;
     page_size?: number; // max 100
 }
-  
+
 export interface NotionSearchResponse {
     object: 'list';
     results: NotionPageDetailResponse[];
@@ -29,8 +29,8 @@ export interface NotionPageDetailResponse {
     id: string;
     created_time: string;
     last_edited_time: string;
-    created_by: { object: 'user'; id: string; };
-    last_edited_by: { object: 'user'; id: string; };
+    created_by: { object: 'user'; id: string };
+    last_edited_by: { object: 'user'; id: string };
     parent: {
         type: string;
         database_id: string;
@@ -46,7 +46,7 @@ export interface NotionPageDetailResponse {
     url: string;
     public_url: string;
 }
-  
+
 export interface NotionUserDetailResponse {
     object: 'user';
     id: string;
@@ -67,9 +67,9 @@ export interface NotionBlockDetailResponse {
 }
 
 /**
- * 
+ *
  * Notion data types
- * 
+ *
  */
 export enum NotionBlockType {
     PARAGRAPH = 'paragraph',
@@ -106,11 +106,27 @@ export interface NotionBlock {
     has_children: boolean;
     archived: boolean;
     in_trash: boolean;
-    type: NotionBlockType,
-    [typeData: string]: NotionBlockData // a key here equal to type above containing the raw text
+    type: NotionBlockType;
+    [typeData: string]: NotionBlockData; // a key here equal to type above containing the raw text
 }
 
-export type NotionBlockData = NotionParagraph | NotionNumberedListItem | NotionBulletedListItem | NotionCallout | NotionQuote | NotionToggle | INotionHeading1 | INotionHeading2 | INotionHeading3 | NotionCode | NotionEquation | NotionToDo | NotionColumn | NotionColumnList | NotionTable | NotionTableRow;
+export type NotionBlockData =
+    | NotionParagraph
+    | NotionNumberedListItem
+    | NotionBulletedListItem
+    | NotionCallout
+    | NotionQuote
+    | NotionToggle
+    | INotionHeading1
+    | INotionHeading2
+    | INotionHeading3
+    | NotionCode
+    | NotionEquation
+    | NotionToDo
+    | NotionColumn
+    | NotionColumnList
+    | NotionTable
+    | NotionTableRow;
 
 export type NotionParagraph = NotionBaseDataStore;
 export type NotionNumberedListItem = NotionBaseDataStore;
@@ -138,10 +154,8 @@ export interface NotionToDo {
 }
 
 // TODO:
-export interface NotionColumnList {
-}
-export interface NotionColumn {
-}
+export interface NotionColumnList {}
+export interface NotionColumn {}
 export interface NotionTable {
     table_width: number;
     has_column_header: boolean;
@@ -166,7 +180,7 @@ export interface NotionRichTextData {
         content: string;
         link: string | null;
     };
-    annotations: any;
+    annotations: unknown;
     plain_text: string;
     href: string | null;
-};
+}

@@ -6,12 +6,8 @@ import { ChatModule } from './chat/chat.module';
 import { DataSourceModule } from './dataSource/dataSource.module';
 
 @Module({
-	imports: [
-		PrismaModule,
-		ChatModule,
-		DataSourceModule,
-	],
-	controllers: [AppController],
-	providers: [AppService]
+    imports: [PrismaModule, ChatModule, DataSourceModule],
+    controllers: [AppController],
+    providers: [AppService],
 })
 export class AppModule {}

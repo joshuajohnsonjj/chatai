@@ -16,26 +16,26 @@ const getStatusCode = (exceptionName: string): number => {
             return HttpStatus.UNAUTHORIZED;
         default:
             return HttpStatus.INTERNAL_SERVER_ERROR;
-  }
+    }
 };
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  catch(exception: Error, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<IncomingMessage>();
-    const code = getStatusCode(exception.name);
-    const message = exception.message;
+    catch(exception: Error, host: ArgumentsHost) {
+        const ctx = host.switchToHttp();
+        const response = ctx.getResponse<Response>();
+        const request = ctx.getRequest<IncomingMessage>();
+        const code = getStatusCode(exception.name);
+        const message = exception.message;
 
-    response.status(code).json({
-      error: {
-        timestamp: new Date().toISOString(),
-        path: request.url,
-        name: exception.name,
-        code,
-        message
-      },
-    });
-  }
+        response.status(code).json({
+            error: {
+                timestamp: new Date().toISOString(),
+                path: request.url,
+                name: exception.name,
+                code,
+                message,
+            },
+        });
+    }
 }
