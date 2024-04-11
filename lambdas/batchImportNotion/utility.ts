@@ -11,7 +11,15 @@ import type {
     NotionWrapper,
 } from '@joshuajohnsonjj38/notion';
 import { NotionBlockType } from '@joshuajohnsonjj38/notion';
-import { QdrantDataSource, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
+import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
+
+const openAI = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
+const qdrant = new QdrantWrapper(
+    process.env.QDRANT_HOST as string,
+    parseInt(process.env.QDRANT_PORT as string, 10),
+    process.env.QDRANT_COLLECTION as string,
+);
 
 export const getTextFromTable = (tableBlocks: NotionBlock[], parantTableSettings: NotionTable): string => {
     const stringifyTableRow = (row: NotionTableRow): string => {
@@ -115,8 +123,6 @@ export const publishToQdrant = async (
         ownerId,
     };
 
-    console.log(parentBlock.id, payload);
-
-    // const embedding = await openAI.getTextEmbedding(text);
-    // await qdrant.upsert(block.id, embedding, payload);
+    const embedding = await openAI.getTextEmbedding(text);
+    await qdrant.upsert(parentBlock.id, embedding, payload);
 };

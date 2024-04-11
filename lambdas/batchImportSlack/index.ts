@@ -1,65 +1,108 @@
-import { QdrantWrapper, type QdrantPayload, QdrantDataSource } from '@joshuajohnsonjj38/qdrant';
-import omit from 'lodash/omit';
-import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
-import { Handler } from 'aws-lambda';
-import { SecretMananger } from '@joshuajohnsonjj38/secret-mananger';
+import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
+import { Handler, SQSEvent } from 'aws-lambda';
 import { PrismaClient } from '@joshuajohnsonjj38/prisma';
-import { SimplifiedSlackUser, SlackWrapper } from '@joshuajohnsonjj38/slack';
+import { type SlackMessage, SlackWrapper } from '@joshuajohnsonjj38/slack';
+import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 
-const openAI = new OpenAIWrapper('TODO');
-const qdrant = new QdrantWrapper('TODO', 1234, 'TODO');
-const secretMananger = new SecretMananger('', '', '');
+const rsaService = new RsaCipher('./private.pem');
 const prisma = new PrismaClient();
+const openAI = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
+const qdrant = new QdrantWrapper(
+    process.env.QDRANT_HOST as string,
+    parseInt(process.env.QDRANT_PORT as string, 10),
+    process.env.QDRANT_COLLECTION as string,
+);
 
-const getWorkspaceUserInfo = async (service: SlackWrapper): Promise<{ [id: string]: SimplifiedSlackUser }> => {
-    const users: any[] = [];
-    let isComplete = false;
-    let nextCursor: string | null = null;
+const processMessages = async (
+    messages: SlackMessage[],
+    channelId: string,
+    channelName: string,
+    ownerId: string,
+): Promise<void> => {
+    await Promise.all(
+        messages.map(async (message) => {
+            const payload: QdrantPayload = {
+                date: new Date(message.ts).getTime(),
+                text: message.text,
+                dataSource: QdrantDataSource.SLACK,
+                ownerId,
+                channelId,
+                channelName,
+            };
 
-    while (!isComplete) {
-        let resp;
-        if (!nextCursor) {
-            resp = await service.listUsers();
-        } else {
-            resp = await service.listUsers(nextCursor);
-        }
-
-        users.push(
-            ...resp.members.map((member) => [
-                member.id,
-                {
-                    id: member.id,
-                    name: member.real_name,
-                    email: member.profile.email,
-                },
-            ]),
-        );
-
-        nextCursor = resp.response_metadata.next_cursor;
-        isComplete = !!resp.response_metadata.next_cursor;
-    }
-
-    return Object.fromEntries(users);
+            const embedding = await openAI.getTextEmbedding(message.text);
+            await qdrant.upsert(`${channelId}:${message.ts}`, embedding, payload);
+        }),
+    );
 };
 
-// TODO: handle deletion/archived
-// TODO: handle table/columns
-export const handler: Handler = async (event) => {
-    const messageData = JSON.parse(event.body);
-    const slackKey = secretMananger.decrypt(messageData.secret);
-    const slackService = new SlackWrapper(slackKey);
+const processChannel = async (
+    slackAPI: SlackWrapper,
+    channelId: string,
+    channelName: string,
+    ownerEntityId: string,
+) => {
+    let isComplete = false;
+    let nextCursor: string | null = null;
+    const processingMessagesPromises: Promise<void>[] = [];
 
-    const users = await getWorkspaceUserInfo(slackService);
-
-    if (messageData.isFinal) {
-        await prisma.dataSource.update({
-            where: {
-                id: event.dataSourceId,
-            },
-            data: {
-                lastSync: new Date(),
-                isSyncing: false,
-            },
-        });
+    while (!isComplete) {
+        const messagesResponse = await slackAPI.getConversationHistory(channelId, nextCursor);
+        processingMessagesPromises.push(
+            processMessages(messagesResponse.messages, channelId, channelName, ownerEntityId),
+        );
+        isComplete = !messagesResponse.has_more;
+        nextCursor = messagesResponse?.response_metadata?.next_cursor;
     }
+
+    await Promise.all(processingMessagesPromises);
+};
+
+/**
+ * Lambda SQS handler
+ *
+ * Message body expected to have following data
+ *      channelId: string,
+ *      channelName: string,
+ *      ownerEntityId: string,
+ *      dataSourceId: string,
+ *      secret: string,
+ *
+ * Or at the end of a data source's sync messages
+ *      dataSourceId: string,
+ *      isFinal: true,
+ */
+export const handler: Handler = async (event: SQSEvent) => {
+    const processingChannelPromises: Promise<void>[] = [];
+    const completedDataSources: string[] = [];
+
+    for (const record of event.Records) {
+        const messageBody = JSON.parse(record.body);
+
+        if (messageBody.isFinal) {
+            completedDataSources.push(messageBody.dataSourceId);
+            continue;
+        }
+
+        const slackKey = rsaService.decrypt(messageBody.secret);
+        const slackAPI = new SlackWrapper(slackKey);
+
+        processingChannelPromises.push(
+            processChannel(slackAPI, messageBody.channelId, messageBody.channelName, messageBody.ownerEntityId),
+        );
+    }
+
+    await Promise.all(processingChannelPromises);
+    await prisma.dataSource.updateMany({
+        where: {
+            id: {
+                in: completedDataSources,
+            },
+        },
+        data: {
+            lastSync: new Date(),
+            isSyncing: false,
+        },
+    });
 };

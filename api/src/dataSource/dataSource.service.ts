@@ -5,7 +5,7 @@ import type {
     CreateDataSourceQueryDto,
     TestDataSourceResponseDto,
 } from './dto/dataSource.dto';
-// import { decrypt } from 'src/services/secretMananger';
+import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { DataSourceTypeName } from '@prisma/client';
 import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
@@ -23,10 +23,13 @@ import { BadCredentialsError, ResourceNotFoundError } from 'src/exceptions';
 export class DataSourceService {
     private readonly sqsClient = new SQSClient({ region: process.env.AWS_REGION });
 
+    private readonly rsaService = new RsaCipher('../../private.pem');
+
     constructor(private readonly prisma: PrismaService) {}
 
     async createDataSource(params: CreateDataSourceQueryDto): Promise<CreateDataSourceResponseDto> {
-        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
+        const decryptedSecret = this.rsaService.decrypt(params.secret);
+        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, decryptedSecret);
 
         if (!isValid) {
             throw new BadCredentialsError();
@@ -56,7 +59,8 @@ export class DataSourceService {
     }
 
     async testDataSourceCredential(params: CreateDataSourceQueryDto): Promise<TestDataSourceResponseDto> {
-        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
+        const decryptedSecret = this.rsaService.decrypt(params.secret);
+        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, decryptedSecret);
         return { isValid };
     }
 
@@ -80,15 +84,15 @@ export class DataSourceService {
                 this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
                 break;
             case DataSourceTypeName.SLACK:
-                this.initSlackSync(dataSource.secret, dataSource.ownerEntityId);
+                this.initSlackSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
                 break;
             default:
                 break;
         }
     }
 
-    private async initNotionSync(secret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
-        const decryptedSecret = secret; //decrypt(secret);
+    private async initNotionSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
+        const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const notionService = new NotionWrapper(decryptedSecret);
         const messageGroupId = v4();
         const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
@@ -107,7 +111,7 @@ export class DataSourceService {
                             pageUrl: page.public_url,
                             ownerEntityId: ownerEntityId,
                             pageTitle: getPageTitle(page),
-                            secret: secret,
+                            secret: encryptedSecret,
                             dataSourceId,
                         }),
                         MessageGroupId: messageGroupId,
@@ -126,41 +130,38 @@ export class DataSourceService {
         this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_NOTION_QUEUE_URL as string, dataSourceId);
     }
 
-    private async initSlackSync(secret: string, ownerEntityId: string): Promise<void> {
-        const decryptedSecret = secret; //decrypt(secret);
-        const notionService = new NotionWrapper(decryptedSecret);
+    private async initSlackSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
+        const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
+        const slackService = new SlackWrapper(decryptedSecret);
         const messageGroupId = v4();
         const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
         let isComplete = false;
         let nextCursor: string | null = null;
         while (!isComplete) {
-            const resp = await notionService.listPages(nextCursor);
+            const resp = await slackService.listConversations(nextCursor);
 
-            resp.results.forEach((page) => {
-                if (moment().isAfter(moment(page.last_edited_time))) {
-                    messageBatchEntries.push({
-                        Id: page.id,
-                        MessageBody: JSON.stringify({
-                            pageId: page.id,
-                            pageUrl: page.public_url,
-                            ownerEntityId: ownerEntityId,
-                            secret: secret,
-                        }),
-                        MessageGroupId: messageGroupId,
-                    });
-                } else {
-                    isComplete = true;
-                }
+            resp.channels.forEach((channel) => {
+                messageBatchEntries.push({
+                    Id: channel.id,
+                    MessageBody: JSON.stringify({
+                        channelId: channel.id,
+                        channelName: channel.name,
+                        ownerEntityId: ownerEntityId,
+                        secret: encryptedSecret,
+                        dataSourceId,
+                    }),
+                    MessageGroupId: messageGroupId,
+                });
             });
 
             if (!isComplete) {
-                isComplete = !resp.has_more;
-                nextCursor = resp.next_cursor;
+                isComplete = !resp?.response_metadata?.next_cursor;
+                nextCursor = resp?.response_metadata?.next_cursor;
             }
         }
 
-        this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_SLACK_QUEUE_URL as string, '');
+        this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_SLACK_QUEUE_URL as string, dataSourceId);
     }
 
     private sendSqsMessageBatches(

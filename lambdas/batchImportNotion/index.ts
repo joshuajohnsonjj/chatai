@@ -1,17 +1,12 @@
-// import { QdrantWrapper, type QdrantPayload, QdrantDataSource } from '@joshuajohnsonjj38/qdrant';
 import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
 import type { NotionBlock, NotionBlockDetailResponse, NotionTable } from '@joshuajohnsonjj38/notion';
-// import omit from 'lodash/omit';
-// import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { Handler, SQSEvent } from 'aws-lambda';
 import { collectAllChildren, getTextFromBlock, getTextFromTable, publishToQdrant } from './utility';
-// import { SecretMananger } from '@joshuajohnsonjj38/secret-mananger';
-// import { PrismaClient } from '@joshuajohnsonjj38/prisma';
+import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
+import { PrismaClient } from '@joshuajohnsonjj38/prisma';
 
-// const openAI = new OpenAIWrapper('TODO');
-// const qdrant = new QdrantWrapper('TODO', 1234, 'TODO');
-// const secretMananger = new SecretMananger('', '', '');
-// const prisma = new PrismaClient();
+const rsaService = new RsaCipher('./private.pem');
+const prisma = new PrismaClient();
 
 const processBlockList = async (
     notionAPI: NotionWrapper,
@@ -74,9 +69,6 @@ const processPage = async (
     await Promise.all(processingBlockPromises);
 };
 
-// TODO: handle deletion/archived
-// TODO: error handling
-
 /**
  * Lambda SQS handler
  *
@@ -90,15 +82,22 @@ const processPage = async (
  *
  * Or at the end of a data source's sync messages
  *      dataSourceId: string,
- *      secret: string,
+ *      isFinal: true,
  */
 export const handler: Handler = async (event: SQSEvent) => {
+    // TODO: error handling, dead letter queue?
     const processingPagePromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
 
     for (const record of event.Records) {
         const messageBody = JSON.parse(record.body);
-        const notionKey = messageBody.secret; //secretMananger.decrypt(messageBody.secret);
+
+        if (messageBody.isFinal) {
+            completedDataSources.push(messageBody.dataSourceId);
+            continue;
+        }
+
+        const notionKey = rsaService.decrypt(messageBody.secret);
         const notionAPI = new NotionWrapper(notionKey);
 
         processingPagePromises.push(
@@ -110,22 +109,18 @@ export const handler: Handler = async (event: SQSEvent) => {
                 messageBody.pageTitle,
             ),
         );
-
-        if (messageBody.isFinal) {
-            completedDataSources.push(messageBody.dataSourceId);
-        }
     }
 
     await Promise.all(processingPagePromises);
-    // await prisma.dataSource.updateMany({
-    //     where: {
-    //         id: {
-    //             in: completedDataSources,
-    //         },
-    //     },
-    //     data: {
-    //         lastSync: new Date(),
-    //         isSyncing: false,
-    //     },
-    // });
+    await prisma.dataSource.updateMany({
+        where: {
+            id: {
+                in: completedDataSources,
+            },
+        },
+        data: {
+            lastSync: new Date(),
+            isSyncing: false,
+        },
+    });
 };

@@ -1,5 +1,5 @@
 import { EntityType } from '@prisma/client';
-import { IsEnum, IsHash, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsString, IsUUID } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -11,7 +11,6 @@ export class CreateDataSourceQueryDto {
     @IsEnum(EntityType)
     ownerEntityType: EntityType;
 
-    // @IsHash('sha256')
     @IsString()
     secret: string;
 }

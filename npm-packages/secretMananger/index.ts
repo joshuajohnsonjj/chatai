@@ -1,33 +1,31 @@
-import aws from 'aws-sdk';
+// https://fireship.io/lessons/node-crypto-examples/
+import NodeRSA from 'node-rsa';
+import fs from 'fs';
 
-export class SecretMananger {
-    private readonly encryptionAlgorithm = 'RSAES_OAEP_SHA_256';
-    private readonly kms: aws.KMS;
+export class RsaCipher {
+    private readonly key: NodeRSA;
 
-    constructor(accessKeyId: string, secretAccessKey: string, region: string) {
-        this.kms = new aws.KMS({ accessKeyId, secretAccessKey, region });
+    constructor(privatePemFilePath?: string) {
+        if (!privatePemFilePath) {
+            this.key = new NodeRSA({ b: 2048 });
+            console.warn('Using RSA Cipher without specifiying pem file. Generating new keys...');
+        } else {
+            const pem = fs.readFileSync(privatePemFilePath, 'utf8');
+            this.key = new NodeRSA(pem);
+        }
     }
 
-    public decrypt = (buffer: string): string => {
-        const params = {
-            CiphertextBlob: buffer, // The encrypted data (ciphertext).
-            EncryptionAlgorithm: this.encryptionAlgorithm, // The encryption algorithm that was used to encrypt the data. This parameter is required to decrypt with an asymmetric KMS key.
-            KeyId: process.env.AWS_KMS_MASTER_KEY_ID, // A key identifier for the KMS key to use to decrypt the data. This parameter is required to decrypt with an asymmetric KMS key.
-        };
-        this.kms.decrypt(params, function (err, data) {
-            if (err) {
-                console.log(err, err.stack); // an error occurred
-            } else {
-                return data; // successful response
-            }
-            /*
-            data = {
-            EncryptionAlgorithm: "RSAES_OAEP_SHA_256", // The encryption algorithm that was used to decrypt the ciphertext.
-            KeyId: "arn:aws:kms:us-west-2:111122223333:key/0987dcba-09fe-87dc-65ba-ab0987654321", // The Amazon Resource Name (ARN) of the KMS key that was used to decrypt the data.
-            Plaintext: <Binary String>// The decrypted (plaintext) data.
-            }
-            */
-        });
-        return '';
-    };
+    public encrypt(plainData: string, rsaPublicKey: string): string {
+        const tempKey = new NodeRSA();
+        tempKey.importKey(rsaPublicKey, 'pkcs8-public-pem');
+        return tempKey.encrypt(plainData, 'base64');
+    }
+
+    public decrypt(encryptedString: string): string {
+        return this.key.decrypt(encryptedString, 'utf8');
+    }
+
+    public getPublicKey() {
+        return this.key.exportKey('pkcs8-public-pem');
+    }
 }

@@ -17,6 +17,7 @@ export enum TQdrantPayloadKey {
 
 export enum QdrantDataSource {
     NOTION = 'notion',
+    SLACK = 'slack',
 }
 
 export interface QdrantPayload {
@@ -24,7 +25,12 @@ export interface QdrantPayload {
     date: number; // Unix timestamp
     dataSource: QdrantDataSource;
     ownerId: string;
+
     url?: string;
     authorName?: string;
     authorEmail?: string;
+
+    // slack specific fields
+    channelId?: string;
+    channelName?: string;
 }
