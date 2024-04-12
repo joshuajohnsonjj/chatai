@@ -4,6 +4,7 @@ import { PrismaClient } from '@joshuajohnsonjj38/prisma';
 import { type SlackMessage, SlackWrapper } from '@joshuajohnsonjj38/slack';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
+import { createClient } from 'redis';
 
 const rsaService = new RsaCipher('./private.pem');
 const prisma = new PrismaClient();
@@ -13,8 +14,12 @@ const qdrant = new QdrantWrapper(
     parseInt(process.env.QDRANT_PORT as string, 10),
     process.env.QDRANT_COLLECTION as string,
 );
+const redisClient = createClient({
+  url: process.env.REDIS_URL,
+});
 
 const processMessages = async (
+    slackAPI: SlackWrapper,
     messages: SlackMessage[],
     channelId: string,
     channelName: string,
@@ -27,8 +32,9 @@ const processMessages = async (
                 text: message.text,
                 dataSource: QdrantDataSource.SLACK,
                 ownerId,
-                channelId,
-                channelName,
+                slackChannelId: channelId,
+                slackChannelName: channelName,
+                authorName: (await slackAPI.getUserInfoById(message.user)).real_name
             };
 
             const embedding = await openAI.getTextEmbedding(message.text);
@@ -50,7 +56,7 @@ const processChannel = async (
     while (!isComplete) {
         const messagesResponse = await slackAPI.getConversationHistory(channelId, nextCursor);
         processingMessagesPromises.push(
-            processMessages(messagesResponse.messages, channelId, channelName, ownerEntityId),
+            processMessages(slackAPI, messagesResponse.messages, channelId, channelName, ownerEntityId),
         );
         isComplete = !messagesResponse.has_more;
         nextCursor = messagesResponse?.response_metadata?.next_cursor;
@@ -77,6 +83,10 @@ export const handler: Handler = async (event: SQSEvent) => {
     const processingChannelPromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
 
+    if (!redisClient.isOpen) {
+        await redisClient.connect();
+    }
+
     for (const record of event.Records) {
         const messageBody = JSON.parse(record.body);
 
@@ -86,7 +96,7 @@ export const handler: Handler = async (event: SQSEvent) => {
         }
 
         const slackKey = rsaService.decrypt(messageBody.secret);
-        const slackAPI = new SlackWrapper(slackKey);
+        const slackAPI = new SlackWrapper(slackKey, redisClient);
 
         processingChannelPromises.push(
             processChannel(slackAPI, messageBody.channelId, messageBody.channelName, messageBody.ownerEntityId),

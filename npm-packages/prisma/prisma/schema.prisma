@@ -39,6 +39,7 @@ model DataSource {
   updatedAt        DateTime       @default(now())
   lastSync         DateTime?
   isSyncing        Boolean        @default(false)
+  externalId       String?        @unique
   dataSourceTypeId String
   secret           String
   ownerEntityId    String

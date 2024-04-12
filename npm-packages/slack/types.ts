@@ -15,14 +15,19 @@ export interface SlackConversationListRequestParams {
 
 export interface SlackConversationListResponse {
     ok: boolean;
-    channels: {
-        id: string;
-        name: string;
-        // skiping irrelevant keys...
-    }[];
+    channels: SlackChannelInfoResponse[];
     response_metadata: {
         next_cursor: string;
     };
+}
+
+export interface SlackChannelInfoResponse {
+    id: string;
+    name: string;
+    topic: {
+        value: string;
+    };
+    // skiping irrelevant keys...
 }
 
 export interface SlackUserListRequestParams {
@@ -32,16 +37,19 @@ export interface SlackUserListRequestParams {
 
 export interface SlackUserListResponse {
     ok: boolean;
-    members: {
-        id: string;
-        real_name: string;
-        profile: {
-            email: string;
-        };
-    }[];
+    members: SlackUserResponse[];
     response_metadata: {
         next_cursor: string;
     };
+}
+
+export interface SlackUserResponse {
+    id: string;
+    real_name: string;
+    profile: {
+        email: string;
+    };
+    // some keys skipped
 }
 
 export interface SimplifiedSlackUser {
@@ -70,5 +78,27 @@ export interface SlackConversationHistoryResponse {
     has_more: boolean;
     response_metadata: {
         next_cursor: string;
+    };
+}
+
+export interface SlackEventAPIPayload {
+    type: 'event_callback';
+    token: string;
+    team_id: string;
+    api_app_id: string;
+    event: SlackMessageEventAPI
+    event_id: string;
+    event_time: number;
+}
+
+export interface SlackMessageEventAPI {
+    type: 'message';
+    channel: string; // channel id
+	user: string; // user id
+	text: string;
+	ts: string;
+    edited?: {
+        user: string;
+        ts: string;
     };
 }

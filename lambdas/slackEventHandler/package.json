@@ -1,5 +1,5 @@
 {
-    "name": "batch-import-slack",
+    "name": "slack-event-handler",
     "version": "1.0.0",
     "main": "dist/index.js",
     "scripts": {

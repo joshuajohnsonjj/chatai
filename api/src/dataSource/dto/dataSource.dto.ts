@@ -1,5 +1,5 @@
 import { EntityType } from '@prisma/client';
-import { IsEnum, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -13,6 +13,10 @@ export class CreateDataSourceQueryDto {
 
     @IsString()
     secret: string;
+
+    @IsString()
+    @IsOptional()
+    externalId?: string;
 }
 
 export class CreateDataSourceResponseDto {

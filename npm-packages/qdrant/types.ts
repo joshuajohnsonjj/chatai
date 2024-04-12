@@ -28,9 +28,8 @@ export interface QdrantPayload {
 
     url?: string;
     authorName?: string;
-    authorEmail?: string;
 
     // slack specific fields
-    channelId?: string;
-    channelName?: string;
+    slackChannelId?: string;
+    slackChannelName?: string;
 }

@@ -28,8 +28,7 @@ export class DataSourceService {
     constructor(private readonly prisma: PrismaService) {}
 
     async createDataSource(params: CreateDataSourceQueryDto): Promise<CreateDataSourceResponseDto> {
-        const decryptedSecret = this.rsaService.decrypt(params.secret);
-        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, decryptedSecret);
+        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
 
         if (!isValid) {
             throw new BadCredentialsError();
@@ -42,6 +41,7 @@ export class DataSourceService {
                 ownerEntityType: params.ownerEntityType,
                 secret: params.secret,
                 isSyncing: true,
+                externalId: params.externalId,
             },
             select: {
                 id: true,
@@ -59,11 +59,11 @@ export class DataSourceService {
     }
 
     async testDataSourceCredential(params: CreateDataSourceQueryDto): Promise<TestDataSourceResponseDto> {
-        const decryptedSecret = this.rsaService.decrypt(params.secret);
-        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, decryptedSecret);
+        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
         return { isValid };
     }
 
+    // TODO: locking db?
     async syncDataSource(dataSourceId: string): Promise<void> {
         const dataSource = await this.prisma.dataSource.findUnique({
             where: { id: dataSourceId },
@@ -193,7 +193,7 @@ export class DataSourceService {
     }
 
     private async testDataSourceConnection(dataSourceTypeId: string, secret: string): Promise<boolean> {
-        const decryptedSecret = secret; //decrypt(secret);
+        const decryptedSecret = this.rsaService.decrypt(secret);
         const dataSourceType = await this.prisma.dataSourceType.findUnique({
             where: {
                 id: dataSourceTypeId,
