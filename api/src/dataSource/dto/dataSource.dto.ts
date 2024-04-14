@@ -30,4 +30,5 @@ export class CreateDataSourceResponseDto {
 
 export class TestDataSourceResponseDto {
     isValid: boolean;
+    message: string;
 }

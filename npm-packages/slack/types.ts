@@ -15,6 +15,7 @@ export interface SlackConversationListRequestParams {
 
 export interface SlackConversationListResponse {
     ok: boolean;
+    error?: string;
     channels: SlackChannelInfoResponse[];
     response_metadata: {
         next_cursor: string;
@@ -35,9 +36,25 @@ export interface SlackUserListRequestParams {
     cursor?: string;
 }
 
+export interface SlackAppActivityListRequestParams {
+    limit?: number;
+    cursor?: string;
+    app_id: string;
+}
+
 export interface SlackUserListResponse {
     ok: boolean;
+    error?: string;
     members: SlackUserResponse[];
+    response_metadata: {
+        next_cursor: string;
+    };
+}
+
+export interface SlackAppActivityResponse {
+    ok: boolean;
+    error?: string;
+    activities: unknown[];
     response_metadata: {
         next_cursor: string;
     };
@@ -74,6 +91,7 @@ export interface SlackMessage {
 
 export interface SlackConversationHistoryResponse {
     ok: boolean;
+    error?: string;
     messages: SlackMessage[];
     has_more: boolean;
     response_metadata: {

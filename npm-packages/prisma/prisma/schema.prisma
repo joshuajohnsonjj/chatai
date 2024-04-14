@@ -20,6 +20,12 @@ enum DataSourceTypeName {
   FILE_UPLOAD
 }
 
+enum DataSyncInterval {
+  INSTANT
+  DAILY
+  WEEKLY
+}
+
 enum UserType {
   INDIVIDUAL
   ORGANIZATION_MEMBER
@@ -62,31 +68,39 @@ model Organization {
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @default(now())
   planId              String
+  name                String
+  isAccountActive     Boolean      @default(false)
   plan                AccountPlan? @relation(fields: [planId], references: [id])
   organizationMembers User[]
 }
 
 model User {
-  id             String        @id
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @default(now())
-  planId         String?
-  organizationId String?
-  type           UserType
-  plan           AccountPlan?  @relation(fields: [planId], references: [id])
-  organization   Organization? @relation(fields: [organizationId], references: [id])
-  chats          Chat[]
+  id               String        @id
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now())
+  planId           String?
+  organizationId   String?
+  stripeCustomerId String?
+  email            String
+  type             UserType
+  plan             AccountPlan?  @relation(fields: [planId], references: [id])
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  chats            Chat[]
 }
 
 model AccountPlan {
-  id              String         @id @default(uuid())
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @default(now())
-  name            String
-  stripeId        String         @unique
-  isActive        Boolean
-  registeredOrgs  Organization[]
-  registeredUsers User[]
+  id                  String           @id @default(uuid())
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now())
+  stripeProductId     String           @unique
+  isActive            Boolean          @default(true)
+  maxDataSources      Int
+  dataSyncInterval    DataSyncInterval
+  dailyMessageQuota   Int?
+  adHocUploadsEnabled Boolean
+  integrationsEnabled Boolean
+  registeredOrgs      Organization[]
+  registeredUsers     User[]
 }
 
 model Chat {

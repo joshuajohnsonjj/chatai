@@ -13,8 +13,8 @@ export class BadRequestError extends Error {
 }
 
 export class BadCredentialsError extends Error {
-    constructor() {
-        super('The provided data source credentials are not valid.');
+    constructor(message?: string) {
+        super(message ?? 'The provided data source credentials are not valid.');
         this.name = ErrorTypes.BadCredentialsError;
     }
 }

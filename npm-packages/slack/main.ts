@@ -1,6 +1,8 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
-import { SlackBaseUrl, TSlackEndpoints, SlackHeaders, SlackRedisKey } from './constants';
+import { SlackBaseUrl, SlackEndpoints, SlackErros, SlackHeaders, SlackRedisKey } from './constants';
 import type {
+    SlackAppActivityListRequestParams,
+    SlackAppActivityResponse,
     SlackChannelInfoResponse,
     SlackConversationHistoryRequestParams,
     SlackConversationHistoryResponse,
@@ -26,13 +28,21 @@ export class SlackWrapper {
         }
     }
 
-    public async testConnection(): Promise<boolean> {
-        try {
-            await this.listConversations(null, 1);
-            return true;
-        } catch (error) {
-            return false;
-        }
+    public async testConnection(appId: string): Promise<{ token: boolean; appId: boolean; }> {
+        const [
+            conversationResponse,
+            userResponse,
+            appResponse,
+        ] = await Promise.all([
+            this.listConversations(null, 1),
+            this.listUsers(null, 1),
+            this.getAppActivity(appId, null, 1),
+        ]);
+
+        return {
+            token: this.checkTokenValidity(conversationResponse, userResponse, appResponse),
+            appId: this.checkAppIdValidity(appResponse),
+        };
     }
 
     public async listConversations(cursor: string | null, limit = 100): Promise<SlackConversationListResponse> {
@@ -45,7 +55,7 @@ export class SlackWrapper {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: SlackBaseUrl,
-            url: TSlackEndpoints.CONVERSATION_LIST,
+            url: SlackEndpoints.CONVERSATION_LIST,
             headers: {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
@@ -69,7 +79,7 @@ export class SlackWrapper {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: SlackBaseUrl,
-            url: TSlackEndpoints.CONVERSATION_HISTORY,
+            url: SlackEndpoints.CONVERSATION_HISTORY,
             headers: {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
@@ -79,7 +89,27 @@ export class SlackWrapper {
         return response.data;
     }
 
-    public async listUsers(cursor?: string, limit = 100): Promise<SlackUserListResponse> {
+    public async getAppActivity(app_id: string, cursor: string | null, limit: number): Promise<SlackAppActivityResponse> {
+        const data: SlackAppActivityListRequestParams = { app_id, limit };
+
+        if (cursor) {
+            data.cursor = cursor;
+        }
+
+        const response = await this.sendHttpRequest({
+            method: 'get',
+            baseURL: SlackBaseUrl,
+            url: SlackEndpoints.APP_ACTIVITY_LIST,
+            headers: {
+                ...SlackHeaders,
+                Authorization: `Bearer ${this.accessToken}`,
+            },
+            data: querystring.stringify(data as unknown as querystring.ParsedUrlQueryInput),
+        });
+        return response.data;
+    }
+
+    public async listUsers(cursor: string | null, limit = 100): Promise<SlackUserListResponse> {
         const data: SlackUserListRequestParams = { limit };
 
         if (cursor) {
@@ -89,7 +119,7 @@ export class SlackWrapper {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: SlackBaseUrl,
-            url: TSlackEndpoints.USERS_LIST,
+            url: SlackEndpoints.USERS_LIST,
             headers: {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
@@ -112,7 +142,7 @@ export class SlackWrapper {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: SlackBaseUrl,
-            url: TSlackEndpoints.USER_INFO,
+            url: SlackEndpoints.USER_INFO,
             headers: {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
@@ -139,7 +169,7 @@ export class SlackWrapper {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: SlackBaseUrl,
-            url: TSlackEndpoints.CONVERSATION_INFO,
+            url: SlackEndpoints.CONVERSATION_INFO,
             headers: {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
@@ -166,13 +196,25 @@ export class SlackWrapper {
         return axios.request(req);
     }
 
-    private setRedis(key: string, value: string) {
+    private setRedis(key: string, value: string): void {
         if (this.cacheClientReady) {
             this.cache!.set(key, value, { EX: 259200 }); // 72 hr expiration
         }
     }
 
-    private get cacheClientReady() {
+    private checkTokenValidity(
+        conversationResponse: SlackConversationListResponse,
+        userResponse: SlackUserListResponse,
+        appResponse: SlackAppActivityResponse,
+    ): boolean {
+        return conversationResponse.ok && userResponse.ok && (appResponse.ok || appResponse.error !== SlackErros.ACCESS_DENIED);
+    }
+
+    private checkAppIdValidity(appResponse: SlackAppActivityResponse): boolean {
+        return appResponse.error !== SlackErros.INVALID_APP && appResponse.error !== SlackErros.INVALID_APP_ID;
+    }
+
+    private get cacheClientReady(): boolean {
         return !!this.cache && this.cache.isOpen && this.cache.isReady;
     }
 }

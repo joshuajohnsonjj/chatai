@@ -14,6 +14,7 @@ import { type RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
 import { type ForgetRequestDto } from './dto/forget.request.dto';
 import { type ResetRequestDto } from './dto/reset.request.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { STRIPE_PRODUCTS } from 'src/constants/stripe';
 
 @Injectable()
 export class UserAuthService {
@@ -26,42 +27,6 @@ export class UserAuthService {
         this.userPool = new CognitoUserPool({
             UserPoolId: this.configService.get<string>('AWS_COGNITO_USER_POOL_ID') as string,
             ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID') as string,
-        });
-    }
-
-    async forget(forgetPasswordRequest: ForgetRequestDto) {
-        const { email } = forgetPasswordRequest;
-        const user = new CognitoUser({
-            Username: email,
-            Pool: this.userPool,
-        });
-        return await new Promise((resolve, reject) => {
-            user.forgotPassword({
-                onSuccess: () => {
-                    resolve({ success: true });
-                },
-                onFailure: (err) => {
-                    reject(err);
-                },
-            });
-        });
-    }
-
-    async reset(resetPasswordRequest: ResetRequestDto) {
-        const { email, password, code } = resetPasswordRequest;
-        const user = new CognitoUser({
-            Username: email,
-            Pool: this.userPool,
-        });
-        return await new Promise((resolve, reject) => {
-            user.confirmPassword(code, password, {
-                onSuccess: () => {
-                    resolve({ success: true });
-                },
-                onFailure: (err) => {
-                    reject(err);
-                },
-            });
         });
     }
 
@@ -83,10 +48,16 @@ export class UserAuthService {
                     } else {
                         const userId = result.userSub;
 
+                        const accountPlan = await this.prisma.accountPlan.findUniqueOrThrow({
+                            where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
+                        });
+
                         await this.prisma.user.create({
                             data: {
                                 id: userId,
+                                email,
                                 type,
+                                planId: accountPlan.id,
                             },
                         });
 
@@ -142,6 +113,42 @@ export class UserAuthService {
                 } else {
                     resolve({ success: true });
                 }
+            });
+        });
+    }
+
+    async forget(forgetPasswordRequest: ForgetRequestDto) {
+        const { email } = forgetPasswordRequest;
+        const user = new CognitoUser({
+            Username: email,
+            Pool: this.userPool,
+        });
+        return await new Promise((resolve, reject) => {
+            user.forgotPassword({
+                onSuccess: () => {
+                    resolve({ success: true });
+                },
+                onFailure: (err) => {
+                    reject(err);
+                },
+            });
+        });
+    }
+
+    async reset(resetPasswordRequest: ResetRequestDto) {
+        const { email, password, code } = resetPasswordRequest;
+        const user = new CognitoUser({
+            Username: email,
+            Pool: this.userPool,
+        });
+        return await new Promise((resolve, reject) => {
+            user.confirmPassword(code, password, {
+                onSuccess: () => {
+                    resolve({ success: true });
+                },
+                onFailure: (err) => {
+                    reject(err);
+                },
             });
         });
     }

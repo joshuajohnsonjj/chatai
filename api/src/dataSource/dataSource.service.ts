@@ -28,10 +28,10 @@ export class DataSourceService {
     constructor(private readonly prisma: PrismaService) {}
 
     async createDataSource(params: CreateDataSourceQueryDto): Promise<CreateDataSourceResponseDto> {
-        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
+        const { isValid, message } = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
 
         if (!isValid) {
-            throw new BadCredentialsError();
+            throw new BadCredentialsError(message);
         }
 
         const dataSource = await this.prisma.dataSource.create({
@@ -59,8 +59,7 @@ export class DataSourceService {
     }
 
     async testDataSourceCredential(params: CreateDataSourceQueryDto): Promise<TestDataSourceResponseDto> {
-        const isValid = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret);
-        return { isValid };
+        return await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
     }
 
     // TODO: locking db?
@@ -192,7 +191,11 @@ export class DataSourceService {
         );
     }
 
-    private async testDataSourceConnection(dataSourceTypeId: string, secret: string): Promise<boolean> {
+    private async testDataSourceConnection(
+        dataSourceTypeId: string,
+        secret: string,
+        externalId?: string,
+    ): Promise<{ isValid: boolean; message: string; }> {
         const decryptedSecret = this.rsaService.decrypt(secret);
         const dataSourceType = await this.prisma.dataSourceType.findUnique({
             where: {
@@ -204,12 +207,19 @@ export class DataSourceService {
         });
 
         switch (dataSourceType?.name) {
-            case DataSourceTypeName.NOTION:
-                return new NotionWrapper(decryptedSecret).testConnection();
-            case DataSourceTypeName.SLACK:
-                return new SlackWrapper(decryptedSecret).testConnection();
+            case DataSourceTypeName.NOTION: {
+                const validity = await new NotionWrapper(decryptedSecret).testConnection();
+                return { isValid: validity, message: validity ? '' : 'Invalid token' };
+            }
+            case DataSourceTypeName.SLACK: {
+                const validity = await new SlackWrapper(decryptedSecret).testConnection(externalId ?? '');
+                return {
+                    isValid: validity.appId && validity.token,
+                    message: validity.appId && validity.token ? '' : (!validity.appId ? 'Invalid app id' : 'Invalid token or missing scopes'),
+                };
+            }
             default:
-                return false;
+                return { isValid: false, message: 'Invalid data source id' };
         }
     }
 }
