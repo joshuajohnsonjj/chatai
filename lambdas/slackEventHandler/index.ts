@@ -15,13 +15,12 @@ const qdrant = new QdrantWrapper(
 );
 const rsaService = new RsaCipher('./private.pem');
 const redisClient = createClient({
-  url: process.env.REDIS_URL,
+    url: process.env.REDIS_URL,
 });
-
 
 // TODO: check best way to keep connection open
 /**
- * 
+ *
  * Receives HTTP events for slack message postings
  *
  */
@@ -44,10 +43,7 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
     const slackKey = rsaService.decrypt(dataSource.secret);
     const slackService = new SlackWrapper(slackKey, redisClient);
 
-    const [
-        userInfo,
-        channelInfo
-    ] = await Promise.all([
+    const [userInfo, channelInfo] = await Promise.all([
         slackService.getUserInfoById(messageData.event.user),
         slackService.getChannelInfoById(messageData.event.channel),
     ]);
@@ -66,10 +62,11 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
     await qdrant.upsert(`${messageData.event.channel}:${messageData.event.ts}`, embedding, payload);
     await prisma.dataSource.update({
         where: {
-            id: dataSource.id
+            id: dataSource.id,
         },
         data: {
             lastSync: new Date(),
+            updatedAt: new Date(),
         },
     });
 };

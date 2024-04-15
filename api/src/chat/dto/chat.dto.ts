@@ -5,6 +5,9 @@ export class StartNewChatQueryDto {
     @IsUUID()
     userId: string;
 
+    @IsUUID()
+    associatedEntityId: string;
+
     @IsString()
     @MaxLength(40)
     @MinLength(1)

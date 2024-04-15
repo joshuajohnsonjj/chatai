@@ -15,6 +15,8 @@ import { type ForgetRequestDto } from './dto/forget.request.dto';
 import { type ResetRequestDto } from './dto/reset.request.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { STRIPE_PRODUCTS } from 'src/constants/stripe';
+import { CognitoAttribute, UserRole } from 'src/types';
+import { UserInviteType, UserType } from '@prisma/client';
 
 @Injectable()
 export class UserAuthService {
@@ -31,15 +33,16 @@ export class UserAuthService {
     }
 
     async register(authRegisterRequest: RegisterRequestDto) {
-        const { firstName, lastName, email, password, phoneNumber, type } = authRegisterRequest;
+        const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
         return await new Promise((resolve, reject) => {
             this.userPool.signUp(
                 email,
                 password,
                 [
-                    new CognitoUserAttribute({ Name: 'firstName', Value: firstName }),
-                    new CognitoUserAttribute({ Name: 'lastName', Value: lastName || '' }),
-                    new CognitoUserAttribute({ Name: 'phoneNumber', Value: phoneNumber || '' }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.FIRST_NAME, Value: firstName }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.LAST_NAME, Value: lastName || '' }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.PHONE_NUMBER, Value: phoneNumber || '' }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.USER_ROLE, Value: '' }),
                 ],
                 [],
                 async (err, result) => {
@@ -55,8 +58,7 @@ export class UserAuthService {
                         await this.prisma.user.create({
                             data: {
                                 id: userId,
-                                email,
-                                type,
+                                type: UserType.INDIVIDUAL,
                                 planId: accountPlan.id,
                             },
                         });
@@ -70,6 +72,64 @@ export class UserAuthService {
                 },
             );
         });
+    }
+
+    async acceptInvite(inviteId: string, authRegisterRequest: RegisterRequestDto) {
+        const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
+
+        const userInvite = await this.prisma.userInvite.update({
+            where: { id: inviteId },
+            data: { isAccepted: true, updatedAt: new Date() },
+            select: { type: true, organizationId: true },
+        });
+
+        return await new Promise((resolve, reject) => {
+            this.userPool.signUp(
+                email,
+                password,
+                [
+                    new CognitoUserAttribute({ Name: CognitoAttribute.FIRST_NAME, Value: firstName }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.LAST_NAME, Value: lastName || '' }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.PHONE_NUMBER, Value: phoneNumber || '' }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: userInvite.organizationId }),
+                    new CognitoUserAttribute({
+                        Name: CognitoAttribute.USER_ROLE,
+                        Value: userInvite.type === UserInviteType.ADMIN ? UserRole.ORG_ADMIN : UserRole.ORG_MEMBER,
+                    }),
+                ],
+                [],
+                async (err, result) => {
+                    if (!result) {
+                        reject(err);
+                    } else {
+                        const userId = result.userSub;
+
+                        await this.prisma.user.create({
+                            data: {
+                                id: userId,
+                                type: UserType.ORGANIZATION_MEMBER,
+                                organizationId: userInvite.organizationId,
+                            },
+                        });
+
+                        resolve({
+                            uuid: userId,
+                            userConfirmed: result.userConfirmed,
+                            success: true,
+                        });
+                    }
+                },
+            );
+        });
+    }
+
+    updateAttributes(email: string, updates: CognitoUserAttribute[]) {
+        const user = new CognitoUser({
+            Username: email,
+            Pool: this.userPool,
+        });
+
+        user.updateAttributes(updates, () => {});
     }
 
     async authenticate(user: AuthenticateRequestDto) {

@@ -4,12 +4,18 @@ import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import type { GetChatResponseResponseDto, ListChatResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto } from './dto/chat.dto';
+import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { AccessDeniedError, ResourceNotFoundError } from 'src/exceptions';
 
 @Injectable()
 export class ChatService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async generateResponse(chatId: string, entityId: string, text: string): Promise<GetChatResponseResponseDto> {
+    async generateResponse(chatId: string, entityId: string, text: string, user: DecodedUserTokenDto): Promise<GetChatResponseResponseDto> {
+        if (entityId !== user.idUser && entityId !== user.organization) {
+            throw new AccessDeniedError('User unauthorized to interact with this chat');
+        }
+
         return await this.prisma.$transaction(async (tx) => {
             await tx.chatMessage.create({
                 data: {
@@ -48,11 +54,25 @@ export class ChatService {
                 userId: params.userId,
                 title: params.title,
                 chatType: params.chatType,
+                associatedEntityId: params.associatedEntityId,
             },
         });
     }
 
-    async listChat(chatId: string, page: number): Promise<ListChatResponseDto> {
+    async listChat(chatId: string, page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
+        const chat = await this.prisma.chat.findUnique({
+            where: { id: chatId },
+            select: { associatedEntityId: true },
+        });
+
+        if (!chat) {
+            throw new ResourceNotFoundError(chatId, 'Chat');
+        }
+
+        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
+            throw new AccessDeniedError('User unauthorized to read this data');
+        }
+
         const pageSize = 20;
         const messages = await this.prisma.chatMessage.findMany({
             where: {

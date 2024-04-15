@@ -1,0 +1,20 @@
+{
+  "name": "@joshuajohnsonjj38/mailer",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "devDependencies": {
+    "typescript": "^5.4.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@sendgrid/mail": "^8.1.3"
+  }
+}

@@ -15,7 +15,7 @@ const qdrant = new QdrantWrapper(
     process.env.QDRANT_COLLECTION as string,
 );
 const redisClient = createClient({
-  url: process.env.REDIS_URL,
+    url: process.env.REDIS_URL,
 });
 
 const processMessages = async (
@@ -34,7 +34,7 @@ const processMessages = async (
                 ownerId,
                 slackChannelId: channelId,
                 slackChannelName: channelName,
-                authorName: (await slackAPI.getUserInfoById(message.user)).real_name
+                authorName: (await slackAPI.getUserInfoById(message.user)).real_name,
             };
 
             const embedding = await openAI.getTextEmbedding(message.text);
@@ -113,6 +113,7 @@ export const handler: Handler = async (event: SQSEvent) => {
         data: {
             lastSync: new Date(),
             isSyncing: false,
+            updatedAt: new Date(),
         },
     });
 };

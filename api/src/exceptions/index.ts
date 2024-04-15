@@ -27,8 +27,8 @@ export class ResourceNotFoundError extends Error {
 }
 
 export class AccessDeniedError extends Error {
-    constructor(message: string) {
-        super(message);
+    constructor(message?: string) {
+        super(message ?? 'Must be an organization admin to preform this action.');
         this.name = ErrorTypes.AccessDeniedError;
     }
 }

@@ -1,5 +1,5 @@
-import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import { DataSyncInterval } from '@prisma/client';
+import { IsEmail, IsEnum, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { DataSyncInterval, UserInviteType } from '@prisma/client';
 
 export class CreateOrganizationQueryDto {
     @IsUUID()
@@ -23,4 +23,30 @@ export class OrganizationResponseDto {
         adHocUploadsEnabled?: boolean;
         integrationsEnabled?: boolean;
     };
+}
+
+export class InvitUserQueryDto {
+    @IsEmail()
+    inviteEmail: string;
+
+    @IsString()
+    @MaxLength(40)
+    @MinLength(1)
+    firstName: string;
+
+    @IsEnum(UserInviteType)
+    type: UserInviteType;
+
+    @IsUUID()
+    senderId: string;
+}
+
+export class InviteResponseDto {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    resentAt: Date | null;
+    email: string;
+    firstName: string;
+    organizationId: string;
 }

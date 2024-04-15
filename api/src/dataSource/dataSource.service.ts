@@ -28,7 +28,11 @@ export class DataSourceService {
     constructor(private readonly prisma: PrismaService) {}
 
     async createDataSource(params: CreateDataSourceQueryDto): Promise<CreateDataSourceResponseDto> {
-        const { isValid, message } = await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
+        const { isValid, message } = await this.testDataSourceConnection(
+            params.dataSourceTypeId,
+            params.secret,
+            params.externalId,
+        );
 
         if (!isValid) {
             throw new BadCredentialsError(message);
@@ -75,7 +79,7 @@ export class DataSourceService {
 
         await this.prisma.dataSource.update({
             where: { id: dataSourceId },
-            data: { isSyncing: true },
+            data: { isSyncing: true, updatedAt: new Date() },
         });
 
         switch (dataSource.type.name) {
@@ -195,7 +199,7 @@ export class DataSourceService {
         dataSourceTypeId: string,
         secret: string,
         externalId?: string,
-    ): Promise<{ isValid: boolean; message: string; }> {
+    ): Promise<{ isValid: boolean; message: string }> {
         const decryptedSecret = this.rsaService.decrypt(secret);
         const dataSourceType = await this.prisma.dataSourceType.findUnique({
             where: {
@@ -215,7 +219,12 @@ export class DataSourceService {
                 const validity = await new SlackWrapper(decryptedSecret).testConnection(externalId ?? '');
                 return {
                     isValid: validity.appId && validity.token,
-                    message: validity.appId && validity.token ? '' : (!validity.appId ? 'Invalid app id' : 'Invalid token or missing scopes'),
+                    message:
+                        validity.appId && validity.token
+                            ? ''
+                            : !validity.appId
+                              ? 'Invalid app id'
+                              : 'Invalid token or missing scopes',
                 };
             }
             default:

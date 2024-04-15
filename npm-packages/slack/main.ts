@@ -28,12 +28,8 @@ export class SlackWrapper {
         }
     }
 
-    public async testConnection(appId: string): Promise<{ token: boolean; appId: boolean; }> {
-        const [
-            conversationResponse,
-            userResponse,
-            appResponse,
-        ] = await Promise.all([
+    public async testConnection(appId: string): Promise<{ token: boolean; appId: boolean }> {
+        const [conversationResponse, userResponse, appResponse] = await Promise.all([
             this.listConversations(null, 1),
             this.listUsers(null, 1),
             this.getAppActivity(appId, null, 1),
@@ -89,7 +85,11 @@ export class SlackWrapper {
         return response.data;
     }
 
-    public async getAppActivity(app_id: string, cursor: string | null, limit: number): Promise<SlackAppActivityResponse> {
+    public async getAppActivity(
+        app_id: string,
+        cursor: string | null,
+        limit: number,
+    ): Promise<SlackAppActivityResponse> {
         const data: SlackAppActivityListRequestParams = { app_id, limit };
 
         if (cursor) {
@@ -179,7 +179,7 @@ export class SlackWrapper {
 
         const channelData = response.data.user;
         this.setRedis(SlackRedisKey.CHANNEL(channelId), JSON.stringify(channelData));
-        
+
         return channelData;
     }
 
@@ -207,7 +207,11 @@ export class SlackWrapper {
         userResponse: SlackUserListResponse,
         appResponse: SlackAppActivityResponse,
     ): boolean {
-        return conversationResponse.ok && userResponse.ok && (appResponse.ok || appResponse.error !== SlackErros.ACCESS_DENIED);
+        return (
+            conversationResponse.ok &&
+            userResponse.ok &&
+            (appResponse.ok || appResponse.error !== SlackErros.ACCESS_DENIED)
+        );
     }
 
     private checkAppIdValidity(appResponse: SlackAppActivityResponse): boolean {

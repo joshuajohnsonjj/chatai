@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { DecodedUserTokenDto } from './dto/jwt.dto';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -21,7 +22,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: any) {
-        return { idUser: payload.sub, email: payload.email };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    validate(payload: any): DecodedUserTokenDto {
+        return {
+            idUser: payload.sub,
+            email: payload.email,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            userRole: payload.userRole,
+            organization: payload.organization,
+        };
     }
 }

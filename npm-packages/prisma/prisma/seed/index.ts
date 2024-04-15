@@ -3,6 +3,7 @@ import { v4 } from 'uuid';
 
 const prisma = new PrismaClient();
 async function main() {
+    // TODO: update seeding
     // plans
     const accountPlan = await prisma.accountPlan.create({
         data: {

@@ -1,5 +1,4 @@
-import { UserType } from '@prisma/client';
-import { IsEmail, IsEnum, IsOptional, IsPhoneNumber, IsString, IsStrongPassword } from 'class-validator';
+import { IsEmail, IsOptional, IsPhoneNumber, IsString, IsStrongPassword } from 'class-validator';
 
 export class RegisterRequestDto {
     @IsString()
@@ -15,9 +14,6 @@ export class RegisterRequestDto {
 
     @IsEmail()
     email: string;
-
-    @IsEnum(UserType)
-    type: UserType;
 
     @IsStrongPassword({
         minLength: 8,

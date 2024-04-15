@@ -121,6 +121,7 @@ export const handler: Handler = async (event: SQSEvent) => {
         data: {
             lastSync: new Date(),
             isSyncing: false,
+            updatedAt: new Date(),
         },
     });
 };

@@ -104,7 +104,7 @@ export interface SlackEventAPIPayload {
     token: string;
     team_id: string;
     api_app_id: string;
-    event: SlackMessageEventAPI
+    event: SlackMessageEventAPI;
     event_id: string;
     event_time: number;
 }
@@ -112,9 +112,9 @@ export interface SlackEventAPIPayload {
 export interface SlackMessageEventAPI {
     type: 'message';
     channel: string; // channel id
-	user: string; // user id
-	text: string;
-	ts: string;
+    user: string; // user id
+    text: string;
+    ts: string;
     edited?: {
         user: string;
         ts: string;

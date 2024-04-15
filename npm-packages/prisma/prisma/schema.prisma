@@ -29,8 +29,11 @@ enum DataSyncInterval {
 enum UserType {
   INDIVIDUAL
   ORGANIZATION_MEMBER
-  ORGANIZATION_ADMIN
-  ORGANIZATION_OWNER
+}
+
+enum UserInviteType {
+  MEMBER
+  ADMIN
 }
 
 enum ChatType {
@@ -72,6 +75,20 @@ model Organization {
   isAccountActive     Boolean      @default(false)
   plan                AccountPlan? @relation(fields: [planId], references: [id])
   organizationMembers User[]
+  pendingInvites      UserInvite[]
+}
+
+model UserInvite {
+  id             String         @id @default(uuid())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now())
+  resentAt       DateTime?
+  email          String
+  firstName      String
+  organizationId String
+  isAccepted     Boolean        @default(false)
+  type           UserInviteType
+  organization   Organization   @relation(fields: [organizationId], references: [id])
 }
 
 model User {
@@ -81,7 +98,6 @@ model User {
   planId           String?
   organizationId   String?
   stripeCustomerId String?
-  email            String
   type             UserType
   plan             AccountPlan?  @relation(fields: [planId], references: [id])
   organization     Organization? @relation(fields: [organizationId], references: [id])
@@ -104,14 +120,15 @@ model AccountPlan {
 }
 
 model Chat {
-  id          String        @id @default(uuid())
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @default(now())
-  userId      String
-  title       String
-  chatType    ChatType
-  user        User          @relation(fields: [userId], references: [id])
-  gptMessages ChatMessage[]
+  id                 String        @id @default(uuid())
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @default(now())
+  userId             String
+  associatedEntityId String
+  title              String
+  chatType           ChatType
+  user               User          @relation(fields: [userId], references: [id])
+  gptMessages        ChatMessage[]
 }
 
 model ChatMessage {
