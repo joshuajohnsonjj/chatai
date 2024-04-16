@@ -15,8 +15,9 @@ import { type ForgetRequestDto } from './dto/forget.request.dto';
 import { type ResetRequestDto } from './dto/reset.request.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { STRIPE_PRODUCTS } from 'src/constants/stripe';
-import { CognitoAttribute, UserRole } from 'src/types';
+import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { UserInviteType, UserType } from '@prisma/client';
+import { createCustomer } from 'src/services/stripe';
 
 @Injectable()
 export class UserAuthService {
@@ -27,8 +28,8 @@ export class UserAuthService {
         private readonly prisma: PrismaService,
     ) {
         this.userPool = new CognitoUserPool({
-            UserPoolId: this.configService.get<string>('AWS_COGNITO_USER_POOL_ID') as string,
-            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID') as string,
+            UserPoolId: this.configService.get<string>('AWS_COGNITO_USER_POOL_ID')!,
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
         });
     }
 
@@ -38,12 +39,7 @@ export class UserAuthService {
             this.userPool.signUp(
                 email,
                 password,
-                [
-                    new CognitoUserAttribute({ Name: CognitoAttribute.FIRST_NAME, Value: firstName }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.LAST_NAME, Value: lastName || '' }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.PHONE_NUMBER, Value: phoneNumber || '' }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.USER_ROLE, Value: '' }),
-                ],
+                [new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' })],
                 [],
                 async (err, result) => {
                     if (!result) {
@@ -51,13 +47,21 @@ export class UserAuthService {
                     } else {
                         const userId = result.userSub;
 
-                        const accountPlan = await this.prisma.accountPlan.findUniqueOrThrow({
-                            where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
-                        });
+                        const [accountPlan, stripeCustomer] = await Promise.all([
+                            this.prisma.accountPlan.findUniqueOrThrow({
+                                where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
+                            }),
+                            createCustomer(`${firstName} ${lastName}`, email),
+                        ]);
 
                         await this.prisma.user.create({
                             data: {
                                 id: userId,
+                                firstName,
+                                lastName,
+                                email,
+                                phoneNumber,
+                                stripeCustomerId: stripeCustomer.id,
                                 type: UserType.INDIVIDUAL,
                                 planId: accountPlan.id,
                             },
@@ -88,13 +92,13 @@ export class UserAuthService {
                 email,
                 password,
                 [
-                    new CognitoUserAttribute({ Name: CognitoAttribute.FIRST_NAME, Value: firstName }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.LAST_NAME, Value: lastName || '' }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.PHONE_NUMBER, Value: phoneNumber || '' }),
                     new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: userInvite.organizationId }),
                     new CognitoUserAttribute({
-                        Name: CognitoAttribute.USER_ROLE,
-                        Value: userInvite.type === UserInviteType.ADMIN ? UserRole.ORG_ADMIN : UserRole.ORG_MEMBER,
+                        Name: CognitoAttribute.ORG_USER_ROLE,
+                        Value:
+                            userInvite.type === UserInviteType.ADMIN
+                                ? OganizationUserRole.ORG_ADMIN
+                                : OganizationUserRole.ORG_MEMBER,
                     }),
                 ],
                 [],
@@ -104,9 +108,16 @@ export class UserAuthService {
                     } else {
                         const userId = result.userSub;
 
+                        const stripeCustomer = await createCustomer(`${firstName} ${lastName}`, email);
+
                         await this.prisma.user.create({
                             data: {
                                 id: userId,
+                                firstName,
+                                lastName,
+                                phoneNumber,
+                                email,
+                                stripeCustomerId: stripeCustomer.id,
                                 type: UserType.ORGANIZATION_MEMBER,
                                 organizationId: userInvite.organizationId,
                             },

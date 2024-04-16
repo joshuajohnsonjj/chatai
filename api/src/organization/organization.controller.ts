@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Body, Post, Request, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Body, Post, Req, Delete } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 // import { AuthGuard } from '@nestjs/passport';
 import {
@@ -7,6 +7,8 @@ import {
     InviteResponseDto,
     OrganizationResponseDto,
 } from './dto/organization.dto';
+import { Request } from 'express';
+import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 
 @Controller('organization')
 // @UseGuards(AuthGuard('jwt'))
@@ -16,9 +18,9 @@ export class OrganizationController {
     @Post()
     async createOrganization(
         @Body() body: CreateOrganizationQueryDto,
-        @Request() req,
+        @Req() req: Request,
     ): Promise<OrganizationResponseDto> {
-        return this.service.createOrganization(body, req.user);
+        return this.service.createOrganization(body, req.user as DecodedUserTokenDto);
     }
 
     @Get('/:organizationId')
@@ -30,44 +32,42 @@ export class OrganizationController {
     async createOrgInvite(
         @Param() orgId: string,
         @Body() body: InvitUserQueryDto,
-        @Request() req,
+        @Req() req: Request,
     ): Promise<InviteResponseDto> {
-        return await this.service.createOrgInvite(orgId, body, req.user);
+        return await this.service.createOrgInvite(orgId, body, req.user as DecodedUserTokenDto);
     }
 
     @Post('/:organizationId/invite/:invitationId/resend')
     async resendOrgInvite(
         @Param() orgId: string,
         @Param() invitationId: string,
-        @Request() req,
+        @Req() req: Request,
     ): Promise<InviteResponseDto> {
-        return await this.service.resendOrgInvite(orgId, invitationId, req.user);
+        return await this.service.resendOrgInvite(orgId, invitationId, req.user as DecodedUserTokenDto);
     }
 
-    // TODO:
     @Delete('/:organizationId/invite/:invitationId')
     async revokeOrgInvite(
         @Param() orgId: string,
         @Param() invitationId: string,
-        @Request() req,
+        @Req() req: Request,
     ): Promise<{ success: boolean }> {
-        await this.service.revokeOrgInvite(orgId, invitationId, req.user);
+        await this.service.revokeOrgInvite(orgId, invitationId, req.user as DecodedUserTokenDto);
         return { success: true };
     }
 
     @Get('/:organizationId/invite')
-    async listOrganizationInvites(@Param() orgId: string, @Request() req): Promise<InviteResponseDto[]> {
-        return await this.service.listOrganizationInvites(orgId, req.user);
+    async listOrganizationInvites(@Param() orgId: string, @Req() req: Request): Promise<InviteResponseDto[]> {
+        return await this.service.listOrganizationInvites(orgId, req.user as DecodedUserTokenDto);
     }
 
-    // TODO:
     @Delete('/:organizationId/member/:userId')
     async revokeOrgUserAccesse(
         @Param() orgId: string,
         @Param() userId: string,
-        @Request() req,
-    ): Promise<InviteResponseDto> {
-        return await this.service.revokeOrgUserAccesse(orgId, userId, req.user);
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.revokeOrgUserAccesse(orgId, userId, req.user as DecodedUserTokenDto);
+        return { success: true };
     }
 }
-// TODO: verify request object type w/ user -> create type

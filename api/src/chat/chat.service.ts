@@ -6,16 +6,26 @@ import type { GetChatResponseResponseDto, ListChatResponseDto } from './dto/mess
 import type { StartNewChatQueryDto, StartNewChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, ResourceNotFoundError } from 'src/exceptions';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class ChatService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private configService: ConfigService,
+    ) {}
 
-    async generateResponse(chatId: string, entityId: string, text: string, user: DecodedUserTokenDto): Promise<GetChatResponseResponseDto> {
+    async generateResponse(
+        chatId: string,
+        entityId: string,
+        text: string,
+        user: DecodedUserTokenDto,
+    ): Promise<GetChatResponseResponseDto> {
         if (entityId !== user.idUser && entityId !== user.organization) {
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
+        // TODO: this may not be neccessary
         return await this.prisma.$transaction(async (tx) => {
             await tx.chatMessage.create({
                 data: {
@@ -25,13 +35,13 @@ export class ChatService {
                 },
             });
 
-            const openai = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
+            const openai = new OpenAIWrapper(this.configService.get<string>('OPENAI_SECRET')!);
 
             const questionVector = await openai.getTextEmbedding(text);
             const queryResult = await new QdrantWrapper(
-                process.env.QDRANT_URL as string,
-                parseInt(process.env.QDRANT_PORT as string, 10),
-                process.env.QDRANT_COLLECTION as string,
+                this.configService.get<string>('QDRANT_URL')!,
+                this.configService.get<number>('QDRANT_PORT')!,
+                this.configService.get<string>('QDRANT_COLLECTION')!,
             ).query(questionVector, entityId);
 
             const generatedResponse = await openai.getGptReponseFromSourceData(text, queryResult);

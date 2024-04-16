@@ -5,8 +5,7 @@ export class RegisterRequestDto {
     firstName: string;
 
     @IsString()
-    @IsOptional()
-    lastName?: string;
+    lastName: string;
 
     @IsPhoneNumber('US')
     @IsOptional()

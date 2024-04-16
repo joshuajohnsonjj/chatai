@@ -98,6 +98,10 @@ model User {
   planId           String?
   organizationId   String?
   stripeCustomerId String?
+  firstName        String
+  lastName         String
+  email            String
+  phoneNumber      String?
   type             UserType
   plan             AccountPlan?  @relation(fields: [planId], references: [id])
   organization     Organization? @relation(fields: [organizationId], references: [id])

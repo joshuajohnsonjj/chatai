@@ -3,6 +3,6 @@ export class DecodedUserTokenDto {
     email: string;
     firstName: string;
     lastName: string;
-    userRole: string;
+    oganizationUserRole: string;
     organization: string;
 }

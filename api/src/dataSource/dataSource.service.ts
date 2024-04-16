@@ -6,7 +6,7 @@ import type {
     TestDataSourceResponseDto,
 } from './dto/dataSource.dto';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
-import { DataSourceTypeName } from '@prisma/client';
+import { DataSourceTypeName, EntityType } from '@prisma/client';
 import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
 import moment from 'moment';
@@ -17,17 +17,36 @@ import {
     SendMessageBatchRequestEntry,
 } from '@aws-sdk/client-sqs';
 import { v4 } from 'uuid';
-import { BadCredentialsError, ResourceNotFoundError } from 'src/exceptions';
+import { AccessDeniedError, BadCredentialsError, BadRequestError, ResourceNotFoundError } from 'src/exceptions';
+import { ConfigService } from '@nestjs/config';
+import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { OganizationUserRole } from 'src/types';
 
 @Injectable()
 export class DataSourceService {
-    private readonly sqsClient = new SQSClient({ region: process.env.AWS_REGION });
+    private readonly sqsClient = new SQSClient({ region: this.configService.get<string>('AWS_REGION')! });
 
     private readonly rsaService = new RsaCipher('../../private.pem');
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private configService: ConfigService,
+    ) {}
 
-    async createDataSource(params: CreateDataSourceQueryDto): Promise<CreateDataSourceResponseDto> {
+    async createDataSource(
+        params: CreateDataSourceQueryDto,
+        user: DecodedUserTokenDto,
+    ): Promise<CreateDataSourceResponseDto> {
+        if (params.ownerEntityType === EntityType.ORGANIZATION) {
+            this.checkIsOrganizationAdmin(
+                params.ownerEntityId,
+                user.organization,
+                user.oganizationUserRole as OganizationUserRole,
+            );
+        } else if (params.ownerEntityId !== user.idUser) {
+            throw new BadRequestError('User id mismatch');
+        }
+
         const { isValid, message } = await this.testDataSourceConnection(
             params.dataSourceTypeId,
             params.secret,
@@ -66,32 +85,37 @@ export class DataSourceService {
         return await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
     }
 
-    // TODO: locking db?
     async syncDataSource(dataSourceId: string): Promise<void> {
-        const dataSource = await this.prisma.dataSource.findUnique({
-            where: { id: dataSourceId },
-            select: { ownerEntityId: true, secret: true, type: { select: { name: true } } },
+        await this.prisma.$transaction(async (tx) => {
+            const dataSource = await tx.dataSource.findUnique({
+                where: { id: dataSourceId },
+                select: { isSyncing: true, ownerEntityId: true, secret: true, type: { select: { name: true } } },
+            });
+
+            if (!dataSource) {
+                throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+            }
+
+            if (dataSource.isSyncing) {
+                throw new BadRequestError('Data source sync already in progress');
+            }
+
+            await tx.dataSource.update({
+                where: { id: dataSourceId },
+                data: { isSyncing: true, updatedAt: new Date() },
+            });
+
+            switch (dataSource.type.name) {
+                case DataSourceTypeName.NOTION:
+                    this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
+                    break;
+                case DataSourceTypeName.SLACK:
+                    this.initSlackSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
+                    break;
+                default:
+                    break;
+            }
         });
-
-        if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
-        }
-
-        await this.prisma.dataSource.update({
-            where: { id: dataSourceId },
-            data: { isSyncing: true, updatedAt: new Date() },
-        });
-
-        switch (dataSource.type.name) {
-            case DataSourceTypeName.NOTION:
-                this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
-                break;
-            case DataSourceTypeName.SLACK:
-                this.initSlackSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
-                break;
-            default:
-                break;
-        }
     }
 
     private async initNotionSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
@@ -130,7 +154,11 @@ export class DataSourceService {
             }
         }
 
-        this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_NOTION_QUEUE_URL as string, dataSourceId);
+        this.sendSqsMessageBatches(
+            messageBatchEntries,
+            this.configService.get<string>('SQS_NOTION_QUEUE_URL')!,
+            dataSourceId,
+        );
     }
 
     private async initSlackSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
@@ -164,7 +192,11 @@ export class DataSourceService {
             }
         }
 
-        this.sendSqsMessageBatches(messageBatchEntries, process.env.SQS_SLACK_QUEUE_URL as string, dataSourceId);
+        this.sendSqsMessageBatches(
+            messageBatchEntries,
+            this.configService.get<string>('SQS_SLACK_QUEUE_URL')!,
+            dataSourceId,
+        );
     }
 
     private sendSqsMessageBatches(
@@ -228,7 +260,16 @@ export class DataSourceService {
                 };
             }
             default:
-                return { isValid: false, message: 'Invalid data source id' };
+                return { isValid: false, message: 'Invalid data source type' };
+        }
+    }
+
+    private checkIsOrganizationAdmin(reqOrgId: string, userOrgId: string, role: OganizationUserRole): void {
+        if (
+            ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role) ||
+            reqOrgId !== userOrgId
+        ) {
+            throw new AccessDeniedError();
         }
     }
 }
