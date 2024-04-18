@@ -21,8 +21,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
-import { SQS } from 'aws-sdk';
+import { type AWSError, SQS } from 'aws-sdk';
 import type { SendMessageBatchRequest, SendMessageBatchRequestEntryList } from 'aws-sdk/clients/sqs';
+import type { PromiseResult } from 'aws-sdk/lib/request';
 
 @Injectable()
 export class DataSourceService {
@@ -124,7 +125,13 @@ export class DataSourceService {
         await this.prisma.$transaction(async (tx) => {
             const dataSource = await tx.dataSource.findUnique({
                 where: { id: dataSourceId },
-                select: { isSyncing: true, ownerEntityId: true, secret: true, type: { select: { name: true } } },
+                select: {
+                    isSyncing: true,
+                    ownerEntityId: true,
+                    secret: true,
+                    lastSync: true,
+                    type: { select: { name: true } },
+                },
             });
 
             if (!dataSource) {
@@ -144,7 +151,7 @@ export class DataSourceService {
 
             switch (dataSource.type.name) {
                 case DataSourceTypeName.NOTION:
-                    this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
+                    this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSource.lastSync, dataSourceId);
                     break;
                 case DataSourceTypeName.SLACK:
                     this.initSlackSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
@@ -155,7 +162,12 @@ export class DataSourceService {
         });
     }
 
-    private async initNotionSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
+    private async initNotionSync(
+        encryptedSecret: string,
+        ownerEntityId: string,
+        lastSync: Date | null,
+        dataSourceId: string,
+    ): Promise<void> {
         this.logger.log(`Retreiving data source ${dataSourceId} Notion pages`, 'DataSource');
 
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
@@ -168,8 +180,8 @@ export class DataSourceService {
         while (!isComplete) {
             const resp = await notionService.listPages(nextCursor);
             resp.results.forEach((page) => {
-                // FIXME: needs to check last sync time of data source
-                if (moment().isAfter(moment(page.last_edited_time))) {
+                // Only process pages created/edited since last sync
+                if (!lastSync || moment(lastSync).isBefore(moment(page.last_edited_time))) {
                     messageBatchEntries.push({
                         Id: page.id,
                         MessageBody: JSON.stringify({
@@ -212,7 +224,7 @@ export class DataSourceService {
         let nextCursor: string | null = null;
         while (!isComplete) {
             const resp = await slackService.listConversations(nextCursor);
-            // TODO: check last sync time of data source
+            // TODO: check last sync time of data source, might have to do this on lambda side...
             resp.channels.forEach((channel) => {
                 messageBatchEntries.push({
                     Id: channel.id,
@@ -240,31 +252,38 @@ export class DataSourceService {
         );
     }
 
-    private sendSqsMessageBatches(
+    private async sendSqsMessageBatches(
         messageBatchEntries: SendMessageBatchRequestEntryList,
         url: string,
         dataSourceId: string,
-    ): void {
+    ): Promise<void> {
         const maxMessageBatchSize = 10;
         const messageGrouoId = messageBatchEntries[0].MessageGroupId;
+        const messagePromises: Promise<PromiseResult<SQS.SendMessageBatchResult, AWSError>>[] = [];
         for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
             const sqsMessageBatchInput: SendMessageBatchRequest = {
                 QueueUrl: url,
                 Entries: messageBatchEntries.slice(i, i + maxMessageBatchSize),
             };
-            this.sqsClient.sendMessageBatch(sqsMessageBatchInput);
+            messagePromises.push(this.sqsClient.sendMessageBatch(sqsMessageBatchInput).promise());
         }
 
-        this.sqsClient.sendMessageBatch({
-            QueueUrl: url,
-            Entries: [
-                {
-                    Id: v4(),
-                    MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
-                    MessageGroupId: messageGrouoId,
-                },
-            ],
-        });
+        messagePromises.push(
+            this.sqsClient
+                .sendMessageBatch({
+                    QueueUrl: url,
+                    Entries: [
+                        {
+                            Id: v4(),
+                            MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
+                            MessageGroupId: messageGrouoId,
+                        },
+                    ],
+                })
+                .promise(),
+        );
+
+        await Promise.all(messagePromises);
 
         this.logger.log(
             `Sent SQS messages for data source ${dataSourceId}. Message group: ${messageGrouoId}`,
