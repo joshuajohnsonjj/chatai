@@ -36,7 +36,7 @@ export class AccessDeniedError extends Error {
 
 export class InternalError extends Error {
     constructor(message?: string) {
-        super(message ?? 'Oops... We couldn\'t complete that request. Contact support if issue persists.');
+        super(message ?? "Oops... We couldn't complete that request. Contact support if issue persists.");
         this.name = ErrorTypes.InternalError;
     }
 }

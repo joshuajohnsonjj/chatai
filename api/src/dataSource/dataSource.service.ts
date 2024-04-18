@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
     CreateDataSourceResponseDto,
@@ -37,13 +37,16 @@ export class DataSourceService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private configService: ConfigService,
+        private readonly configService: ConfigService,
+        private readonly logger: Logger,
     ) {}
 
     async createDataSource(
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<CreateDataSourceResponseDto> {
+        this.logger.log('Creating new data source', 'DataSource');
+
         if (params.ownerEntityType === EntityType.ORGANIZATION) {
             this.checkIsOrganizationAdmin(
                 params.ownerEntityId,
@@ -61,6 +64,7 @@ export class DataSourceService {
         );
 
         if (!isValid) {
+            this.logger.error('Invalid data source credential', 'DataSource');
             throw new BadCredentialsError(message);
         }
 
@@ -99,6 +103,8 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<TestDataSourceResponseDto> {
+        this.logger.log('Testing data source credential', 'DataSource');
+
         if (params.ownerEntityType === EntityType.ORGANIZATION) {
             this.checkIsOrganizationAdmin(
                 params.ownerEntityId,
@@ -113,6 +119,8 @@ export class DataSourceService {
     }
 
     async syncDataSource(dataSourceId: string): Promise<void> {
+        this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, 'DataSource');
+
         await this.prisma.$transaction(async (tx) => {
             const dataSource = await tx.dataSource.findUnique({
                 where: { id: dataSourceId },
@@ -120,10 +128,12 @@ export class DataSourceService {
             });
 
             if (!dataSource) {
+                this.logger.error(`Data source ${dataSourceId} not found`, 'DataSource');
                 throw new ResourceNotFoundError(dataSourceId, 'DataSource');
             }
 
             if (dataSource.isSyncing) {
+                this.logger.error(`Data source ${dataSourceId} already syncing`, 'DataSource');
                 throw new BadRequestError('Data source sync already in progress');
             }
 
@@ -146,6 +156,8 @@ export class DataSourceService {
     }
 
     private async initNotionSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
+        this.logger.log(`Retreiving data source ${dataSourceId} Notion pages`, 'DataSource');
+
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const notionService = new NotionWrapper(decryptedSecret);
         const messageGroupId = v4();
@@ -189,6 +201,8 @@ export class DataSourceService {
     }
 
     private async initSlackSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
+        this.logger.log(`Retreiving data source ${dataSourceId} Slack channels`, 'DataSource');
+
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const slackService = new SlackWrapper(decryptedSecret);
         const messageGroupId = v4();
@@ -232,6 +246,7 @@ export class DataSourceService {
         dataSourceId: string,
     ): void {
         const maxMessageBatchSize = 10;
+        const messageGrouoId = messageBatchEntries[0].MessageGroupId;
         for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
             const sqsMessageBatchInput: SendMessageBatchRequest = {
                 QueueUrl: url,
@@ -246,10 +261,15 @@ export class DataSourceService {
                 {
                     Id: v4(),
                     MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
-                    MessageGroupId: messageBatchEntries[0].MessageGroupId,
+                    MessageGroupId: messageGrouoId,
                 },
             ],
         });
+
+        this.logger.log(
+            `Sent SQS messages for data source ${dataSourceId}. Message group: ${messageGrouoId}`,
+            'DataSource',
+        );
     }
 
     private async testDataSourceConnection(
@@ -294,6 +314,7 @@ export class DataSourceService {
             ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role) ||
             reqOrgId !== userOrgId
         ) {
+            this.logger.error('User is not an admin of the specified org', 'DataSource');
             throw new AccessDeniedError();
         }
     }

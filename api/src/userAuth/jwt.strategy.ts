@@ -24,7 +24,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-
     validate(payload: CognitoIdUserPayload): DecodedUserTokenDto {
         if (!payload.sub) {
             throw new AccessDeniedError('Invalid bearer token');

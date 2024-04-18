@@ -18,7 +18,7 @@ async function main() {
                 adHocUploadsEnabled: true,
                 integrationsEnabled: true,
             },
-        ]
+        ],
     });
 }
 

@@ -11,9 +11,10 @@ export class RsaCipher {
         }
     }
 
-    public encrypt(plainData: string, rsaPublicKey: string): string {
+    public encrypt(plainData: string, rsaPublicKeyFilePath: string): string {
         const tempKey = new NodeRSA();
-        tempKey.importKey(rsaPublicKey, 'pkcs8-public-pem');
+        const publicPem = fs.readFileSync(rsaPublicKeyFilePath, 'utf8');
+        tempKey.importKey(publicPem, 'pkcs8-public-pem');
         return tempKey.encrypt(plainData, 'base64');
     }
 

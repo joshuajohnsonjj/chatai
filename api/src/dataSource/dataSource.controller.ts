@@ -28,7 +28,7 @@ export class DataSourceController {
     }
 
     @Post('/:dataSourceId/sync')
-    async syncDataSource(@Param() { dataSourceId }: {dataSourceId: string}): Promise<{ success: boolean }> {
+    async syncDataSource(@Param() { dataSourceId }: { dataSourceId: string }): Promise<{ success: boolean }> {
         await this.service.syncDataSource(dataSourceId);
         return { success: true };
     }
