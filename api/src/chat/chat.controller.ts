@@ -22,10 +22,7 @@ export class ChatController {
     }
 
     @Get()
-    async listChats(
-        @Query() { page }: ListChatMessagesQueryDto,
-        @Req() req: Request,
-    ): Promise<ListChatResponseDto> {
+    async listChats(@Query() { page }: ListChatMessagesQueryDto, @Req() req: Request): Promise<ListChatResponseDto> {
         return await this.service.listChats(page, req.user as DecodedUserTokenDto);
     }
 

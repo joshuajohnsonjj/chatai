@@ -43,7 +43,7 @@ export class UserAuthService {
                 password,
                 [
                     new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: '' }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' })
+                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' }),
                 ],
                 [],
                 async (err, result) => {
@@ -113,7 +113,10 @@ export class UserAuthService {
                     } else {
                         const userId = result.userSub;
 
-                        const stripeCustomer = await this.stripeService.createCustomer(`${firstName} ${lastName}`, email);
+                        const stripeCustomer = await this.stripeService.createCustomer(
+                            `${firstName} ${lastName}`,
+                            email,
+                        );
 
                         await this.prisma.user.create({
                             data: {

@@ -118,11 +118,7 @@ export class OrganizationService {
         body: InvitUserQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<InviteResponseDto> {
-        this.checkIsOrganizationAdmin(
-            organizationId,
-            user[CognitoAttribute.ORG],
-            user[CognitoAttribute.ORG_USER_ROLE],
-        );
+        this.checkIsOrganizationAdmin(organizationId, user[CognitoAttribute.ORG], user[CognitoAttribute.ORG_USER_ROLE]);
 
         // TODO: check if user exists already/in other org
         const org = await this.prisma.organization.findUnique({
@@ -159,11 +155,7 @@ export class OrganizationService {
         inviteId: string,
         user: DecodedUserTokenDto,
     ): Promise<InviteResponseDto> {
-        this.checkIsOrganizationAdmin(
-            organizationId,
-            user[CognitoAttribute.ORG],
-            user[CognitoAttribute.ORG_USER_ROLE],
-        );
+        this.checkIsOrganizationAdmin(organizationId, user[CognitoAttribute.ORG], user[CognitoAttribute.ORG_USER_ROLE]);
 
         const org = await this.prisma.organization.findUnique({
             where: { id: organizationId },
@@ -249,11 +241,7 @@ export class OrganizationService {
     }
 
     async listOrganizationInvites(organizationId: string, reqUser: DecodedUserTokenDto): Promise<InviteResponseDto[]> {
-        this.checkIsOrganizationAdmin(
-            organizationId,
-            reqUser.organization,
-            reqUser[CognitoAttribute.ORG_USER_ROLE],
-        );
+        this.checkIsOrganizationAdmin(organizationId, reqUser.organization, reqUser[CognitoAttribute.ORG_USER_ROLE]);
 
         return this.prisma.userInvite.findMany({
             where: { organizationId },

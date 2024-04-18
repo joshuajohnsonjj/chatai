@@ -9,31 +9,36 @@ import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { DataSourceTypeName, EntityType } from '@prisma/client';
 import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
-import moment from 'moment';
-import {
-    SQSClient,
-    SendMessageBatchCommand,
-    SendMessageBatchCommandInput,
-    SendMessageBatchRequestEntry,
-} from '@aws-sdk/client-sqs';
+import * as moment from 'moment';
 import { v4 } from 'uuid';
-import { AccessDeniedError, BadCredentialsError, BadRequestError, ResourceNotFoundError } from 'src/exceptions';
+import {
+    AccessDeniedError,
+    BadCredentialsError,
+    BadRequestError,
+    InternalError,
+    ResourceNotFoundError,
+} from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
-import { CognitoAttribute, OganizationUserRole } from 'src/types';
+import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
+import { SQS } from 'aws-sdk';
+import type { SendMessageBatchRequest, SendMessageBatchRequestEntryList } from 'aws-sdk/clients/sqs';
 
 @Injectable()
 export class DataSourceService {
-    private readonly sqsClient = new SQSClient({ region: this.configService.get<string>('AWS_REGION')! });
+    private readonly sqsClient = new SQS({
+        apiVersion: '2012-11-05',
+        accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY')!,
+        secretAccessKey: this.configService.get<string>('AWS_SECRET')!,
+        region: this.configService.get<string>('AWS_REGION')!,
+    });
 
-    private readonly rsaService: RsaCipher;
+    private readonly rsaService = new RsaCipher(__dirname + '/../../private.pem');
 
     constructor(
         private readonly prisma: PrismaService,
         private configService: ConfigService,
-    ) {
-        this.rsaService = new RsaCipher(__dirname + '/../../private.pem');
-    }
+    ) {}
 
     async createDataSource(
         params: CreateDataSourceQueryDto,
@@ -59,31 +64,41 @@ export class DataSourceService {
             throw new BadCredentialsError(message);
         }
 
-        const dataSource = await this.prisma.dataSource.create({
-            data: {
-                dataSourceTypeId: params.dataSourceTypeId,
-                ownerEntityId: params.ownerEntityId,
-                ownerEntityType: params.ownerEntityType,
-                secret: params.secret,
-                isSyncing: true,
-                externalId: params.externalId,
-            },
-            select: {
-                id: true,
-                createdAt: true,
-                updatedAt: true,
-                lastSync: true,
-                dataSourceTypeId: true,
-                ownerEntityId: true,
-            },
-        });
+        try {
+            const dataSource = await this.prisma.dataSource.create({
+                data: {
+                    dataSourceTypeId: params.dataSourceTypeId,
+                    ownerEntityId: params.ownerEntityId,
+                    ownerEntityType: params.ownerEntityType,
+                    secret: params.secret,
+                    isSyncing: false,
+                    externalId: params.externalId,
+                },
+                select: {
+                    id: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    lastSync: true,
+                    dataSourceTypeId: true,
+                    ownerEntityId: true,
+                },
+            });
 
-        this.syncDataSource(dataSource.id);
+            this.syncDataSource(dataSource.id);
 
-        return dataSource;
+            return dataSource;
+        } catch (e) {
+            if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
+                throw new BadRequestError('Data source already exists for entity');
+            }
+            throw new InternalError();
+        }
     }
 
-    async testDataSourceCredential(params: CreateDataSourceQueryDto, user: DecodedUserTokenDto): Promise<TestDataSourceResponseDto> {
+    async testDataSourceCredential(
+        params: CreateDataSourceQueryDto,
+        user: DecodedUserTokenDto,
+    ): Promise<TestDataSourceResponseDto> {
         if (params.ownerEntityType === EntityType.ORGANIZATION) {
             this.checkIsOrganizationAdmin(
                 params.ownerEntityId,
@@ -134,20 +149,20 @@ export class DataSourceService {
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const notionService = new NotionWrapper(decryptedSecret);
         const messageGroupId = v4();
-        const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+        const messageBatchEntries: SendMessageBatchRequestEntryList = [];
 
         let isComplete = false;
         let nextCursor: string | null = null;
         while (!isComplete) {
             const resp = await notionService.listPages(nextCursor);
-
             resp.results.forEach((page) => {
+                // FIXME: needs to check last sync time of data source
                 if (moment().isAfter(moment(page.last_edited_time))) {
                     messageBatchEntries.push({
                         Id: page.id,
                         MessageBody: JSON.stringify({
                             pageId: page.id,
-                            pageUrl: page.public_url,
+                            pageUrl: page.url,
                             ownerEntityId: ownerEntityId,
                             pageTitle: getPageTitle(page),
                             secret: encryptedSecret,
@@ -177,13 +192,13 @@ export class DataSourceService {
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const slackService = new SlackWrapper(decryptedSecret);
         const messageGroupId = v4();
-        const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+        const messageBatchEntries: SendMessageBatchRequestEntryList = [];
 
         let isComplete = false;
         let nextCursor: string | null = null;
         while (!isComplete) {
             const resp = await slackService.listConversations(nextCursor);
-
+            // TODO: check last sync time of data source
             resp.channels.forEach((channel) => {
                 messageBatchEntries.push({
                     Id: channel.id,
@@ -212,31 +227,29 @@ export class DataSourceService {
     }
 
     private sendSqsMessageBatches(
-        messageBatchEntries: SendMessageBatchRequestEntry[],
+        messageBatchEntries: SendMessageBatchRequestEntryList,
         url: string,
         dataSourceId: string,
     ): void {
         const maxMessageBatchSize = 10;
         for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
-            const sqsMessageBatchInput: SendMessageBatchCommandInput = {
+            const sqsMessageBatchInput: SendMessageBatchRequest = {
                 QueueUrl: url,
                 Entries: messageBatchEntries.slice(i, i + maxMessageBatchSize),
             };
-            this.sqsClient.send(new SendMessageBatchCommand(sqsMessageBatchInput));
+            this.sqsClient.sendMessageBatch(sqsMessageBatchInput);
         }
 
-        this.sqsClient.send(
-            new SendMessageBatchCommand({
-                QueueUrl: url,
-                Entries: [
-                    {
-                        Id: v4(),
-                        MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
-                        MessageGroupId: messageBatchEntries[0].MessageGroupId,
-                    },
-                ],
-            }),
-        );
+        this.sqsClient.sendMessageBatch({
+            QueueUrl: url,
+            Entries: [
+                {
+                    Id: v4(),
+                    MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
+                    MessageGroupId: messageBatchEntries[0].MessageGroupId,
+                },
+            ],
+        });
     }
 
     private async testDataSourceConnection(

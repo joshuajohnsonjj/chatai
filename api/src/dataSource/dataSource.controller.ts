@@ -20,12 +20,15 @@ export class DataSourceController {
     }
 
     @Post('test')
-    async testDataSourceCredential(@Body() body: CreateDataSourceQueryDto, @Req() req: Request): Promise<TestDataSourceResponseDto> {
+    async testDataSourceCredential(
+        @Body() body: CreateDataSourceQueryDto,
+        @Req() req: Request,
+    ): Promise<TestDataSourceResponseDto> {
         return await this.service.testDataSourceCredential(body, req.user as DecodedUserTokenDto);
     }
 
     @Post('/:dataSourceId/sync')
-    async syncDataSource(@Param() dataSourceId: string): Promise<{ success: boolean }> {
+    async syncDataSource(@Param() { dataSourceId }: {dataSourceId: string}): Promise<{ success: boolean }> {
         await this.service.syncDataSource(dataSourceId);
         return { success: true };
     }

@@ -3,6 +3,7 @@ export enum ErrorTypes {
     BadCredentialsError = 'BadCredentialsError',
     ResourceNotFoundError = 'ResourceNotFoundError',
     AccessDeniedError = 'AccessDeniedError',
+    InternalError = 'InternalError',
 }
 
 export class BadRequestError extends Error {
@@ -30,5 +31,12 @@ export class AccessDeniedError extends Error {
     constructor(message?: string) {
         super(message ?? 'Must be an organization admin to preform this action.');
         this.name = ErrorTypes.AccessDeniedError;
+    }
+}
+
+export class InternalError extends Error {
+    constructor(message?: string) {
+        super(message ?? 'Oops... We couldn\'t complete that request. Contact support if issue persists.');
+        this.name = ErrorTypes.InternalError;
     }
 }

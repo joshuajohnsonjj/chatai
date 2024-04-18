@@ -73,7 +73,11 @@ export class ChatService {
         });
     }
 
-    async listChatMessages(chatId: string, page: number, user: DecodedUserTokenDto): Promise<ListChatMessagesResponseDto> {
+    async listChatMessages(
+        chatId: string,
+        page: number,
+        user: DecodedUserTokenDto,
+    ): Promise<ListChatMessagesResponseDto> {
         const chat = await this.prisma.chat.findUnique({
             where: { id: chatId },
             select: { associatedEntityId: true },

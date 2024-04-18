@@ -12,7 +12,6 @@ async function bootstrap() {
 }
 bootstrap();
 
-
 // , {
 //         logger: WinstonModule.createLogger({
 //             format: winston.format.uncolorize(),

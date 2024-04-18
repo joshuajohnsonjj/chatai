@@ -3,7 +3,8 @@ import { PassportStrategy } from '@nestjs/passport';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { DecodedUserTokenDto } from './dto/jwt.dto';
-import { CognitoAttribute } from 'src/types';
+import { CognitoAttribute, CognitoIdUserPayload } from 'src/types';
+import { AccessDeniedError } from 'src/exceptions';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -23,12 +24,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    validate(payload: any): DecodedUserTokenDto {
+
+    validate(payload: CognitoIdUserPayload): DecodedUserTokenDto {
+        if (!payload.sub) {
+            throw new AccessDeniedError('Invalid bearer token');
+        }
+
         return {
             idUser: payload.sub,
-            oganizationUserRole: payload[CognitoAttribute.ORG_USER_ROLE],
-            organization: payload[CognitoAttribute.ORG],
+            oganizationUserRole: payload[CognitoAttribute.ORG_USER_ROLE] ?? '',
+            organization: payload[CognitoAttribute.ORG] ?? '',
         };
     }
 }
