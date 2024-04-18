@@ -10,4 +10,5 @@ var TQdrantPayloadKey;
 var QdrantDataSource;
 (function (QdrantDataSource) {
     QdrantDataSource["NOTION"] = "notion";
+    QdrantDataSource["SLACK"] = "slack";
 })(QdrantDataSource || (exports.QdrantDataSource = QdrantDataSource = {}));

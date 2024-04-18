@@ -9,7 +9,7 @@
     "npm-packages/*"
   ],
   "scripts": {
-    "build:all": "lerna run build",
+    "build": "lerna run build",
     "lint": "eslint \"**/*.ts\" --fix; npx prettier --write ."
   },
   "private": true,

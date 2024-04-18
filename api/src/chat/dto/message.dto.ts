@@ -18,13 +18,13 @@ export class GetChatResponseResponseDto {
     updatedAt: Date;
 }
 
-export class ListChatQueryDto {
+export class ListChatMessagesQueryDto {
     @IsNumberString()
     @Transform(({ value }) => parseInt(value as string, 10))
     page: number;
 }
 
-export class ListChatResponseDto {
+export class ListChatMessagesResponseDto {
     page: number;
     size: number;
     messages: GetChatResponseResponseDto[];

@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { DecodedUserTokenDto } from './dto/jwt.dto';
+import { CognitoAttribute } from 'src/types';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -10,7 +11,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            _audience: process.env.AWS_COGNITO_COGNITO_CLIENT_ID,
+            audience: process.env.AWS_COGNITO_COGNITO_CLIENT_ID,
             issuer: `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.AWS_COGNITO_USER_POOL_ID}`,
             algorithms: ['RS256'],
             secretOrKeyProvider: passportJwtSecret({
@@ -26,11 +27,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     validate(payload: any): DecodedUserTokenDto {
         return {
             idUser: payload.sub,
-            email: payload.email,
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            OganizationUserRole: payload.OganizationUserRole,
-            organization: payload.organization,
+            oganizationUserRole: payload[CognitoAttribute.ORG_USER_ROLE],
+            organization: payload[CognitoAttribute.ORG],
         };
     }
 }

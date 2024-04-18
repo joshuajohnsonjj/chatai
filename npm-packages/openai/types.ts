@@ -1,4 +1,11 @@
-export enum TOpenAIModels {
-    EMBEDDINGS = 'text-embedding-ada-002',
-    COMPLETIONS = 'text-davinci-003',
+export enum GeminiModels {
+    EMBEDDINGS = 'embedding-001',
+    TEXT = 'gemini-pro',
+}
+
+export interface ChatHistory {
+    role: 'user' | 'model';
+    parts: {
+        text: string;
+    }[];
 }

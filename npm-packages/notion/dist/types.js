@@ -26,4 +26,3 @@ var NotionBlockType;
     NotionBlockType["TO_DO"] = "to_do";
     NotionBlockType["TOGGLE"] = "toggle";
 })(NotionBlockType || (exports.NotionBlockType = NotionBlockType = {}));
-;

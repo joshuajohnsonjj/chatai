@@ -24,3 +24,19 @@ export class StartNewChatResponseDto {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export class ListChatResponseDto {
+    page: number;
+    size: number;
+    chats: ChatResponseDto[];
+}
+
+export class ChatResponseDto {
+    id: string;
+    title: string;
+    lastMessage: {
+        timestamp: Date;
+        text: string;
+        isSystemMessage: boolean;
+    };
+}

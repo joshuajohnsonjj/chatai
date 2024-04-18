@@ -17,11 +17,13 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { STRIPE_PRODUCTS } from 'src/constants/stripe';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { UserInviteType, UserType } from '@prisma/client';
-import { createCustomer } from 'src/services/stripe';
+import { StripeService } from 'src/services/stripe';
 
 @Injectable()
 export class UserAuthService {
     private readonly userPool: CognitoUserPool;
+
+    private readonly stripeService = new StripeService(this.configService.get<string>('STRIPE_KEY')!);
 
     constructor(
         private readonly configService: ConfigService,
@@ -39,7 +41,10 @@ export class UserAuthService {
             this.userPool.signUp(
                 email,
                 password,
-                [new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' })],
+                [
+                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: '' }),
+                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' })
+                ],
                 [],
                 async (err, result) => {
                     if (!result) {
@@ -51,7 +56,7 @@ export class UserAuthService {
                             this.prisma.accountPlan.findUniqueOrThrow({
                                 where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
                             }),
-                            createCustomer(`${firstName} ${lastName}`, email),
+                            this.stripeService.createCustomer(`${firstName} ${lastName}`, email),
                         ]);
 
                         await this.prisma.user.create({
@@ -108,7 +113,7 @@ export class UserAuthService {
                     } else {
                         const userId = result.userSub;
 
-                        const stripeCustomer = await createCustomer(`${firstName} ${lastName}`, email);
+                        const stripeCustomer = await this.stripeService.createCustomer(`${firstName} ${lastName}`, email);
 
                         await this.prisma.user.create({
                             data: {
@@ -158,9 +163,9 @@ export class UserAuthService {
             newUser.authenticateUser(authenticationDetails, {
                 onSuccess: (result) => {
                     resolve({
-                        accessToken: result.getAccessToken().getJwtToken(),
+                        accessToken: result.getIdToken().getJwtToken(),
                         refreshToken: result.getRefreshToken().getToken(),
-                        userId: result.getAccessToken().payload.username,
+                        userId: result.getIdToken().payload.sub,
                         email: result.getIdToken().payload.email,
                         name: result.getIdToken().payload.name,
                     });

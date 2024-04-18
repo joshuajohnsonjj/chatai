@@ -8,6 +8,109 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model DataSource {
+  id               String         @id @default(uuid())
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @default(now())
+  lastSync         DateTime?
+  dataSourceTypeId String
+  ownerEntityId    String
+  ownerEntityType  EntityType
+  secret           String
+  externalId       String?        @unique
+  isSyncing        Boolean        @default(false)
+  type             DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
+
+  @@unique([ownerEntityId, dataSourceTypeId])
+}
+
+model DataSourceType {
+  id            String             @id @default(uuid())
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @default(now())
+  name          DataSourceTypeName @unique
+  linkedSources DataSource[]
+}
+
+model Organization {
+  id                  String       @id @default(uuid())
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @default(now())
+  planId              String
+  isAccountActive     Boolean      @default(false)
+  name                String
+  plan                AccountPlan  @relation(fields: [planId], references: [id])
+  organizationMembers User[]
+  pendingInvites      UserInvite[]
+}
+
+model UserInvite {
+  id             String         @id @default(uuid())
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @default(now())
+  resentAt       DateTime?
+  email          String
+  firstName      String
+  organizationId String
+  isAccepted     Boolean        @default(false)
+  type           UserInviteType
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+}
+
+model User {
+  id               String        @id
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now())
+  type             UserType
+  planId           String?
+  organizationId   String?
+  email            String
+  firstName        String
+  lastName         String
+  phoneNumber      String?
+  stripeCustomerId String?
+  chats            Chat[]
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  plan             AccountPlan?  @relation(fields: [planId], references: [id])
+}
+
+model AccountPlan {
+  id                  String           @id @default(uuid())
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @default(now())
+  isActive            Boolean          @default(true)
+  adHocUploadsEnabled Boolean
+  dailyMessageQuota   Int?
+  dataSyncInterval    DataSyncInterval
+  integrationsEnabled Boolean
+  maxDataSources      Int
+  stripeProductId     String           @unique
+  registeredOrgs      Organization[]
+  registeredUsers     User[]
+}
+
+model Chat {
+  id                 String        @id @default(uuid())
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @default(now())
+  userId             String
+  title              String
+  chatType           ChatType
+  associatedEntityId String
+  user               User          @relation(fields: [userId], references: [id])
+  gptMessages        ChatMessage[]
+}
+
+model ChatMessage {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+  text            String
+  isSystemMessage Boolean
+  chatId          String
+  chat            Chat     @relation(fields: [chatId], references: [id])
+}
+
 enum EntityType {
   INDIVIDUAL
   ORGANIZATION
@@ -40,107 +143,4 @@ enum ChatType {
   SYSTEM
   SLACK
   MICROSOFT_TEAMS
-}
-
-model DataSource {
-  id               String         @id @default(uuid())
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @default(now())
-  lastSync         DateTime?
-  isSyncing        Boolean        @default(false)
-  externalId       String?        @unique
-  dataSourceTypeId String
-  secret           String
-  ownerEntityId    String
-  ownerEntityType  EntityType
-  type             DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
-
-  @@unique([ownerEntityId, dataSourceTypeId])
-}
-
-model DataSourceType {
-  id            String             @id @default(uuid())
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @default(now())
-  name          DataSourceTypeName @unique
-  linkedSources DataSource[]
-}
-
-model Organization {
-  id                  String       @id @default(uuid())
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @default(now())
-  planId              String
-  name                String
-  isAccountActive     Boolean      @default(false)
-  plan                AccountPlan? @relation(fields: [planId], references: [id])
-  organizationMembers User[]
-  pendingInvites      UserInvite[]
-}
-
-model UserInvite {
-  id             String         @id @default(uuid())
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @default(now())
-  resentAt       DateTime?
-  email          String
-  firstName      String
-  organizationId String
-  isAccepted     Boolean        @default(false)
-  type           UserInviteType
-  organization   Organization   @relation(fields: [organizationId], references: [id])
-}
-
-model User {
-  id               String        @id
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @default(now())
-  planId           String?
-  organizationId   String?
-  stripeCustomerId String?
-  firstName        String
-  lastName         String
-  email            String
-  phoneNumber      String?
-  type             UserType
-  plan             AccountPlan?  @relation(fields: [planId], references: [id])
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  chats            Chat[]
-}
-
-model AccountPlan {
-  id                  String           @id @default(uuid())
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @default(now())
-  stripeProductId     String           @unique
-  isActive            Boolean          @default(true)
-  maxDataSources      Int
-  dataSyncInterval    DataSyncInterval
-  dailyMessageQuota   Int?
-  adHocUploadsEnabled Boolean
-  integrationsEnabled Boolean
-  registeredOrgs      Organization[]
-  registeredUsers     User[]
-}
-
-model Chat {
-  id                 String        @id @default(uuid())
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @default(now())
-  userId             String
-  associatedEntityId String
-  title              String
-  chatType           ChatType
-  user               User          @relation(fields: [userId], references: [id])
-  gptMessages        ChatMessage[]
-}
-
-model ChatMessage {
-  id              String   @id @default(uuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
-  text            String
-  isSystemMessage Boolean
-  chatId          String
-  chat            Chat     @relation(fields: [chatId], references: [id])
 }

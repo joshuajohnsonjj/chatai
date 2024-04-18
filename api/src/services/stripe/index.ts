@@ -1,10 +1,16 @@
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_KEY as string);
+export class StripeService {
+    private readonly client: Stripe;
 
-export const createCustomer = async (name: string, email: string) => {
-    return stripe.customers.create({
-        name,
-        email,
-    });
-};
+    constructor(key: string) {
+        this.client = new Stripe(key);
+    }
+
+    public async createCustomer(name: string, email: string) {
+        return this.client.customers.create({
+            name,
+            email,
+        });
+    }
+}

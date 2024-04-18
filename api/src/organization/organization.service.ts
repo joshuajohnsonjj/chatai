@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
     CreateOrganizationQueryDto,
@@ -14,16 +14,16 @@ import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { UserAuthService } from 'src/userAuth/userAuth.service';
 import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
-import { Logger } from 'winston';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class OrganizationService {
+    @Inject(UserAuthService)
+    private readonly userAuthService: UserAuthService;
+
     constructor(
         private readonly prisma: PrismaService,
-        private readonly userAuthService: UserAuthService,
         private configService: ConfigService,
-        private readonly logger: Logger,
     ) {}
 
     async createOrganization(
@@ -34,7 +34,6 @@ export class OrganizationService {
             where: { stripeProductId: STRIPE_PRODUCTS.ORGANIZATION },
         });
 
-        // create org
         const organization = await this.prisma.organization.create({
             data: {
                 planId: accountPlan.id,
@@ -42,23 +41,22 @@ export class OrganizationService {
             },
         });
 
-        // update owner
-        await Promise.all([
-            this.prisma.user.update({
-                where: { id: params.ownerUserId },
-                data: {
-                    organizationId: organization.id,
-                    type: UserType.ORGANIZATION_MEMBER,
-                    updatedAt: new Date(),
-                },
+        const user = await this.prisma.user.update({
+            where: { id: ownerUser.idUser },
+            data: {
+                organizationId: organization.id,
+                type: UserType.ORGANIZATION_MEMBER,
+                updatedAt: new Date(),
+            },
+            select: { email: true },
+        });
+
+        this.userAuthService.updateAttributes(user.email, [
+            new CognitoUserAttribute({
+                Name: CognitoAttribute.ORG_USER_ROLE,
+                Value: OganizationUserRole.ORG_OWNER,
             }),
-            this.userAuthService.updateAttributes(ownerUser.email, [
-                new CognitoUserAttribute({
-                    Name: CognitoAttribute.ORG_USER_ROLE,
-                    Value: OganizationUserRole.ORG_OWNER,
-                }),
-                new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: organization.id }),
-            ]),
+            new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: organization.id }),
         ]);
 
         return {
@@ -122,8 +120,8 @@ export class OrganizationService {
     ): Promise<InviteResponseDto> {
         this.checkIsOrganizationAdmin(
             organizationId,
-            user.organization,
-            user.oganizationUserRole as OganizationUserRole,
+            user[CognitoAttribute.ORG],
+            user[CognitoAttribute.ORG_USER_ROLE],
         );
 
         // TODO: check if user exists already/in other org
@@ -136,6 +134,11 @@ export class OrganizationService {
             throw new ResourceNotFoundError(organizationId, 'Organization');
         }
 
+        const inviterUser = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.idUser },
+            select: { firstName: true },
+        });
+
         const [invite] = await Promise.all([
             this.prisma.userInvite.create({
                 data: {
@@ -145,7 +148,7 @@ export class OrganizationService {
                     type: body.type,
                 },
             }),
-            this.sendInviteEmail(body.inviteEmail, body.firstName, user.firstName, org.name),
+            this.sendInviteEmail(body.inviteEmail, body.firstName, inviterUser.firstName, org.name),
         ]);
 
         return invite;
@@ -158,8 +161,8 @@ export class OrganizationService {
     ): Promise<InviteResponseDto> {
         this.checkIsOrganizationAdmin(
             organizationId,
-            user.organization,
-            user.oganizationUserRole as OganizationUserRole,
+            user[CognitoAttribute.ORG],
+            user[CognitoAttribute.ORG_USER_ROLE],
         );
 
         const org = await this.prisma.organization.findUnique({
@@ -171,11 +174,16 @@ export class OrganizationService {
             throw new ResourceNotFoundError(organizationId, 'Organization');
         }
 
+        const inviterUser = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.idUser },
+            select: { firstName: true },
+        });
+
         const invite = await this.prisma.userInvite.update({
             where: { id: inviteId },
             data: { resentAt: new Date(), updatedAt: new Date() },
         });
-        await this.sendInviteEmail(invite.email, invite.firstName, user.firstName, org.name);
+        await this.sendInviteEmail(invite.email, invite.firstName, inviterUser.firstName, org.name);
 
         return invite;
     }
@@ -183,8 +191,8 @@ export class OrganizationService {
     async revokeOrgInvite(organizationId: string, invitationId: string, reqUser: DecodedUserTokenDto): Promise<void> {
         this.checkIsOrganizationAdmin(
             organizationId,
-            reqUser.organization,
-            reqUser.oganizationUserRole as OganizationUserRole,
+            reqUser[CognitoAttribute.ORG],
+            reqUser[CognitoAttribute.ORG_USER_ROLE],
         );
 
         await this.prisma.userInvite.delete({ where: { id: invitationId } });
@@ -197,8 +205,8 @@ export class OrganizationService {
     ): Promise<void> {
         this.checkIsOrganizationAdmin(
             organizationId,
-            reqUser.organization,
-            reqUser.oganizationUserRole as OganizationUserRole,
+            reqUser[CognitoAttribute.ORG],
+            reqUser[CognitoAttribute.ORG_USER_ROLE],
         );
 
         const userToRemove = await this.prisma.user.findUnique({
@@ -244,7 +252,7 @@ export class OrganizationService {
         this.checkIsOrganizationAdmin(
             organizationId,
             reqUser.organization,
-            reqUser.oganizationUserRole as OganizationUserRole,
+            reqUser[CognitoAttribute.ORG_USER_ROLE],
         );
 
         return this.prisma.userInvite.findMany({

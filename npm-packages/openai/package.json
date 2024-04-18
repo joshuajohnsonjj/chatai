@@ -1,6 +1,6 @@
 {
   "name": "@joshuajohnsonjj38/openai",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc"
@@ -9,7 +9,7 @@
     "dist/*"
   ],
   "dependencies": {
-    "openai": "^4.33.0"
+    "@google/generative-ai": "^0.7.1"
   },
   "devDependencies": {
     "typescript": "^5.4.4"

@@ -20,18 +20,20 @@ import { v4 } from 'uuid';
 import { AccessDeniedError, BadCredentialsError, BadRequestError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
-import { OganizationUserRole } from 'src/types';
+import { CognitoAttribute, OganizationUserRole } from 'src/types';
 
 @Injectable()
 export class DataSourceService {
     private readonly sqsClient = new SQSClient({ region: this.configService.get<string>('AWS_REGION')! });
 
-    private readonly rsaService = new RsaCipher('../../private.pem');
+    private readonly rsaService: RsaCipher;
 
     constructor(
         private readonly prisma: PrismaService,
         private configService: ConfigService,
-    ) {}
+    ) {
+        this.rsaService = new RsaCipher(__dirname + '/../../private.pem');
+    }
 
     async createDataSource(
         params: CreateDataSourceQueryDto,
@@ -40,8 +42,8 @@ export class DataSourceService {
         if (params.ownerEntityType === EntityType.ORGANIZATION) {
             this.checkIsOrganizationAdmin(
                 params.ownerEntityId,
-                user.organization,
-                user.oganizationUserRole as OganizationUserRole,
+                user[CognitoAttribute.ORG],
+                user[CognitoAttribute.ORG_USER_ROLE],
             );
         } else if (params.ownerEntityId !== user.idUser) {
             throw new BadRequestError('User id mismatch');
@@ -81,7 +83,17 @@ export class DataSourceService {
         return dataSource;
     }
 
-    async testDataSourceCredential(params: CreateDataSourceQueryDto): Promise<TestDataSourceResponseDto> {
+    async testDataSourceCredential(params: CreateDataSourceQueryDto, user: DecodedUserTokenDto): Promise<TestDataSourceResponseDto> {
+        if (params.ownerEntityType === EntityType.ORGANIZATION) {
+            this.checkIsOrganizationAdmin(
+                params.ownerEntityId,
+                user[CognitoAttribute.ORG],
+                user[CognitoAttribute.ORG_USER_ROLE],
+            );
+        } else if (params.ownerEntityId !== user.idUser) {
+            throw new BadRequestError('User id mismatch');
+        }
+
         return await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
     }
 

@@ -1,6 +1,6 @@
-import { Controller, Get, Param, Body, Post, Req, Delete } from '@nestjs/common';
+import { Controller, Get, Param, Body, Post, Req, Delete, UseGuards } from '@nestjs/common';
 import { OrganizationService } from './organization.service';
-// import { AuthGuard } from '@nestjs/passport';
+import { AuthGuard } from '@nestjs/passport';
 import {
     CreateOrganizationQueryDto,
     InvitUserQueryDto,
@@ -10,8 +10,8 @@ import {
 import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 
-@Controller('organization')
-// @UseGuards(AuthGuard('jwt'))
+@Controller('v1/organization')
+@UseGuards(AuthGuard('jwt'))
 export class OrganizationController {
     constructor(private readonly service: OrganizationService) {}
 

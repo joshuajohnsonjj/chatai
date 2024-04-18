@@ -22,65 +22,42 @@ class QdrantWrapper {
             const searchResult = yield this.client.search(this.collection, {
                 vector: vectorizedQuery,
                 filter: {
-                    must: [
-                        { key: types_1.TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }
-                    ]
+                    must: [{ key: types_1.TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
                 },
                 with_payload: true,
-                limit: 3
+                limit: 3,
             });
             return (0, compact_1.default)(searchResult.map((result) => { var _a; return (_a = result.payload) === null || _a === void 0 ? void 0 : _a.text; }));
         });
         this.upsert = (recordId, vectorizedText, payload) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield this.client.upsert(this.collection, {
-                    points: [
-                        {
-                            id: recordId,
-                            payload,
-                            vector: vectorizedText
-                        }
-                    ]
-                });
-                return true;
-            }
-            catch (error) {
-                console.log(error.message);
-                return false;
-            }
+            yield this.client.upsert(this.collection, {
+                points: [
+                    {
+                        id: recordId,
+                        payload: payload,
+                        vector: vectorizedText,
+                    },
+                ],
+            });
         });
         this.deleteVectorById = (recordId) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield this.client.delete(this.collection, {
-                    points: [recordId]
-                });
-                return true;
-            }
-            catch (error) {
-                console.log(error.message);
-                return false;
-            }
+            yield this.client.delete(this.collection, {
+                points: [recordId],
+            });
         });
         this.deleteVectorsByEntityId = (entityId) => __awaiter(this, void 0, void 0, function* () {
-            try {
-                yield this.client.delete(this.collection, {
-                    filter: {
-                        must: [
-                            {
-                                key: types_1.TQdrantPayloadKey.ENTITY_ID,
-                                match: {
-                                    value: entityId
-                                }
-                            }
-                        ]
-                    }
-                });
-                return true;
-            }
-            catch (error) {
-                console.log(error.message);
-                return false;
-            }
+            yield this.client.delete(this.collection, {
+                filter: {
+                    must: [
+                        {
+                            key: types_1.TQdrantPayloadKey.ENTITY_ID,
+                            match: {
+                                value: entityId,
+                            },
+                        },
+                    ],
+                },
+            });
         });
         this.client = new js_client_rest_1.QdrantClient({ host: hostUrl, port });
         this.collection = collection;

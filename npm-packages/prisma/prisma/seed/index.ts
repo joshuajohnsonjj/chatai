@@ -1,58 +1,24 @@
-import { ChatType, DataSourceTypeName, EntityType, PrismaClient, UserType } from '@prisma/client';
-import { v4 } from 'uuid';
+import { DataSyncInterval, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 async function main() {
-    // TODO: update seeding
-    // plans
-    const accountPlan = await prisma.accountPlan.create({
-        data: {
-            name: 'Basic month-to-month',
-            stripeId: 'xyz',
-            isActive: true,
-        },
-    });
-
-    // users
-    const user = await prisma.user.create({
-        data: {
-            id: v4(),
-            type: UserType.INDIVIDUAL,
-            planId: accountPlan.id,
-        },
-    });
-
-    // data source types
-    await prisma.dataSourceType.createMany({
+    await prisma.accountPlan.createMany({
         data: [
-            { name: DataSourceTypeName.FILE_UPLOAD },
-            { name: DataSourceTypeName.SLACK },
-            { name: DataSourceTypeName.GOOGLE_DRIVE },
-            { name: DataSourceTypeName.NOTION },
-        ],
-    });
-
-    const dataSourceType = await prisma.dataSourceType.findFirst({
-        select: { id: true },
-    });
-
-    await prisma.dataSource.create({
-        data: {
-            lastSync: new Date(),
-            dataSourceTypeId: dataSourceType?.id as string,
-            ownerEntityId: user.id,
-            ownerEntityType: EntityType.INDIVIDUAL,
-            secret: 'SECRET_HASH',
-        },
-    });
-
-    // chats
-    await prisma.chat.create({
-        data: {
-            userId: user.id,
-            chatType: ChatType.SLACK,
-            title: 'Slack Chat',
-        },
+            {
+                stripeProductId: 'prod_Pv7gSv8MIwbXzn',
+                maxDataSources: 5,
+                dataSyncInterval: DataSyncInterval.INSTANT,
+                adHocUploadsEnabled: true,
+                integrationsEnabled: true,
+            },
+            {
+                stripeProductId: 'prod_Pv7unqUI418jsP',
+                maxDataSources: 5,
+                dataSyncInterval: DataSyncInterval.INSTANT,
+                adHocUploadsEnabled: true,
+                integrationsEnabled: true,
+            },
+        ]
     });
 }
 

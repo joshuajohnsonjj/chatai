@@ -8,56 +8,64 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.OpenAIWrapper = void 0;
-const openai_1 = __importDefault(require("openai"));
+const generative_ai_1 = require("@google/generative-ai");
 const types_1 = require("./types");
 class OpenAIWrapper {
     constructor(secretKey) {
         this.getTextEmbedding = (textInput) => __awaiter(this, void 0, void 0, function* () {
-            const embeddingResponse = yield this.client.embeddings.create({ input: textInput, model: types_1.TOpenAIModels.EMBEDDINGS });
-            return embeddingResponse.data[0].embedding;
+            const model = this.client.getGenerativeModel({ model: types_1.GeminiModels.EMBEDDINGS });
+            const result = yield model.embedContent(textInput);
+            const embedding = result.embedding;
+            return embedding.values;
         });
-        this.getGptReponseFromSourceData = (basePrompt, sourceData) => __awaiter(this, void 0, void 0, function* () {
-            const prompt_start = 'Answer the question based on the context below.\n\n' +
-                'Context:\n';
-            const prompt_end = `\n\nQuestion: ${basePrompt}\nAnswer:`;
-            const limit = 3750;
-            let prompt = '';
-            for (let i = 1; i < sourceData.length; i++) {
-                if (('\n\n---\n\n' + sourceData.slice(0, i).join('\n\n---\n\n')).length >=
-                    limit) {
-                    prompt =
-                        prompt_start +
-                            '\n\n---\n\n' +
-                            sourceData.slice(0, i - 1).join('\n\n---\n\n') +
-                            prompt_end;
-                    break;
-                }
-                else if (i === sourceData.length - 1) {
-                    prompt =
-                        prompt_start +
-                            '\n\n---\n\n' +
-                            sourceData.join('\n\n---\n\n') +
-                            prompt_end;
-                }
+        this.getGptReponseFromSourceData = (basePrompt, sourceData, history) => __awaiter(this, void 0, void 0, function* () {
+            const prompt = this.buildPromptWithSourceData(basePrompt, sourceData);
+            const model = this.client.getGenerativeModel({ model: types_1.GeminiModels.TEXT });
+            if (history) {
+                return this.getChatContinuationResponse(model, prompt, history);
             }
-            const openAiResponse = yield this.client.completions.create({
-                model: types_1.TOpenAIModels.COMPLETIONS,
-                prompt,
-                temperature: 1.25,
-                max_tokens: 400,
-                frequency_penalty: 0,
-                presence_penalty: 0,
-                stop: null
-            });
-            return openAiResponse.choices[0].text;
+            else {
+                return this.getOneOffResponse(model, prompt);
+            }
         });
-        this.client = new openai_1.default({ apiKey: secretKey });
-        ;
+        this.client = new generative_ai_1.GoogleGenerativeAI(secretKey);
+    }
+    getChatContinuationResponse(model, prompt, history) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const chat = model.startChat({
+                history,
+                generationConfig: {
+                    maxOutputTokens: 100,
+                },
+            });
+            const result = yield chat.sendMessage(prompt);
+            return result.response.text();
+        });
+    }
+    getOneOffResponse(model, prompt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = yield model.generateContent(prompt);
+            return result.response.text();
+        });
+    }
+    buildPromptWithSourceData(basePrompt, sourceData) {
+        // TODO: check on limit
+        const prompt_start = 'Answer the question based on the context below.\n\n' + 'Context:\n';
+        const prompt_end = `\n\nQuestion: ${basePrompt}\nAnswer:`;
+        const limit = 3750;
+        let constructedPrompt = '';
+        for (let i = 1; i < sourceData.length; i++) {
+            if (('\n\n---\n\n' + sourceData.slice(0, i).join('\n\n---\n\n')).length >= limit) {
+                constructedPrompt = prompt_start + '\n\n---\n\n' + sourceData.slice(0, i - 1).join('\n\n---\n\n') + prompt_end;
+                break;
+            }
+            else if (i === sourceData.length - 1) {
+                constructedPrompt = prompt_start + '\n\n---\n\n' + sourceData.join('\n\n---\n\n') + prompt_end;
+            }
+        }
+        return constructedPrompt;
     }
 }
 exports.OpenAIWrapper = OpenAIWrapper;

@@ -1,13 +1,13 @@
 import { Controller, Body, Post, Param, Req } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
-// import { AuthGuard } from '@nestjs/passport';
-// import { UseGuards } from '@nestjs/common/decorators';
+import { AuthGuard } from '@nestjs/passport';
+import { UseGuards } from '@nestjs/common/decorators';
 import { CreateDataSourceQueryDto, CreateDataSourceResponseDto, TestDataSourceResponseDto } from './dto/dataSource.dto';
 import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 
-@Controller('dataSource')
-// @UseGuards(AuthGuard('jwt'))
+@Controller('v1/dataSource')
+@UseGuards(AuthGuard('jwt'))
 export class DataSourceController {
     constructor(private readonly service: DataSourceService) {}
 
@@ -20,8 +20,8 @@ export class DataSourceController {
     }
 
     @Post('test')
-    async testDataSourceCredential(@Body() body: CreateDataSourceQueryDto): Promise<TestDataSourceResponseDto> {
-        return await this.service.testDataSourceCredential(body);
+    async testDataSourceCredential(@Body() body: CreateDataSourceQueryDto, @Req() req: Request): Promise<TestDataSourceResponseDto> {
+        return await this.service.testDataSourceCredential(body, req.user as DecodedUserTokenDto);
     }
 
     @Post('/:dataSourceId/sync')

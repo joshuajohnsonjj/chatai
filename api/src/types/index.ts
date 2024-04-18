@@ -5,9 +5,6 @@ export enum OganizationUserRole {
 }
 
 export enum CognitoAttribute {
-    FIRST_NAME = 'firstName',
-    LAST_NAME = 'lastName',
-    PHONE_NUMBER = 'phoneNumber',
-    ORG_USER_ROLE = 'OganizationUserRole',
-    ORG = 'organization',
+    ORG_USER_ROLE = 'custom:oganizationUserRole',
+    ORG = 'custom:organization',
 }

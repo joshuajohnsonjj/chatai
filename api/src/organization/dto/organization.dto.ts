@@ -1,10 +1,7 @@
-import { IsEmail, IsEnum, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsEmail, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { DataSyncInterval, UserInviteType } from '@prisma/client';
 
 export class CreateOrganizationQueryDto {
-    @IsUUID()
-    ownerUserId: string;
-
     @IsString()
     @MaxLength(40)
     @MinLength(1)
@@ -34,7 +31,7 @@ export class InvitUserQueryDto {
     @MinLength(1)
     firstName: string;
 
-    @IsEnum(UserInviteType)
+    @IsString()
     type: UserInviteType;
 
     @IsUUID()

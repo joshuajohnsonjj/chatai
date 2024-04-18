@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
-import type { GetChatResponseResponseDto, ListChatResponseDto } from './dto/message.dto';
-import type { StartNewChatQueryDto, StartNewChatResponseDto } from './dto/chat.dto';
+import type { GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
+import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
+import { CognitoAttribute } from 'src/types';
 
 @Injectable()
 export class ChatService {
@@ -21,41 +22,44 @@ export class ChatService {
         text: string,
         user: DecodedUserTokenDto,
     ): Promise<GetChatResponseResponseDto> {
-        if (entityId !== user.idUser && entityId !== user.organization) {
+        if (entityId !== user.idUser && entityId !== user[CognitoAttribute.ORG]) {
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
-        // TODO: this may not be neccessary
-        return await this.prisma.$transaction(async (tx) => {
-            await tx.chatMessage.create({
-                data: {
-                    text,
-                    isSystemMessage: false,
-                    chatId,
-                },
-            });
-
-            const openai = new OpenAIWrapper(this.configService.get<string>('OPENAI_SECRET')!);
-
-            const questionVector = await openai.getTextEmbedding(text);
-            const queryResult = await new QdrantWrapper(
-                this.configService.get<string>('QDRANT_URL')!,
-                this.configService.get<number>('QDRANT_PORT')!,
-                this.configService.get<string>('QDRANT_COLLECTION')!,
-            ).query(questionVector, entityId);
-
-            const generatedResponse = await openai.getGptReponseFromSourceData(text, queryResult);
-
-            const savedResponse = await tx.chatMessage.create({
-                data: {
-                    text: generatedResponse,
-                    chatId,
-                    isSystemMessage: true,
-                },
-            });
-
-            return savedResponse;
+        // TODO: error handling
+        await this.prisma.chatMessage.create({
+            data: {
+                text,
+                isSystemMessage: false,
+                chatId,
+            },
         });
+
+        const openai = new OpenAIWrapper(this.configService.get<string>('OPENAI_SECRET')!);
+
+        const questionVector = await openai.getTextEmbedding(text);
+        const queryResult = await new QdrantWrapper(
+            this.configService.get<string>('QDRANT_URL')!,
+            this.configService.get<number>('QDRANT_PORT')!,
+            this.configService.get<string>('QDRANT_COLLECTION')!,
+        ).query(questionVector, entityId);
+
+        const generatedResponse = await openai.getGptReponseFromSourceData(text, queryResult);
+
+        const savedResponse = await this.prisma.chatMessage.create({
+            data: {
+                text: generatedResponse,
+                chatId,
+                isSystemMessage: true,
+            },
+        });
+
+        await this.prisma.chat.update({
+            where: { id: chatId },
+            data: { updatedAt: new Date() },
+        });
+
+        return savedResponse;
     }
 
     async startNewChat(params: StartNewChatQueryDto): Promise<StartNewChatResponseDto> {
@@ -69,7 +73,7 @@ export class ChatService {
         });
     }
 
-    async listChat(chatId: string, page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
+    async listChatMessages(chatId: string, page: number, user: DecodedUserTokenDto): Promise<ListChatMessagesResponseDto> {
         const chat = await this.prisma.chat.findUnique({
             where: { id: chatId },
             select: { associatedEntityId: true },
@@ -79,7 +83,7 @@ export class ChatService {
             throw new ResourceNotFoundError(chatId, 'Chat');
         }
 
-        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
+        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user[CognitoAttribute.ORG]) {
             throw new AccessDeniedError('User unauthorized to read this data');
         }
 
@@ -99,6 +103,55 @@ export class ChatService {
             page,
             size: pageSize,
             messages,
+        };
+    }
+
+    async listChats(page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
+        const associatedEntityId = user[CognitoAttribute.ORG] ?? user.idUser;
+
+        const pageSize = 20;
+        const chatsQuery = await this.prisma.chat.findMany({
+            where: {
+                associatedEntityId,
+                userId: user.idUser,
+            },
+            orderBy: {
+                updatedAt: 'desc',
+            },
+            take: pageSize,
+            skip: page * pageSize,
+            select: {
+                id: true,
+                title: true,
+                updatedAt: true,
+                gptMessages: {
+                    select: {
+                        text: true,
+                        isSystemMessage: true,
+                        createdAt: true,
+                    },
+                    take: 1,
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                },
+            },
+        });
+
+        const chats = chatsQuery.map((chat) => ({
+            id: chat.id,
+            title: chat.title,
+            lastMessage: {
+                timestamp: chat.gptMessages[0]?.createdAt ?? chat.updatedAt,
+                text: chat.gptMessages[0]?.text ?? '',
+                isSystemMessage: !!chat.gptMessages[0]?.isSystemMessage,
+            },
+        }));
+
+        return {
+            page,
+            size: pageSize,
+            chats,
         };
     }
 }
