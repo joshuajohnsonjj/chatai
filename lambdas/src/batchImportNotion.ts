@@ -1,11 +1,14 @@
 import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
 import type { NotionBlock, NotionBlockDetailResponse, NotionTable } from '@joshuajohnsonjj38/notion';
-import { Handler, SQSEvent } from 'aws-lambda';
-import { collectAllChildren, getTextFromBlock, getTextFromTable, publishToQdrant } from './utility';
+import type { Handler, SQSEvent } from 'aws-lambda';
+import { collectAllChildren, getTextFromBlock, getTextFromTable, isValidMessageBody, publishToQdrant } from './utility/notion';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { PrismaClient } from '@joshuajohnsonjj38/prisma';
+import * as dotenv from 'dotenv';
 
-const rsaService = new RsaCipher('./private.pem');
+dotenv.config({ path: __dirname + '/../.env' });
+
+const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 const prisma = new PrismaClient();
 
 const processBlockList = async (
@@ -89,8 +92,15 @@ export const handler: Handler = async (event: SQSEvent) => {
     const processingPagePromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
 
+    console.log(`Processing ${event.Records.length} messages`);
+
     for (const record of event.Records) {
         const messageBody = JSON.parse(record.body);
+
+        if (!isValidMessageBody(messageBody)) {
+            console.error('Skipping invalid message', messageBody);
+            continue;
+        }
 
         if (messageBody.isFinal) {
             completedDataSources.push(messageBody.dataSourceId);
@@ -112,16 +122,21 @@ export const handler: Handler = async (event: SQSEvent) => {
     }
 
     await Promise.all(processingPagePromises);
-    await prisma.dataSource.updateMany({
-        where: {
-            id: {
-                in: completedDataSources,
+
+    if (completedDataSources.length) {
+        console.log('Updating complete data source records', completedDataSources);
+
+        await prisma.dataSource.updateMany({
+            where: {
+                id: {
+                    in: completedDataSources,
+                },
             },
-        },
-        data: {
-            lastSync: new Date(),
-            isSyncing: false,
-            updatedAt: new Date(),
-        },
-    });
+            data: {
+                lastSync: new Date(),
+                isSyncing: false,
+                updatedAt: new Date(),
+            },
+        });
+    }
 };

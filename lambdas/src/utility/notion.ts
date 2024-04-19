@@ -5,6 +5,7 @@ import type {
     NotionCode,
     NotionEquation,
     NotionRichTextData,
+    NotionSQSMessageBody,
     NotionTable,
     NotionTableRow,
     NotionToDo,
@@ -13,12 +14,15 @@ import type {
 import { NotionBlockType } from '@joshuajohnsonjj38/notion';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
+import * as dotenv from 'dotenv';
 
-const openAI = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
+dotenv.config({ path: __dirname + '/../../.env' });
+
+const openAI = new OpenAIWrapper(process.env.GEMINI_KEY as string);
 const qdrant = new QdrantWrapper(
     process.env.QDRANT_HOST as string,
-    parseInt(process.env.QDRANT_PORT as string, 10),
     process.env.QDRANT_COLLECTION as string,
+    process.env.QDRANT_KEY as string,
 );
 
 export const getTextFromTable = (tableBlocks: NotionBlock[], parantTableSettings: NotionTable): string => {
@@ -125,4 +129,25 @@ export const publishToQdrant = async (
 
     const embedding = await openAI.getTextEmbedding(text);
     await qdrant.upsert(parentBlock.id, embedding, payload);
+};
+
+
+export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {
+    if (
+        'pageId' in body && typeof body.pageId === 'string' &&
+        'pageUrl' in body && typeof body.pageUrl === 'string' &&
+        'ownerEntityId' in body && typeof body.ownerEntityId === 'string' &&
+        'pageTitle' in body && typeof body.pageTitle === 'string' &&
+        'secret' in body && typeof body.secret === 'string' &&
+        typeof body.dataSourceId === 'string'
+    ) {
+        return true;
+    }
+    if (
+        'isFinal' in body && typeof body.isFinal === 'boolean' &&
+        typeof body.dataSourceId === 'string'
+    ) {
+        return true;
+    }
+    return false;
 };

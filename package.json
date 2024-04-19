@@ -5,7 +5,7 @@
   "workspaces": [
     "api/",
     "frontends/*",
-    "lambdas/*",
+    "lambdas/",
     "npm-packages/*"
   ],
   "scripts": {

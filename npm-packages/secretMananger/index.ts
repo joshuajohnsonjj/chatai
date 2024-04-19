@@ -1,20 +1,17 @@
 import NodeRSA from 'node-rsa';
-import fs from 'fs';
 
 export class RsaCipher {
     private readonly key?: NodeRSA;
 
-    constructor(privatePemFilePath?: string) {
-        if (privatePemFilePath) {
-            const pem = fs.readFileSync(privatePemFilePath, 'utf8');
-            this.key = new NodeRSA(pem);
+    constructor(privatePemStr?: string) {
+        if (privatePemStr) {
+            this.key = new NodeRSA(privatePemStr);
         }
     }
 
-    public encrypt(plainData: string, rsaPublicKeyFilePath: string): string {
+    public encrypt(plainData: string, publicPemStr: string): string {
         const tempKey = new NodeRSA();
-        const publicPem = fs.readFileSync(rsaPublicKeyFilePath, 'utf8');
-        tempKey.importKey(publicPem, 'pkcs8-public-pem');
+        tempKey.importKey(publicPemStr, 'pkcs8-public-pem');
         return tempKey.encrypt(plainData, 'base64');
     }
 

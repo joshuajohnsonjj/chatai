@@ -11,7 +11,7 @@ export interface IQdrantQueryResponse {
 
 export enum TQdrantPayloadKey {
     TEXT = 'text',
-    ENTITY_ID = 'ownerEntityId',
+    ENTITY_ID = 'ownerId',
     DATASOURCE_ID = 'dataSourceId',
 }
 

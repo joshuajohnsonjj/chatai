@@ -1,6 +1,6 @@
 {
   "name": "@joshuajohnsonjj38/secret-mananger",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc"
@@ -16,7 +16,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "fs": "^0.0.1-security",
     "node-rsa": "^1.1.1"
   }
 }

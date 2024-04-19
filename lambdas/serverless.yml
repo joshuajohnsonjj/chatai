@@ -1,0 +1,30 @@
+service: lambdas
+
+provider:
+    name: aws
+    runtime: nodejs20.x
+    stage: dev
+    region: us-east-1
+
+package:
+    individually: true
+
+plugins:
+    - serverless-webpack
+
+custom:
+    webpack:
+        webpackConfig: './webpack.config.js'
+        packager: 'yarn'
+
+        includeModules:
+            forceExclude:
+                - aws-sdk
+
+functions:
+    batchImportNotion:
+        handler: dist/batchImportNotion.handler
+        memorySize: 128
+        description: Handles notion sqs queue messages.
+        events:
+            - sqs: arn:aws:sqs:us-east-1:353643225333:BatchDataSourceSync.fifo

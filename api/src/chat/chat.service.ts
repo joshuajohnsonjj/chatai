@@ -35,13 +35,13 @@ export class ChatService {
             },
         });
 
-        const openai = new OpenAIWrapper(this.configService.get<string>('OPENAI_SECRET')!);
+        const openai = new OpenAIWrapper(this.configService.get<string>('GEMINI_KEY')!);
 
         const questionVector = await openai.getTextEmbedding(text);
         const queryResult = await new QdrantWrapper(
-            this.configService.get<string>('QDRANT_URL')!,
-            this.configService.get<number>('QDRANT_PORT')!,
+            this.configService.get<string>('QDRANT_HOST')!,
             this.configService.get<string>('QDRANT_COLLECTION')!,
+            this.configService.get<string>('QDRANT_KEY')!,
         ).query(questionVector, entityId);
 
         const generatedResponse = await openai.getGptReponseFromSourceData(text, queryResult);

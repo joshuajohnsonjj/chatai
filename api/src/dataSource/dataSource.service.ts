@@ -7,7 +7,7 @@ import type {
 } from './dto/dataSource.dto';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { DataSourceTypeName, EntityType } from '@prisma/client';
-import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
+import { NotionSQSMessageBody, NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
 import * as moment from 'moment';
 import { v4 } from 'uuid';
@@ -34,7 +34,9 @@ export class DataSourceService {
         region: this.configService.get<string>('AWS_REGION')!,
     });
 
-    private readonly rsaService = new RsaCipher(__dirname + '/../../private.pem');
+    private readonly rsaService = new RsaCipher(
+        this.configService.get<string>('RSA_PRIVATE_KEY')!
+    );
 
     constructor(
         private readonly prisma: PrismaService,
@@ -191,7 +193,7 @@ export class DataSourceService {
                             pageTitle: getPageTitle(page),
                             secret: encryptedSecret,
                             dataSourceId,
-                        }),
+                        } as NotionSQSMessageBody),
                         MessageGroupId: messageGroupId,
                     });
                 } else {

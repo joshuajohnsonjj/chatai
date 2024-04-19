@@ -1,0 +1,20 @@
+{
+  "Records": [
+    {
+      "messageId": "19dd0b57-b21e-4ac1-bd88-01bbb068cb78",
+      "receiptHandle": "MessageReceiptHandle",
+      "body": "{\"pageId\":\"4068c36d-b673-4575-a4eb-52be14539e8c\",\"pageTitle\":\"Chat.ai\",\"pageUrl\":\"https://www.notion.so/chat-ai-4068c36db6734575a4eb52be14539e8c\",\"ownerEntityId\":\"74284498-0011-7023-fc9c-67ab0f1e0a90\",\"dataSourceId\":\"f0967a92-d948-4334-8751-cf586856a149\",\"secret\":\"RbpMDiBN38ZFvT3QV7hrLTG1VGTF6RTJOAthw/9hd1B8yDVV0h34qyH2oQ6rMZRrAUDiSo7CNlanK/5aOuaYaAXxMF/+wZMfWGwpWlckGlF4uM8mq6YszuU9rx6LCUvFPWy4rGnKKqI0cbhJPKF8XWt6LnggPA0ppyF4uG4gDfCfDFnqUthP/PI8hmbl/eKWK3WclwzVMwO1IaP0GSTo6VUi3v6ODCSDWCHZ6KQSL2hoZGMBCp8XabmTaQXd+OVAPlz6JGh7f3fSz+ywVgzuEUWjw8sYNBNlJMaz920x+1YsWe4fk0lOrNtK6+MxBY5CgUBW1W/KiRhjZ489kjFGtQ==\"}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1523232000000",
+        "SenderId": "123456789012",
+        "ApproximateFirstReceiveTimestamp": "1523232000001"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "{{{md5_of_body}}}",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:353643225333:BatchDataSourceSync.fifo",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}

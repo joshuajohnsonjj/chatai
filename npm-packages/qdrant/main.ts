@@ -6,8 +6,8 @@ export class QdrantWrapper {
     private readonly client: QdrantClient;
     private readonly collection: string;
 
-    constructor(hostUrl: string, port: number, collection: string) {
-        this.client = new QdrantClient({ host: hostUrl, port });
+    constructor(hostUrl: string, collection: string, apiKey: string) {
+        this.client = new QdrantClient({ url: hostUrl, apiKey });
         this.collection = collection;
     }
 
@@ -18,7 +18,7 @@ export class QdrantWrapper {
                 must: [{ key: TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
             },
             with_payload: true,
-            limit: 3,
+            limit: 5,
         });
 
         return compact(searchResult.map((result) => result.payload?.text)) as string[];

@@ -5,9 +5,14 @@
 
 **/*.tmp
 
-**/event.json
+**/.aws-sam
+
+**/*.zip
 
 **/*.pem
+
+.DS_Store
+**/.DS_Store
 
 # Logs
 logs

@@ -6,13 +6,13 @@ import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import { createClient } from 'redis';
 
-const rsaService = new RsaCipher('./private.pem');
+const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 const prisma = new PrismaClient();
 const openAI = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
 const qdrant = new QdrantWrapper(
     process.env.QDRANT_HOST as string,
-    parseInt(process.env.QDRANT_PORT as string, 10),
     process.env.QDRANT_COLLECTION as string,
+    process.env.QDRANT_KEY as string,
 );
 const redisClient = createClient({
     url: process.env.REDIS_URL,

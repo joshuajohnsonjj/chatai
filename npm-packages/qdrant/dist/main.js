@@ -17,7 +17,7 @@ const js_client_rest_1 = require("@qdrant/js-client-rest");
 const types_1 = require("./types");
 const compact_1 = __importDefault(require("lodash/compact"));
 class QdrantWrapper {
-    constructor(hostUrl, port, collection) {
+    constructor(hostUrl, collection, apiKey) {
         this.query = (vectorizedQuery, entityId) => __awaiter(this, void 0, void 0, function* () {
             const searchResult = yield this.client.search(this.collection, {
                 vector: vectorizedQuery,
@@ -59,7 +59,7 @@ class QdrantWrapper {
                 },
             });
         });
-        this.client = new js_client_rest_1.QdrantClient({ host: hostUrl, port });
+        this.client = new js_client_rest_1.QdrantClient({ url: hostUrl, apiKey });
         this.collection = collection;
     }
 }

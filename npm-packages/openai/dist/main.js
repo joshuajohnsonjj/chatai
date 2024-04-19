@@ -58,7 +58,8 @@ class OpenAIWrapper {
         let constructedPrompt = '';
         for (let i = 1; i < sourceData.length; i++) {
             if (('\n\n---\n\n' + sourceData.slice(0, i).join('\n\n---\n\n')).length >= limit) {
-                constructedPrompt = prompt_start + '\n\n---\n\n' + sourceData.slice(0, i - 1).join('\n\n---\n\n') + prompt_end;
+                constructedPrompt =
+                    prompt_start + '\n\n---\n\n' + sourceData.slice(0, i - 1).join('\n\n---\n\n') + prompt_end;
                 break;
             }
             else if (i === sourceData.length - 1) {

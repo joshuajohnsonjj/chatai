@@ -163,3 +163,25 @@ export interface NotionRichTextData {
     plain_text: string;
     href: string | null;
 }
+
+/**
+ *
+ * SQS types
+ *
+ */
+
+export type NotionSQSMessageBody = NotionSQSBaseBody | NotionSQSFinalBody;
+
+export interface NotionSQSBaseBody {
+    pageId: string;
+    pageUrl: string;
+    ownerEntityId: string;
+    pageTitle: string;
+    secret: string;
+    dataSourceId: string;
+}
+
+export interface NotionSQSFinalBody {
+    isFinal: boolean;
+    dataSourceId: string;
+}
