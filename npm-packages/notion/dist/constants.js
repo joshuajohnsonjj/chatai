@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ImportableBlockTypes = exports.NotionEndpointMethods = exports.NotionEndpoints = exports.NotionHeaders = exports.NotionBaseUrl = void 0;
+exports.JoinableBlockTypes = exports.ImportableBlockTypes = exports.NotionEndpointMethods = exports.NotionEndpoints = exports.NotionHeaders = exports.NotionBaseUrl = void 0;
 exports.NotionBaseUrl = 'https://api.notion.com';
 exports.NotionHeaders = {
     'Content-Type': 'application/json',
@@ -35,4 +35,21 @@ exports.ImportableBlockTypes = [
     'table_row',
     'to_do',
     'toggle',
+];
+/**
+ * Blocks of these types w/o an empty
+ * paragraph between (i.e. new line),
+ * should joined into one record
+ */
+exports.JoinableBlockTypes = [
+    'bulleted_list_item',
+    'embed',
+    'equation',
+    'heading_1',
+    'heading_2',
+    'heading_3',
+    'numbered_list_item',
+    'paragraph',
+    'quote',
+    'to_do',
 ];

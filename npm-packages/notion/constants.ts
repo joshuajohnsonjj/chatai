@@ -38,3 +38,21 @@ export const ImportableBlockTypes = [
     'to_do',
     'toggle',
 ];
+
+/**
+ * Blocks of these types w/o an empty
+ * paragraph between (i.e. new line),
+ * should joined into one record
+ */
+export const JoinableBlockTypes = [
+    'bulleted_list_item',
+    'embed',
+    'equation',
+    'heading_1',
+    'heading_2',
+    'heading_3',
+    'numbered_list_item',
+    'paragraph',
+    'quote',
+    'to_do',
+];

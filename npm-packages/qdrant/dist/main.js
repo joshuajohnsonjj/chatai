@@ -25,7 +25,7 @@ class QdrantWrapper {
                     must: [{ key: types_1.TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
                 },
                 with_payload: true,
-                limit: 3,
+                limit: 5,
             });
             return (0, compact_1.default)(searchResult.map((result) => { var _a; return (_a = result.payload) === null || _a === void 0 ? void 0 : _a.text; }));
         });

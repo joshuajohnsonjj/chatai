@@ -4,6 +4,7 @@ import type {
     NotionBlockDetailResponse,
     NotionCode,
     NotionEquation,
+    NotionParagraph,
     NotionRichTextData,
     NotionSQSMessageBody,
     NotionTable,
@@ -11,9 +12,10 @@ import type {
     NotionToDo,
     NotionWrapper,
 } from '@joshuajohnsonjj38/notion';
-import { NotionBlockType } from '@joshuajohnsonjj38/notion';
+import { JoinableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
+import { DynamoDBClient } from '@joshuajohnsonjj38/dynamo';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: __dirname + '/../../.env' });
@@ -24,7 +26,16 @@ const qdrant = new QdrantWrapper(
     process.env.QDRANT_COLLECTION as string,
     process.env.QDRANT_KEY as string,
 );
+const dynamo = new DynamoDBClient(
+    process.env.AWS_ACCESS_KEY as string,
+    process.env.AWS_SECRET as string,
+    process.env.AWS_REGION as string,
+);
 
+/**
+ * Takes Notion block table data and converts into a
+ * Markdown table formatted string
+ */
 export const getTextFromTable = (tableBlocks: NotionBlock[], parantTableSettings: NotionTable): string => {
     const stringifyTableRow = (row: NotionTableRow): string => {
         return (
@@ -79,6 +90,11 @@ export const getTextFromBlock = (block: NotionBlock): string => {
     }
 };
 
+/**
+ * Starting with a parent block, recursively retreives the tree of
+ * child blocks via DFS traversal and returns all children as
+ * array of Notion blocks
+ */
 export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: NotionWrapper): Promise<NotionBlock[]> => {
     const allChildren: NotionBlock[] = [rootBlock];
 
@@ -96,18 +112,17 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
                 nextCursor = blockResponse.next_cursor;
             }
 
-            for (const child of children) {
-                allChildren.push(child);
-                await collectChildren(child);
-            }
+            allChildren.push(...children);
+            await Promise.all(children.map((child) => collectChildren(child)));
         }
     };
 
     await collectChildren(rootBlock);
+
     return allChildren;
 };
 
-export const publishToQdrant = async (
+export const publishBlockData = async (
     aggregatedBlockText: string,
     parentBlock: NotionBlock,
     pageTitle: string,
@@ -121,33 +136,70 @@ export const publishToQdrant = async (
     const text = `Page Title: ${pageTitle}, Page Excerpt: ${aggregatedBlockText}`;
     const payload: QdrantPayload = {
         date: new Date(parentBlock.last_edited_time).getTime(),
-        text,
-        url: pageUrl,
         dataSource: QdrantDataSource.NOTION,
         ownerId,
     };
 
     const embedding = await openAI.getTextEmbedding(text);
-    await qdrant.upsert(parentBlock.id, embedding, payload);
+    await Promise.all([
+        qdrant.upsert(parentBlock.id, embedding, payload),
+        dynamo.putItem({
+            id: parentBlock.id,
+            ownerEntityId: ownerId,
+            text,
+            createdAt: new Date().toISOString(),
+            url: pageUrl,
+        }),
+    ]);
 };
-
 
 export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {
     if (
-        'pageId' in body && typeof body.pageId === 'string' &&
-        'pageUrl' in body && typeof body.pageUrl === 'string' &&
-        'ownerEntityId' in body && typeof body.ownerEntityId === 'string' &&
-        'pageTitle' in body && typeof body.pageTitle === 'string' &&
-        'secret' in body && typeof body.secret === 'string' &&
+        'pageId' in body &&
+        typeof body.pageId === 'string' &&
+        'pageUrl' in body &&
+        typeof body.pageUrl === 'string' &&
+        'ownerEntityId' in body &&
+        typeof body.ownerEntityId === 'string' &&
+        'pageTitle' in body &&
+        typeof body.pageTitle === 'string' &&
+        'secret' in body &&
+        typeof body.secret === 'string' &&
         typeof body.dataSourceId === 'string'
     ) {
         return true;
     }
-    if (
-        'isFinal' in body && typeof body.isFinal === 'boolean' &&
-        typeof body.dataSourceId === 'string'
-    ) {
+    if ('isFinal' in body && typeof body.isFinal === 'boolean' && typeof body.dataSourceId === 'string') {
         return true;
     }
     return false;
+};
+
+export const isNewLineBlock = (block: NotionBlock): boolean =>
+    block.type === NotionBlockType.PARAGRAPH && !(block[NotionBlockType.PARAGRAPH] as NotionParagraph).rich_text.length;
+
+export const shouldConnectToCurrentBlockGroup = (blockGroup: NotionBlock[], currentBlock: NotionBlock): boolean => {
+    if (!blockGroup.length || !JoinableBlockTypes.includes(currentBlock.type)) {
+        return false;
+    }
+
+    const currentGroupBlockTypes = blockGroup.map((block) => block.type);
+
+    if (
+        (currentBlock.type === NotionBlockType.HEADING_1 &&
+            currentGroupBlockTypes.includes(NotionBlockType.HEADING_1)) ||
+        (currentBlock.type === NotionBlockType.HEADING_2 &&
+            currentGroupBlockTypes.includes(NotionBlockType.HEADING_1)) ||
+        (currentBlock.type === NotionBlockType.HEADING_2 &&
+            currentGroupBlockTypes.includes(NotionBlockType.HEADING_2)) ||
+        (currentBlock.type === NotionBlockType.HEADING_3 &&
+            currentGroupBlockTypes.includes(NotionBlockType.HEADING_3)) ||
+        (currentBlock.type === NotionBlockType.HEADING_3 &&
+            currentGroupBlockTypes.includes(NotionBlockType.HEADING_2)) ||
+        (currentBlock.type === NotionBlockType.HEADING_3 && currentGroupBlockTypes.includes(NotionBlockType.HEADING_1))
+    ) {
+        return false;
+    }
+
+    return true;
 };

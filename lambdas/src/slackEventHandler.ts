@@ -50,12 +50,12 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
 
     const payload: QdrantPayload = {
         date: new Date(messageData.event.ts).getTime(),
-        text: messageData.event.text,
+        // text: messageData.event.text,
         dataSource: QdrantDataSource.SLACK,
         ownerId: dataSource.ownerEntityId,
-        slackChannelId: messageData.event.channel,
-        slackChannelName: channelInfo.name,
-        authorName: userInfo.real_name,
+        // slackChannelId: messageData.event.channel,
+        // slackChannelName: channelInfo.name,
+        // authorName: userInfo.real_name,
     };
 
     const embedding = await openAI.getTextEmbedding(messageData.event.text);

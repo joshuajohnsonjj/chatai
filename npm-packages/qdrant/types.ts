@@ -21,15 +21,7 @@ export enum QdrantDataSource {
 }
 
 export interface QdrantPayload {
-    text: string;
     date: number; // Unix timestamp
     dataSource: QdrantDataSource;
     ownerId: string;
-
-    url?: string;
-    authorName?: string;
-
-    // slack specific fields
-    slackChannelId?: string;
-    slackChannelName?: string;
 }

@@ -34,9 +34,7 @@ export class DataSourceService {
         region: this.configService.get<string>('AWS_REGION')!,
     });
 
-    private readonly rsaService = new RsaCipher(
-        this.configService.get<string>('RSA_PRIVATE_KEY')!
-    );
+    private readonly rsaService = new RsaCipher(this.configService.get<string>('RSA_PRIVATE_KEY')!);
 
     constructor(
         private readonly prisma: PrismaService,

@@ -29,12 +29,12 @@ const processMessages = async (
         messages.map(async (message) => {
             const payload: QdrantPayload = {
                 date: new Date(message.ts).getTime(),
-                text: message.text,
+                // text: message.text,
                 dataSource: QdrantDataSource.SLACK,
                 ownerId,
-                slackChannelId: channelId,
-                slackChannelName: channelName,
-                authorName: (await slackAPI.getUserInfoById(message.user)).real_name,
+                // slackChannelId: channelId,
+                // slackChannelName: channelName,
+                // authorName: (await slackAPI.getUserInfoById(message.user)).real_name,
             };
 
             const embedding = await openAI.getTextEmbedding(message.text);
