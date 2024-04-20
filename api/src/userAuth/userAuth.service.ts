@@ -248,7 +248,7 @@ export class UserAuthService {
                     resolve({
                         success: true,
                         refreshToken: result.getRefreshToken().getToken(),
-                        accessToken: result.getAccessToken().getJwtToken(),
+                        accessToken: result.getIdToken().getJwtToken(),
                     });
                 }
             });
