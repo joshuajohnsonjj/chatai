@@ -1,71 +1,89 @@
-import { DynamoDB } from 'aws-sdk';
-import { DeleteItemOutput, GetItemOutput, PutItemOutput, QueryOutput } from 'aws-sdk/clients/dynamodb';
 import { DynamoAttributes, DynamoDataStoreDocument, DynamoTables } from './types';
+import {
+    BatchGetItemCommand,
+    BatchGetItemCommandOutput,
+    DeleteItemCommand,
+    DeleteItemCommandOutput,
+    DynamoDBClient,
+    PutItemCommand,
+    PutItemCommandOutput,
+    QueryCommand,
+    QueryCommandOutput,
+} from '@aws-sdk/client-dynamodb';
 
-export class DynamoDBClient {
-    private readonly client: DynamoDB.DocumentClient;
+export class DynamoClient {
+    private readonly client: DynamoDBClient;
 
     private readonly table = DynamoTables.ImportsDataStore;
 
-    constructor(accessKeyId: string, secretAccessKey: string, region: string) {
-        this.client = new DynamoDB.DocumentClient({
-            apiVersion: '2012-11-05',
-            accessKeyId,
-            secretAccessKey,
+    constructor(region: string) {
+        this.client = new DynamoDBClient({
             region,
         });
     }
 
-    public async queryByAttr(attributeName: DynamoAttributes, attributeValue: string): Promise<QueryOutput> {
-        const params = {
-            ExpressionAttributeNames: {
-                [`#${attributeName}`]: attributeName,
-            },
+    public async queryByAttr(attributeName: DynamoAttributes, attributeValue: string): Promise<QueryCommandOutput> {
+        const input = {
+            TableName: this.table,
             ExpressionAttributeValues: {
-                [`:${attributeName}`]: attributeValue,
+                ':v1': {
+                    S: attributeValue,
+                },
             },
-            FilterExpression: `#${attributeName} = :${attributeName}`,
-            TableName: this.table,
-        };
-        return this.client.query(params).promise();
-    }
-
-    public async getItemById(documentId: string): Promise<GetItemOutput> {
-        const params = {
-            TableName: this.table,
-            Key: { [DynamoAttributes.ID]: documentId },
+            KeyConditionExpression: `${attributeName} = :v1`,
         };
 
-        return this.client.get(params).promise();
+        return this.client.send(new QueryCommand(input));
     }
 
-    public async batchGetByIds(documentIds: string[]): Promise<DynamoDB.DocumentClient.BatchGetItemOutput> {
-        const queryParams = {
+    public async getItemById(documentId: string): Promise<QueryCommandOutput> {
+        const input = {
+            TableName: this.table,
+            ExpressionAttributeValues: {
+                ':v1': {
+                    S: documentId,
+                },
+            },
+            KeyConditionExpression: `${DynamoAttributes.ID} = :v1`,
+        };
+
+        return this.client.send(new QueryCommand(input));
+    }
+
+    public async batchGetByIds(documentIds: string[]): Promise<BatchGetItemCommandOutput> {
+        const input = {
             RequestItems: {
                 [this.table]: {
-                    Keys: documentIds.map((id) => ({ id: {S: id }})),
+                    Keys: documentIds.map((id) => ({ id: { S: id } })),
                 },
             },
         };
 
-        return this.client.batchGet(queryParams).promise();
+        return this.client.send(new BatchGetItemCommand(input));
     }
 
-    public async putItem(item: DynamoDataStoreDocument): Promise<PutItemOutput> {
-        const params = {
+    public async putItem(item: DynamoDataStoreDocument): Promise<PutItemCommandOutput> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data: any = {};
+        Object.values(item).forEach(([key, val]: string[]) => {
+            data[key] = { S: val };
+        });
+        const input = {
             TableName: this.table,
-            Item: item,
+            Item: data,
         };
-        return this.client.put(params).promise();
+
+        return this.client.send(new PutItemCommand(input));
     }
 
-    public async deleteItemById(documentId: string): Promise<DeleteItemOutput> {
-        const params = {
+    public async deleteItemById(documentId: string): Promise<DeleteItemCommandOutput> {
+        const input = {
             TableName: this.table,
             Key: {
-                [DynamoAttributes.ID]: documentId,
+                [DynamoAttributes.ID]: { S: documentId },
             },
         };
-        return this.client.delete(params).promise();
+
+        return this.client.send(new DeleteItemCommand(input));
     }
 }

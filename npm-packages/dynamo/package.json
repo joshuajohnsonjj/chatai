@@ -15,5 +15,8 @@
   },
   "description": "Node wrapper dynamo db",
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.556.0"
+  }
 }
