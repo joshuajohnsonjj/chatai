@@ -34,7 +34,7 @@ export class UserAuthService {
             ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
         });
     }
-
+    // TODO: resend confirmation code endpoint
     async register(authRegisterRequest: RegisterRequestDto) {
         const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
         return await new Promise((resolve, reject) => {
@@ -142,13 +142,21 @@ export class UserAuthService {
         });
     }
 
-    updateAttributes(email: string, updates: CognitoUserAttribute[]) {
+    async updateAttributes(email: string, updates: CognitoUserAttribute[]): Promise<void> {
         const user = new CognitoUser({
             Username: email,
             Pool: this.userPool,
         });
 
-        user.updateAttributes(updates, () => {});
+        await new Promise((resolve, reject) => {
+            user.updateAttributes(updates, async (err, result) => {
+                if (!result) {
+                    reject(err);
+                } else {
+                    resolve({});
+                }
+            });
+        });
     }
 
     async authenticate(user: AuthenticateRequestDto) {

@@ -21,16 +21,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
-import { type AWSError, SQS } from 'aws-sdk';
-import type { SendMessageBatchRequest, SendMessageBatchRequestEntryList } from 'aws-sdk/clients/sqs';
-import type { PromiseResult } from 'aws-sdk/lib/request';
+import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
+import type {
+    SendMessageBatchCommandOutput,
+    SendMessageBatchRequest,
+    SendMessageBatchRequestEntry,
+} from '@aws-sdk/client-sqs';
 
 @Injectable()
 export class DataSourceService {
-    private readonly sqsClient = new SQS({
-        apiVersion: '2012-11-05',
-        accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY')!,
-        secretAccessKey: this.configService.get<string>('AWS_SECRET')!,
+    private readonly sqsClient = new SQSClient({
         region: this.configService.get<string>('AWS_REGION')!,
     });
 
@@ -173,7 +173,7 @@ export class DataSourceService {
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const notionService = new NotionWrapper(decryptedSecret);
         const messageGroupId = v4();
-        const messageBatchEntries: SendMessageBatchRequestEntryList = [];
+        const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
         let isComplete = false;
         let nextCursor: string | null = null;
@@ -218,7 +218,7 @@ export class DataSourceService {
         const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
         const slackService = new SlackWrapper(decryptedSecret);
         const messageGroupId = v4();
-        const messageBatchEntries: SendMessageBatchRequestEntryList = [];
+        const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
         let isComplete = false;
         let nextCursor: string | null = null;
@@ -253,24 +253,26 @@ export class DataSourceService {
     }
 
     private async sendSqsMessageBatches(
-        messageBatchEntries: SendMessageBatchRequestEntryList,
+        messageBatchEntries: SendMessageBatchRequestEntry[],
         url: string,
         dataSourceId: string,
     ): Promise<void> {
         const maxMessageBatchSize = 10;
         const messageGrouoId = messageBatchEntries[0].MessageGroupId;
-        const messagePromises: Promise<PromiseResult<SQS.SendMessageBatchResult, AWSError>>[] = [];
+        const messagePromises: Promise<SendMessageBatchCommandOutput>[] = [];
+
         for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
             const sqsMessageBatchInput: SendMessageBatchRequest = {
                 QueueUrl: url,
                 Entries: messageBatchEntries.slice(i, i + maxMessageBatchSize),
             };
-            messagePromises.push(this.sqsClient.sendMessageBatch(sqsMessageBatchInput).promise());
+
+            messagePromises.push(this.sqsClient.send(new SendMessageBatchCommand(sqsMessageBatchInput)));
         }
 
         messagePromises.push(
-            this.sqsClient
-                .sendMessageBatch({
+            this.sqsClient.send(
+                new SendMessageBatchCommand({
                     QueueUrl: url,
                     Entries: [
                         {
@@ -279,8 +281,8 @@ export class DataSourceService {
                             MessageGroupId: messageGrouoId,
                         },
                     ],
-                })
-                .promise(),
+                }),
+            ),
         );
 
         await Promise.all(messagePromises);

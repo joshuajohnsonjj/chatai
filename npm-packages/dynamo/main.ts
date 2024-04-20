@@ -16,7 +16,7 @@ export class DynamoDBClient {
         });
     }
 
-    queryByAttr(attributeName: DynamoAttributes, attributeValue: string): Promise<QueryOutput> {
+    public async queryByAttr(attributeName: DynamoAttributes, attributeValue: string): Promise<QueryOutput> {
         const params = {
             ExpressionAttributeNames: {
                 [`#${attributeName}`]: attributeName,
@@ -30,7 +30,7 @@ export class DynamoDBClient {
         return this.client.query(params).promise();
     }
 
-    getItemById(documentId: string): Promise<GetItemOutput> {
+    public async getItemById(documentId: string): Promise<GetItemOutput> {
         const params = {
             TableName: this.table,
             Key: { [DynamoAttributes.ID]: documentId },
@@ -39,7 +39,19 @@ export class DynamoDBClient {
         return this.client.get(params).promise();
     }
 
-    putItem(item: DynamoDataStoreDocument): Promise<PutItemOutput> {
+    public async batchGetByIds(documentIds: string[]): Promise<DynamoDB.DocumentClient.BatchGetItemOutput> {
+        const queryParams = {
+            RequestItems: {
+                [this.table]: {
+                    Keys: documentIds.map((id) => ({ id: {S: id }})),
+                },
+            },
+        };
+
+        return this.client.batchGet(queryParams).promise();
+    }
+
+    public async putItem(item: DynamoDataStoreDocument): Promise<PutItemOutput> {
         const params = {
             TableName: this.table,
             Item: item,
@@ -47,7 +59,7 @@ export class DynamoDBClient {
         return this.client.put(params).promise();
     }
 
-    deleteItemById(documentId: string): Promise<DeleteItemOutput> {
+    public async deleteItemById(documentId: string): Promise<DeleteItemOutput> {
         const params = {
             TableName: this.table,
             Key: {

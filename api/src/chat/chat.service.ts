@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
+import { DynamoDBClient } from '@joshuajohnsonjj38/dynamo';
 import type { GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
@@ -11,6 +12,18 @@ import { CognitoAttribute } from 'src/types';
 
 @Injectable()
 export class ChatService {
+    private readonly qdrant = new QdrantWrapper(
+        this.configService.get<string>('QDRANT_HOST')!,
+        this.configService.get<string>('QDRANT_COLLECTION')!,
+        this.configService.get<string>('QDRANT_KEY')!,
+    );
+
+    private readonly dynamdo = new DynamoDBClient(
+        this.configService.get<string>('AWS_ACCESS_KEY')!,
+        this.configService.get<string>('AWS_SECRET')!,
+        this.configService.get<string>('AWS_REGION')!,
+    );
+
     constructor(
         private readonly prisma: PrismaService,
         private configService: ConfigService,
@@ -26,38 +39,33 @@ export class ChatService {
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
-        // TODO: error handling
-        await this.prisma.chatMessage.create({
-            data: {
-                text,
-                isSystemMessage: false,
-                chatId,
-            },
-        });
-
         const openai = new OpenAIWrapper(this.configService.get<string>('GEMINI_KEY')!);
 
         const questionVector = await openai.getTextEmbedding(text);
-        const queryResult = await new QdrantWrapper(
-            this.configService.get<string>('QDRANT_HOST')!,
-            this.configService.get<string>('QDRANT_COLLECTION')!,
-            this.configService.get<string>('QDRANT_KEY')!,
-        ).query(questionVector, entityId);
+        const queryResult = await this.qdrant.query(questionVector, entityId);
 
         const generatedResponse = await openai.getGptReponseFromSourceData(text, queryResult);
 
-        const savedResponse = await this.prisma.chatMessage.create({
-            data: {
-                text: generatedResponse,
-                chatId,
-                isSystemMessage: true,
-            },
-        });
-
-        await this.prisma.chat.update({
-            where: { id: chatId },
-            data: { updatedAt: new Date() },
-        });
+        const [, savedResponse] = await Promise.all([
+            this.prisma.chatMessage.create({
+                data: {
+                    text,
+                    isSystemMessage: false,
+                    chatId,
+                },
+            }),
+            this.prisma.chatMessage.create({
+                data: {
+                    text: generatedResponse,
+                    chatId,
+                    isSystemMessage: true,
+                },
+            }),
+            this.prisma.chat.update({
+                where: { id: chatId },
+                data: { updatedAt: new Date() },
+            }),
+        ]);
 
         return savedResponse;
     }

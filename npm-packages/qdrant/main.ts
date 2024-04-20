@@ -17,11 +17,11 @@ export class QdrantWrapper {
             filter: {
                 must: [{ key: TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
             },
-            with_payload: true,
-            limit: 5,
+            with_payload: false,
+            limit: 3,
         });
 
-        return compact(searchResult.map((result) => result.payload?.text)) as string[];
+        return compact(searchResult.map((result) => result.id)) as string[];
     };
 
     public upsert = async (recordId: string, vectorizedText: number[], payload: QdrantPayload): Promise<void> => {

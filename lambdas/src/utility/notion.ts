@@ -122,6 +122,10 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
     return allChildren;
 };
 
+/**
+ * Publishes text embeddings to Qdrant and saves text
+ * with other relevant metadata in Dynamo.
+ */
 export const publishBlockData = async (
     aggregatedBlockText: string,
     parentBlock: NotionBlock,

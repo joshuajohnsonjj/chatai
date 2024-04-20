@@ -16,15 +16,55 @@ custom:
     webpack:
         webpackConfig: './webpack.config.js'
         packager: 'yarn'
-
-        includeModules:
-            forceExclude:
-                - aws-sdk
+        includeModules: true
 
 functions:
     batchImportNotion:
-        handler: dist/batchImportNotion.handler
+        handler: dist/handlers/batchImportNotion.handler
         memorySize: 128
         description: Handles notion sqs queue messages.
         events:
             - sqs: arn:aws:sqs:us-east-1:353643225333:BatchDataSourceSync.fifo
+        environment:
+            NODE_ENV: dev
+            QDRANT_KEY: dduFZs6HsXyQKb1oBst_h8eRq97QmNKukFJ3ZYebuiWCObDVRgIEZw
+            QDRANT_HOST: https://907a95c5-fea2-4796-a63b-dbc7ec7f59dc.us-east4-0.gcp.cloud.qdrant.io
+            QDRANT_COLLECTION: dataSourceEmbeddings
+            GEMINI_KEY: "AIzaSyAQ_IXSXo6-rGGRZon3XD5Fv8wRqDmmtbk"
+            AWS_COGNITO_USER_POOL_ID: us-east-1_gaCHPbq7a
+            AWS_REGION: us-east-1
+            AWS_COGNITO_CLIENT_ID: "1omdalr5q95a8cbkpts83e47pb"
+            AWS_ACCESS_KEY: AKIAVEVWHMD22OVNEPFI
+            AWS_SECRET: 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
+            SQS_NOTION_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/353643225333/BatchDataSourceSync.fifo
+            SQS_SLACK_QUEUE_URL: 
+            STRIPE_KEY: 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
+            DATABASE_URL: postgresql://joshua_admin:Welcometosportsinfosolutions2023!@localhost:5432/chat_ai_db
+            RSA_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----
+            MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCs6BzWjUIpiACs
+            tGaYtKTa2ryz9lH5/tpCzzCnIxa255sqXo8Hotp5KydCNeZSrobcCVr4EFTE/rt8
+            5ANzH4LKZUDaCqH4b/Yha1jjCN2+UHliyeC166/XXer6HYlO3NSSfzbxHjO2YbRH
+            KlDgpBHODoFXlnYkelqWrqFycuHBWGp1kKLkIvIPtsOvThiiihlcn8qxEGXC75nI
+            QXOYmxF69uO4OscNjLn7kAZOTyi85zJ8gKX1yYEKaNPuazJi2KSINAJbUiNp9fxw
+            1fzoJKLpNtTzI/FF7W5g5WnHlLh0jS00aTbcUuAMJaGxRY2GKutsyGcvFgzJuv73
+            98k4F1vlAgMBAAECggEAdCjLluf3VudjbKMVeemCBvWEaHJGyGiKQO/og6BzFhWq
+            jGBSPpMNqvFuwnBrd4iAWTp/vr9Z864eTtzv5Ft7BnXXh6Q1BC5TcEgpwvyl28E8
+            iz2MlSrtSwZxYe6N3ElHFdQZGQttOk2RS24GP6R5wbDE/A689+yrByfylmzPdY/Q
+            jGHlktMYfM/kEym17VK3iqI8uEUEdEdFZt9j6Ekg/ct47o3Oww9X8UNigErFLOP7
+            3c2Wws54b60Euf7epJuz+wyOEhTf8hAzEPvf3DNOC8fTUCM00y4nJcvvpj1piVXt
+            CBhW7TQVpZeZUl7jNzG1FYkCSThCaVXJDYKyC6XXAQKBgQDn+Zry3ypeSCVCFFT5
+            gna8/BDKhvoWERR6B8D2cNaa3N7UF825sMSru1/cGGpoM8KnLx8bvZJPYAS4LZVq
+            jfCGE3oeaMtOW1Vab+4zZ3T6baYVWWQiV2oFq9bsw4jqEldn6r4HK0iZCKLVm6Gv
+            bKX+1MKxTPgezUsC/P8mEHNoUQKBgQC+0GsVDDNIxfYdamxnoDkaesh/fKp7vNvJ
+            6vFpyIsgCNhdb5d3jZZt1lhhE+36Gd6+IjqmPjt0YU5iF0mCIXVKiXgWVPvOzpMF
+            Nwhjy5rUSF0k9Xa/5KhsDoMMdUJwuzKv1QukgdUR5/dfS7asjFaXwNnezeQW3T9W
+            jQJcmZTpVQKBgHN1VbzqfGD+0aSJEB475DN91jGnatQO3j06nL1MPlRH+JRh4KA6
+            rji3gye980A3+vtRRc991FOze8Xb0lF9oihpi0+VYxN1/A6ORWXKaXu3lYFsw50g
+            GwIFnGytifjO9jgfq0NQNMsOdFWTJ69ziU9DwD+VCq3yChLLr4bXi0lxAoGABfZ9
+            Yir/b0bAairpOFPJdQphOZqruTItrCGraaLatiWQnVrfYN0L1mLcYCw/Q5GLZGWt
+            b4SCVyCzUl1n7qkdATdKiWgedlf+QCt4F6ZFMF0SjBUfoN+EY9wQPFNtwBgZfWUq
+            9/kWr3iQQmobS0kXa6abKFtGxXAkio/dgwdJoAECgYEAzlriJp/8jTbCLDg+EyGU
+            xT4H8xVj0lMZfNuxAHf+63K38W/DwsQ3X7vok7zCfCJ/ZEJLkOBw2sEAgj2CHv6r
+            IvnJEUINExaiBqIHIGjt4iCe017yfWJTc88GJghaNF9Ceczo7PdUxOhqKekJvNGg
+            EFuAl5K+Mfyz12qM4acHn2c=
+            -----END PRIVATE KEY-----"
