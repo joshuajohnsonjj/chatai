@@ -20,36 +20,6 @@ export class DynamoClient {
         });
     }
 
-    public async queryByAttr(
-        attributeName: DynamoAttributes,
-        attributeValue: string,
-        id: string,
-    ): Promise<DynamoDataStoreDocument[]> {
-        const input = {
-            TableName: this.table,
-            ExpressionAttributeValues: {
-                ':value': { S: attributeValue },
-                ':id': { S: id },
-            },
-            KeyConditionExpression: `${DynamoAttributes.ID} = :id`,
-            FilterExpression: `#${attributeName} = :value`,
-            ExpressionAttributeNames: {
-                [`#${attributeName}`]: attributeName,
-            },
-        };
-
-        const queryRes = await this.client.send(new QueryCommand(input));
-        const queryItems = queryRes.Items ?? [];
-
-        if (!queryItems.length) {
-            return [];
-        }
-
-        return queryItems.map((item) =>
-            Object.fromEntries(Object.entries(item).map(([key, val]) => [key, val.S])),
-        ) as unknown as DynamoDataStoreDocument[];
-    }
-
     public async getItemById(documentId: string): Promise<DynamoDataStoreDocument | null> {
         const input = {
             TableName: this.table,
