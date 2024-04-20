@@ -1,5 +1,5 @@
 export enum DynamoTables {
-    ImportsDataStore = 'ImportsDataStore',
+    ImportsDataStore = 'DataSourceStore',
 }
 
 export enum DynamoAttributes {
