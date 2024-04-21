@@ -15,7 +15,7 @@ import type {
 import { JoinableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
-import { DynamoDBClient } from '@joshuajohnsonjj38/dynamo';
+import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: __dirname + '/../../.env' });
@@ -26,11 +26,7 @@ const qdrant = new QdrantWrapper(
     process.env.QDRANT_COLLECTION as string,
     process.env.QDRANT_KEY as string,
 );
-const dynamo = new DynamoDBClient(
-    process.env.AWS_ACCESS_KEY as string,
-    process.env.AWS_SECRET as string,
-    process.env.AWS_REGION as string,
-);
+const dynamo = new DynamoClient(process.env.AWS_REGION as string);
 
 /**
  * Takes Notion block table data and converts into a

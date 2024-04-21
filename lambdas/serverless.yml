@@ -34,8 +34,8 @@ functions:
             AWS_COGNITO_USER_POOL_ID: us-east-1_gaCHPbq7a
             AWS_REGION: us-east-1
             AWS_COGNITO_CLIENT_ID: '1omdalr5q95a8cbkpts83e47pb'
-            AWS_ACCESS_KEY: AKIAVEVWHMD22OVNEPFI
-            AWS_SECRET: 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
+            AWS_ACCESS_KEY_ID: AKIAVEVWHMD22OVNEPFI
+            AWS_SECRET_ACCESS_KEY: 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
             SQS_NOTION_QUEUE_URL: https://sqs.us-east-1.amazonaws.com/353643225333/BatchDataSourceSync.fifo
             SQS_SLACK_QUEUE_URL:
             STRIPE_KEY: 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
