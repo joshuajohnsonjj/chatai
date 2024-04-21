@@ -20,8 +20,8 @@ class OpenAIWrapper {
             const embedding = result.embedding;
             return embedding.values;
         });
-        this.getGptReponseFromSourceData = (basePrompt, sourceData, history) => __awaiter(this, void 0, void 0, function* () {
-            const prompt = this.buildPromptWithSourceData(basePrompt, sourceData);
+        this.getGptReponseFromSourceData = (userPrompt, sourceData, history) => __awaiter(this, void 0, void 0, function* () {
+            const prompt = this.buildPromptWithSourceData(userPrompt, sourceData);
             const model = this.client.getGenerativeModel({ model: types_1.GeminiModels.TEXT });
             if (history) {
                 return this.getChatContinuationResponse(model, prompt, history);
@@ -50,23 +50,16 @@ class OpenAIWrapper {
             return result.response.text();
         });
     }
-    buildPromptWithSourceData(basePrompt, sourceData) {
-        // TODO: check on limit
-        const prompt_start = 'Answer the question based on the context below.\n\n' + 'Context:\n';
-        const prompt_end = `\n\nQuestion: ${basePrompt}\nAnswer:`;
-        const limit = 3750;
-        let constructedPrompt = '';
-        for (let i = 1; i < sourceData.length; i++) {
-            if (('\n\n---\n\n' + sourceData.slice(0, i).join('\n\n---\n\n')).length >= limit) {
-                constructedPrompt =
-                    prompt_start + '\n\n---\n\n' + sourceData.slice(0, i - 1).join('\n\n---\n\n') + prompt_end;
-                break;
-            }
-            else if (i === sourceData.length - 1) {
-                constructedPrompt = prompt_start + '\n\n---\n\n' + sourceData.join('\n\n---\n\n') + prompt_end;
-            }
-        }
-        return constructedPrompt;
+    buildPromptWithSourceData(userPrompt, sourceData, basePrompt) {
+        const defaultInstructions = 'Use the provided context to help inform your response to the prompt. Respond as if you were speaking in a professional setting.';
+        const instructions = basePrompt !== null && basePrompt !== void 0 ? basePrompt : defaultInstructions;
+        return `
+            Instructions: ${instructions}
+            ---------------------------------------------------------------------------------------------
+            Prompt: ${userPrompt}
+            ---------------------------------------------------------------------------------------------
+            Context: ${sourceData.join('. ')}
+        `;
     }
 }
 exports.OpenAIWrapper = OpenAIWrapper;

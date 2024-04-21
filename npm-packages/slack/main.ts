@@ -12,7 +12,6 @@ import type {
     SlackUserListResponse,
     SlackUserResponse,
 } from './types';
-import querystring from 'querystring';
 import { type RedisClientType } from 'redis';
 
 export class SlackWrapper {
@@ -56,7 +55,7 @@ export class SlackWrapper {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
             },
-            data: querystring.stringify(data as unknown as querystring.ParsedUrlQueryInput),
+            data: new URLSearchParams(data as Record<string, string>).toString(),
         });
         return response.data;
     }
@@ -80,7 +79,7 @@ export class SlackWrapper {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
             },
-            data: querystring.stringify(data as unknown as querystring.ParsedUrlQueryInput),
+            data: new URLSearchParams(data as unknown as Record<string, string>).toString(),
         });
         return response.data;
     }
@@ -104,7 +103,7 @@ export class SlackWrapper {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
             },
-            data: querystring.stringify(data as unknown as querystring.ParsedUrlQueryInput),
+            data: new URLSearchParams(data as unknown as Record<string, string>).toString(),
         });
         return response.data;
     }
@@ -124,7 +123,7 @@ export class SlackWrapper {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
             },
-            data: querystring.stringify(data as unknown as querystring.ParsedUrlQueryInput),
+            data: new URLSearchParams(data as unknown as Record<string, string>).toString(),
         });
         return response.data;
     }
@@ -147,7 +146,7 @@ export class SlackWrapper {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
             },
-            data: querystring.stringify({ user: userId }),
+            data: new URLSearchParams({ user: userId }).toString(),
         });
 
         const userData = response.data.user;
@@ -174,7 +173,7 @@ export class SlackWrapper {
                 ...SlackHeaders,
                 Authorization: `Bearer ${this.accessToken}`,
             },
-            data: querystring.stringify({ channel: channelId }),
+            data: new URLSearchParams({ channel: channelId }).toString(),
         });
 
         const channelData = response.data.user;
