@@ -9,7 +9,7 @@ import {
     isValidMessageBody,
     publishBlockData,
     shouldConnectToCurrentBlockGroup,
-} from '../utility/notion';
+} from './utility';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';

@@ -11,6 +11,11 @@
 
 **/*.pem
 
+**/packaged.yml
+
+**/layer/
+**/*.zip
+
 .DS_Store
 **/.DS_Store
 

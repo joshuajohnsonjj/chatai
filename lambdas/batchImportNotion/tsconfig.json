@@ -7,7 +7,7 @@
         "forceConsistentCasingInFileNames": true,
         "module": "CommonJS",
         "moduleResolution": "node",
-        "outDir": "./dist",
+        "outDir": "dist",
         "preserveConstEnums": true,
         // "rootDir": "./",
         "target": "es2016",

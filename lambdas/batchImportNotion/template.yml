@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: 'Notion batch import SQS message queue handler'
+
+Resources:
+    batchImportNotion:
+        Type: 'AWS::Serverless::Function'
+        Properties:
+            Handler: handler.handler
+            Runtime: nodejs20.x
+            CodeUri: ./dist
+            Timeout: 600
+            Events:
+                NotionImportMessage:
+                    Type: SQS
+                    Properties:
+                        Queue: arn:aws:sqs:us-east-1:353643225333:BatchDataSourceSync.fifo

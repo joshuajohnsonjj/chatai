@@ -6,7 +6,7 @@
         "build": "tsc",
         "local": "node -e \"console.log(require('./dist/handlers/batchImportNotion').handler(require('./testEvents/event1.json')));\"",
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
-        "generate:schema": "npx prisma generate"
+        "generate:schema": "npx prisma generate --schema=./prisma/schema.prisma"
     },
     "dependencies": {
         "@joshuajohnsonjj38/dynamo": "^1.0.1",
@@ -14,20 +14,15 @@
         "@joshuajohnsonjj38/openai": "^1.0.4",
         "@joshuajohnsonjj38/qdrant": "^1.0.3",
         "@joshuajohnsonjj38/secret-mananger": "1.0.3",
+        "@joshuajohnsonjj38/slack": "^1.0.3",
         "@prisma/client": "5.12.1",
         "aws-lambda": "^1.0.7",
-        "dotenv": "^16.4.5",
-        "prisma": "^5.12.1"
+        "dotenv": "^16.4.5"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.137",
-        "fork-ts-checker-webpack-plugin": "^9.0.2",
         "prettier": "^3.2.5",
-        "serverless-webpack": "^5.13.0",
-        "terser-webpack-plugin": "^5.3.10",
-        "ts-loader": "^9.5.1",
-        "typescript": "^5.4.5",
-        "webpack": "^5.91.0",
-        "webpack-node-externals": "^3.0.0"
+        "prisma": "^5.12.1",
+        "typescript": "^5.4.5"
     }
 }
