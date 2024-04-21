@@ -1,4 +1,4 @@
-import { IsEnum, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { ChatType } from '@prisma/client';
 
 export class StartNewChatQueryDto {
@@ -13,7 +13,7 @@ export class StartNewChatQueryDto {
     @MinLength(1)
     title: string;
 
-    @IsEnum(ChatType)
+    @IsString()
     chatType: ChatType;
 }
 

@@ -13,9 +13,9 @@ export class QdrantWrapper {
     }
 
     /**
-     * Returns top 4 matching embeddings as array of objects containing
-     * point id (which corresponds to document in Dynamo) and confidence
-     * score.
+     * Returns up to top 4 matching embeddings with a minimum confidence
+     * score of 67.5% as array of objects containing point id (which
+     * corresponds to document in Dynamo) and confidence score.
      */
     public query = async (vectorizedQuery: number[], entityId: string): Promise<{ id: string; score: number }[]> => {
         const searchResult = await this.client.search(this.collection, {
@@ -24,6 +24,8 @@ export class QdrantWrapper {
                 must: [{ key: TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
             },
             with_payload: false,
+            with_vector: false,
+            score_threshold: 0.675,
             limit: 4,
         });
 

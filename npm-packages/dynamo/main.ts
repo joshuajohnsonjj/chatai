@@ -42,6 +42,10 @@ export class DynamoClient {
     }
 
     public async batchGetByIds(documentIds: string[]): Promise<DynamoDataStoreDocument[]> {
+        if (!documentIds.length) {
+            return [];
+        }
+
         const input = {
             RequestItems: {
                 [this.table]: {

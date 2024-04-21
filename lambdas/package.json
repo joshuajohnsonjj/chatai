@@ -4,7 +4,7 @@
     "main": "dist/index.js",
     "scripts": {
         "build": "tsc",
-        "local": "node -e \"console.log(require('./dist/batchImportNotion').handler(require('./testEvents/event1.json')));\"",
+        "local": "node -e \"console.log(require('./dist/handlers/batchImportNotion').handler(require('./testEvents/event1.json')));\"",
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write ."
     },
     "postinstall": "npx prisma generate",

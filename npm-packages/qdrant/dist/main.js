@@ -16,18 +16,26 @@ exports.QdrantWrapper = void 0;
 const js_client_rest_1 = require("@qdrant/js-client-rest");
 const types_1 = require("./types");
 const compact_1 = __importDefault(require("lodash/compact"));
+const pick_1 = __importDefault(require("lodash/pick"));
 class QdrantWrapper {
     constructor(hostUrl, collection, apiKey) {
+        /**
+         * Returns up to top 4 matching embeddings with a minimum confidence
+         * score of 67.5% as array of objects containing point id (which
+         * corresponds to document in Dynamo) and confidence score.
+         */
         this.query = (vectorizedQuery, entityId) => __awaiter(this, void 0, void 0, function* () {
             const searchResult = yield this.client.search(this.collection, {
                 vector: vectorizedQuery,
                 filter: {
                     must: [{ key: types_1.TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
                 },
-                with_payload: true,
-                limit: 5,
+                with_payload: false,
+                with_vector: false,
+                score_threshold: 0.675,
+                limit: 4,
             });
-            return (0, compact_1.default)(searchResult.map((result) => { var _a; return (_a = result.payload) === null || _a === void 0 ? void 0 : _a.text; }));
+            return (0, compact_1.default)(searchResult.map((result) => (0, pick_1.default)(result, ['id', 'score'])));
         });
         this.upsert = (recordId, vectorizedText, payload) => __awaiter(this, void 0, void 0, function* () {
             yield this.client.upsert(this.collection, {

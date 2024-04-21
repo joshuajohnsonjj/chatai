@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
@@ -24,7 +24,8 @@ export class ChatService {
 
     constructor(
         private readonly prisma: PrismaService,
-        private configService: ConfigService,
+        private readonly configService: ConfigService,
+        private readonly logger: Logger,
     ) {}
 
     async generateResponse(
@@ -34,15 +35,20 @@ export class ChatService {
         user: DecodedUserTokenDto,
     ): Promise<GetChatResponseResponseDto> {
         if (entityId !== user.idUser && entityId !== user[CognitoAttribute.ORG]) {
+            this.logger.warn(`Blocked user ${user.idUser} from interacting with entity ${entityId}`);
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
-        const questionVector = await this.ai.getTextEmbedding(userPrompt);
-        const queryResult = await this.qdrant.query(questionVector, entityId);
+        this.logger.log(`Generating gpt response for chat ${chatId}`);
+
+        const userPromptEmbedding = await this.ai.getTextEmbedding(userPrompt);
+        const queryResult = await this.qdrant.query(userPromptEmbedding, entityId);
         const matchedDataResult = await this.dynamdo.batchGetByIds(queryResult.map((res) => res.id));
 
         const matchedDataText = matchedDataResult.map((data) => data.text);
         const generatedResponse = await this.ai.getGptReponseFromSourceData(userPrompt, matchedDataText);
+
+        // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
 
         const [, savedResponse] = await Promise.all([
             this.prisma.chatMessage.create({
