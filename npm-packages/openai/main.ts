@@ -18,11 +18,11 @@ export class OpenAIWrapper {
     };
 
     public getGptReponseFromSourceData = async (
-        basePrompt: string,
+        userPrompt: string,
         sourceData: string[],
         history?: ChatHistory[],
     ): Promise<string> => {
-        const prompt = this.buildPromptWithSourceData(basePrompt, sourceData);
+        const prompt = this.buildPromptWithSourceData(userPrompt, sourceData);
         const model = this.client.getGenerativeModel({ model: GeminiModels.TEXT });
 
         if (history) {
@@ -53,23 +53,17 @@ export class OpenAIWrapper {
         return result.response.text();
     }
 
-    private buildPromptWithSourceData(basePrompt: string, sourceData: string[]): string {
-        // TODO: check on limit
-        const prompt_start = 'Answer the question based on the context below.\n\n' + 'Context:\n';
-        const prompt_end = `\n\nQuestion: ${basePrompt}\nAnswer:`;
-        const limit = 3750;
+    private buildPromptWithSourceData(userPrompt: string, sourceData: string[], basePrompt?: string): string {
+        const defaultInstructions =
+            'Use the provided context to help inform your response to the prompt. Respond as if you were speaking in a professional setting.';
+        const instructions = basePrompt ?? defaultInstructions;
 
-        let constructedPrompt = '';
-        for (let i = 1; i < sourceData.length; i++) {
-            if (('\n\n---\n\n' + sourceData.slice(0, i).join('\n\n---\n\n')).length >= limit) {
-                constructedPrompt =
-                    prompt_start + '\n\n---\n\n' + sourceData.slice(0, i - 1).join('\n\n---\n\n') + prompt_end;
-                break;
-            } else if (i === sourceData.length - 1) {
-                constructedPrompt = prompt_start + '\n\n---\n\n' + sourceData.join('\n\n---\n\n') + prompt_end;
-            }
-        }
-
-        return constructedPrompt;
+        return `
+            Instructions: ${instructions}
+            ---------------------------------------------------------------------------------------------
+            Prompt: ${userPrompt}
+            ---------------------------------------------------------------------------------------------
+            Context: ${sourceData.join('. ')}
+        `;
     }
 }

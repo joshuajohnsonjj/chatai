@@ -1,6 +1,7 @@
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { QdrantPayload, TQdrantPayloadKey } from './types';
 import compact from 'lodash/compact';
+import pick from 'lodash/pick';
 
 export class QdrantWrapper {
     private readonly client: QdrantClient;
@@ -11,17 +12,22 @@ export class QdrantWrapper {
         this.collection = collection;
     }
 
-    public query = async (vectorizedQuery: number[], entityId: string): Promise<string[]> => {
+    /**
+     * Returns top 4 matching embeddings as array of objects containing
+     * point id (which corresponds to document in Dynamo) and confidence
+     * score.
+     */
+    public query = async (vectorizedQuery: number[], entityId: string): Promise<{ id: string; score: number }[]> => {
         const searchResult = await this.client.search(this.collection, {
             vector: vectorizedQuery,
             filter: {
                 must: [{ key: TQdrantPayloadKey.ENTITY_ID, match: { value: entityId } }],
             },
             with_payload: false,
-            limit: 3,
+            limit: 4,
         });
 
-        return compact(searchResult.map((result) => result.id)) as string[];
+        return compact(searchResult.map((result) => pick(result, ['id', 'score']) as { id: string; score: number }));
     };
 
     public upsert = async (recordId: string, vectorizedText: number[], payload: QdrantPayload): Promise<void> => {

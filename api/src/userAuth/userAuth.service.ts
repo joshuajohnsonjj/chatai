@@ -35,6 +35,7 @@ export class UserAuthService {
         });
     }
     // TODO: resend confirmation code endpoint
+    // TODO: encrypt password for transit
     async register(authRegisterRequest: RegisterRequestDto) {
         const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
         return await new Promise((resolve, reject) => {

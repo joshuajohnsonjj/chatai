@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
-import { DynamoDBClient } from '@joshuajohnsonjj38/dynamo';
+import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
 import type { GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
@@ -18,11 +18,9 @@ export class ChatService {
         this.configService.get<string>('QDRANT_KEY')!,
     );
 
-    private readonly dynamdo = new DynamoDBClient(
-        this.configService.get<string>('AWS_ACCESS_KEY')!,
-        this.configService.get<string>('AWS_SECRET')!,
-        this.configService.get<string>('AWS_REGION')!,
-    );
+    private readonly dynamdo = new DynamoClient(this.configService.get<string>('AWS_REGION')!);
+
+    private readonly ai = new OpenAIWrapper(this.configService.get<string>('GEMINI_KEY')!);
 
     constructor(
         private readonly prisma: PrismaService,
@@ -32,24 +30,24 @@ export class ChatService {
     async generateResponse(
         chatId: string,
         entityId: string,
-        text: string,
+        userPrompt: string,
         user: DecodedUserTokenDto,
     ): Promise<GetChatResponseResponseDto> {
         if (entityId !== user.idUser && entityId !== user[CognitoAttribute.ORG]) {
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
-        const openai = new OpenAIWrapper(this.configService.get<string>('GEMINI_KEY')!);
-
-        const questionVector = await openai.getTextEmbedding(text);
+        const questionVector = await this.ai.getTextEmbedding(userPrompt);
         const queryResult = await this.qdrant.query(questionVector, entityId);
+        const matchedDataResult = await this.dynamdo.batchGetByIds(queryResult.map((res) => res.id));
 
-        const generatedResponse = await openai.getGptReponseFromSourceData(text, queryResult);
+        const matchedDataText = matchedDataResult.map((data) => data.text);
+        const generatedResponse = await this.ai.getGptReponseFromSourceData(userPrompt, matchedDataText);
 
         const [, savedResponse] = await Promise.all([
             this.prisma.chatMessage.create({
                 data: {
-                    text,
+                    text: userPrompt,
                     isSystemMessage: false,
                     chatId,
                 },
