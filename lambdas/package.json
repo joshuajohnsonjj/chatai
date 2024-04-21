@@ -8,6 +8,9 @@
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
         "generate:schema": "npx prisma generate --schema=./prisma/schema.prisma"
     },
+    "prisma": {
+        "seed": "ts-node prisma/seed.ts"
+    },
     "dependencies": {
         "@joshuajohnsonjj38/dynamo": "^1.0.1",
         "@joshuajohnsonjj38/notion": "^1.0.5",

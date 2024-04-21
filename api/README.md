@@ -67,3 +67,5 @@ $ yarn run test:cov
 1. run `npx prisma db seed`
 1. run `npx prisma db pull`
 1. run `npx prisma generate`
+
+`npx prisma migrate reset` to wipe db and run all migrations
