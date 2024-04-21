@@ -11,7 +11,7 @@ import {
     shouldConnectToCurrentBlockGroup,
 } from '../utility/notion';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
-import { PrismaClient } from '@joshuajohnsonjj38/prisma';
+import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: __dirname + '/../.env' });
@@ -164,7 +164,7 @@ export const handler: Handler = async (event: SQSEvent) => {
     await Promise.all(processingPagePromises);
 
     if (completedDataSources.length) {
-        console.log('Updating complete data source records', completedDataSources);
+        console.log('Sync completed ofr data source records:', completedDataSources);
 
         await prisma.dataSource.updateMany({
             where: {

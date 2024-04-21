@@ -1,3 +1,0 @@
-# Prisma service
-
-Prisma service

@@ -32,6 +32,7 @@ export class ChatController {
         @Body() params: GetChatResponseQueryDto,
         @Req() req: Request,
     ): Promise<GetChatResponseResponseDto> {
+        // TODO: figure out how to spead up responses.. http streaming?
         return await this.service.generateResponse(
             chatId,
             params.entityId,

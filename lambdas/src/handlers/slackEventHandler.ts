@@ -1,5 +1,5 @@
 import { APIGatewayEvent, Handler } from 'aws-lambda';
-import { PrismaClient } from '@joshuajohnsonjj38/prisma';
+import { PrismaClient } from '@prisma/client';
 import { SlackEventAPIPayload, SlackWrapper } from '@joshuajohnsonjj38/slack';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
