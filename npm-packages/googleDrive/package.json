@@ -1,5 +1,5 @@
 {
-  "name": "@joshuajohnsonjj38/notion",
+  "name": "google-drive",
   "version": "1.0.5",
   "main": "dist/index.js",
   "scripts": {
