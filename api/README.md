@@ -65,7 +65,7 @@ $ yarn run test:cov
 1. make updates in `schema.prisma`
 1. run `npx prisma migrate dev --name [name]`
 1. run `npx prisma db seed`
-1. run `npx prisma db pull`
-1. run `npx prisma generate`
+1. run `npx prisma db pull` update schema file based on current db
+1. run `npx prisma generate` generate based on schema file
 
 `npx prisma migrate reset` to wipe db and run all migrations

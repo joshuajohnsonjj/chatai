@@ -3,12 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
-import type { GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
+import type { ChatThreadResponseDto, GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { CognitoAttribute } from 'src/types';
+import { v4 } from 'uuid';
+import { last } from 'lodash';
 
 @Injectable()
 export class ChatService {
@@ -41,6 +43,17 @@ export class ChatService {
 
         this.logger.log(`Generating gpt response for chat ${chatId}`);
 
+        const threadId = v4();
+
+        this.prisma.chatMessage.create({
+            data: {
+                text: userPrompt,
+                isSystemMessage: false,
+                chatId,
+                threadId,
+            },
+        });
+
         const userPromptEmbedding = await this.ai.getTextEmbedding(userPrompt);
         const queryResult = await this.qdrant.query(userPromptEmbedding, entityId);
         const matchedDataResult = await this.dynamdo.batchGetByIds(queryResult.map((res) => res.id));
@@ -50,19 +63,13 @@ export class ChatService {
 
         // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
 
-        const [, savedResponse] = await Promise.all([
-            this.prisma.chatMessage.create({
-                data: {
-                    text: userPrompt,
-                    isSystemMessage: false,
-                    chatId,
-                },
-            }),
+        const [savedResponse] = await Promise.all([
             this.prisma.chatMessage.create({
                 data: {
                     text: generatedResponse,
                     chatId,
                     isSystemMessage: true,
+                    threadId,
                 },
             }),
             this.prisma.chat.update({
@@ -109,16 +116,28 @@ export class ChatService {
                 chatId,
             },
             orderBy: {
-                createdAt: 'desc',
+                createdAt: 'asc',
             },
             take: pageSize,
             skip: page * pageSize,
         });
 
+        const threads: ChatThreadResponseDto[] = [];
+        messages.forEach((message) => {
+            if (last(threads)?.threadId !== message.threadId) {
+                threads.push({
+                    threadId: message.threadId,
+                    messages: [message],
+                });
+            } else {
+                last(threads)!.messages.push(message);
+            }
+        });
+
         return {
             page,
-            size: pageSize,
-            messages,
+            size: messages.length,
+            threads,
         };
     }
 
@@ -166,7 +185,7 @@ export class ChatService {
 
         return {
             page,
-            size: pageSize,
+            size: chats.length,
             chats,
         };
     }

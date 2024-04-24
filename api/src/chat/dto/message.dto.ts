@@ -14,6 +14,7 @@ export class GetChatResponseResponseDto {
     text: string;
     isSystemMessage: boolean;
     chatId: string;
+    threadId: string;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,8 +25,13 @@ export class ListChatMessagesQueryDto {
     page: number;
 }
 
+export class ChatThreadResponseDto {
+    threadId: string;
+    messages: GetChatResponseResponseDto[];
+}
+
 export class ListChatMessagesResponseDto {
     page: number;
     size: number;
-    messages: GetChatResponseResponseDto[];
+    threads: ChatThreadResponseDto[];
 }

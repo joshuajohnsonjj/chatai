@@ -1,4 +1,3 @@
-
 /**
  * Lambda SQS handler
  *
@@ -6,7 +5,4 @@
  *      docId: string,
  *      accessToken: string,
  */
-export const handler: Handler = async (event: SQSEvent) => {
-    
-
-};
+export const handler: Handler = async (event: SQSEvent) => {};

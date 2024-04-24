@@ -3,9 +3,9 @@ import { DocsAPIEndpoints } from './types';
 
 export class GoogleDriveService {
     private static readonly DocsBaseUrl = 'https://docs.googleapis.com/v1';
-    
+
     private static readonly DriveBaseUrl = 'https://www.googleapis.com/drive/v3';
-    
+
     private readonly accessToken: string;
 
     constructor(accessToken: string) {

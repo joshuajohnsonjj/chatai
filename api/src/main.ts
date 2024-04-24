@@ -40,6 +40,7 @@ async function bootstrap() {
         logger: process.env.NODE_ENV === 'dev' ? localLogger : cloudwatchLogger,
     });
     app.useGlobalFilters(new GlobalExceptionFilter());
-    await app.listen(3000);
+    app.enableCors();
+    await app.listen(3001);
 }
 bootstrap();

@@ -7,6 +7,7 @@ import { OrganizationModule } from './organization/organization.module';
 import { UserAuthModule } from './userAuth/userAuth.module';
 import { ConfigModule } from '@nestjs/config';
 import { Logger, Module } from '@nestjs/common';
+import { UserModule } from './user/user.module';
 
 @Module({
     imports: [
@@ -15,6 +16,7 @@ import { Logger, Module } from '@nestjs/common';
         DataSourceModule,
         OrganizationModule,
         UserAuthModule,
+        UserModule,
         ConfigModule.forRoot({
             envFilePath: ['.env.test', '.env.prod'],
             isGlobal: true,

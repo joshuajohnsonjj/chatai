@@ -107,6 +107,7 @@ model ChatMessage {
   updatedAt       DateTime @default(now())
   text            String
   isSystemMessage Boolean
+  threadId        String
   chatId          String
   chat            Chat     @relation(fields: [chatId], references: [id])
 }

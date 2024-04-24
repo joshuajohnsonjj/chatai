@@ -255,9 +255,11 @@ export class UserAuthService {
                     reject(err);
                 } else {
                     resolve({
-                        success: true,
                         refreshToken: result.getRefreshToken().getToken(),
                         accessToken: result.getIdToken().getJwtToken(),
+                        userId: result.getIdToken().payload.sub,
+                        email: result.getIdToken().payload.email,
+                        name: result.getIdToken().payload.name,
                     });
                 }
             });

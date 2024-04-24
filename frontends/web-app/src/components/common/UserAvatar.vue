@@ -1,11 +1,13 @@
 <template>
-    <div class="bg-surface rounded pa-4 mt-2">
+    <div style="position: fixed; bottom: 20px" class="bg-surface rounded pa-4 mt-2">
         <div class="d-flex justify-space-between">
             <div class="d-flex justify-start mb-4">
                 <v-avatar image="@/assets/avatar.jpg" size="49"></v-avatar>
                 <div class="ml-2">
-                    <p class="text-paragraph text-primary font-weight-medium">Earl Thomas</p>
-                    <p class="text-caption text-secondary">ethomas@company.com</p>
+                    <p class="text-paragraph text-primary font-weight-medium">
+                        {{ `${userData.firstName} ${userData.lastName}` }}
+                    </p>
+                    <p class="text-caption text-secondary">{{ email }}</p>
                 </div>
             </div>
 
@@ -15,3 +17,13 @@
         <v-btn variant="outlined" class="text-caption w-100">Upgrade to Pro</v-btn>
     </div>
 </template>
+
+<script lang="ts" setup>
+    import { storeToRefs } from 'pinia';
+    import { useUserStore } from '../../stores/user';
+
+    const userStore = useUserStore();
+    const { userData } = storeToRefs(userStore);
+
+    const email = JSON.parse(localStorage.getItem('chatai:token') ?? '{}')?.email;
+</script>
