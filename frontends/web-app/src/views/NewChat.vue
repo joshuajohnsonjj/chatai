@@ -43,25 +43,25 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from 'pinia';
-import { useChatStore } from '../stores/chat';
-import { onBeforeMount } from 'vue';
+    import { storeToRefs } from 'pinia';
+    import { useChatStore } from '../stores/chat';
+    import { onBeforeMount } from 'vue';
 
-const chatStore = useChatStore();
-const { chats } = storeToRefs(chatStore);
+    const chatStore = useChatStore();
+    const { chats } = storeToRefs(chatStore);
 
-onBeforeMount(async () => {
-    if (!chats.value.length) {
-        await chatStore.getChatList();
-    }
-});
+    onBeforeMount(async () => {
+        if (!chats.value.length) {
+            await chatStore.getChatList();
+        }
+    });
 </script>
 
 <style scoped>
-.header-container {
-    position: absolute;
-    left: 0;
-    border-radius: 24px 24px 0 0;
-    border-bottom: 1px solid rgb(var(--v-theme-border-color));
-}
+    .header-container {
+        position: absolute;
+        left: 0;
+        border-radius: 24px 24px 0 0;
+        border-bottom: 1px solid rgb(var(--v-theme-border-color));
+    }
 </style>

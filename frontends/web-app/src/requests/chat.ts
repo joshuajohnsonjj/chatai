@@ -27,7 +27,11 @@ export const getChatHistory = async (chatId: string): Promise<ListChatHistoryRes
     return resp as ListChatHistoryResponse;
 };
 
-export const sendChatMessage = async (chatId: string, text: string, threadId?: string,): Promise<ChatMessageResponse> => {
+export const sendChatMessage = async (
+    chatId: string,
+    text: string,
+    threadId?: string,
+): Promise<ChatMessageResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.SEND_CHAT,
         data: {

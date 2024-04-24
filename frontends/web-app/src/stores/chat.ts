@@ -64,12 +64,12 @@ export const useChatStore = defineStore('chat', () => {
             };
             chatHistory.value.push(thread);
         }
-        
+
         isLoadingThreadResponse.value = threadId;
         const aiResponse = await sendChatMessage(selectedChat.value.id, text, thread!.threadId);
         find(chatHistory.value, (opt) => opt.threadId === thread.threadId)!.messages.push(aiResponse);
         isLoadingThreadResponse.value = null;
-    }
+    };
 
     return {
         chats,

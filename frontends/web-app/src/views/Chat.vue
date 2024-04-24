@@ -31,20 +31,9 @@
                         </div>
                     </div>
 
-                    <div
-                        v-if="isLoadingThreadResponse === thread.threadId"
-                        class="mt-2"
-                    >
-                        <v-skeleton-loader 
-                            type="paragraph"
-                            color="background"
-                            :elevation="1"
-                        ></v-skeleton-loader>
-                        <v-skeleton-loader 
-                            type="sentences"
-                            color="background"
-                            :elevation="1"
-                        ></v-skeleton-loader>
+                    <div v-if="isLoadingThreadResponse === thread.threadId" class="mt-2">
+                        <v-skeleton-loader type="paragraph" color="background" :elevation="1"></v-skeleton-loader>
+                        <v-skeleton-loader type="sentences" color="background" :elevation="1"></v-skeleton-loader>
                     </div>
                 </div>
                 <p class="text-caption text-secondary my-2">
@@ -58,49 +47,48 @@
 </template>
 
 <script lang="ts" setup>
-import { storeToRefs } from 'pinia';
-import { useChatStore } from '../stores/chat';
-import { onBeforeMount } from 'vue';
-import { useRoute } from 'vue-router';
-import last from 'lodash/last';
-import { dateToString, formatChatResponse } from '../utility';
+    import { storeToRefs } from 'pinia';
+    import { useChatStore } from '../stores/chat';
+    import { onBeforeMount } from 'vue';
+    import { useRoute } from 'vue-router';
+    import last from 'lodash/last';
+    import { dateToString, formatChatResponse } from '../utility';
 
+    const chatStore = useChatStore();
+    const { chats, selectedChat, chatHistory, isLoadingThreadResponse } = storeToRefs(chatStore);
 
-const chatStore = useChatStore();
-const { chats, selectedChat, chatHistory, isLoadingThreadResponse } = storeToRefs(chatStore);
+    const route = useRoute();
 
-const route = useRoute();
+    onBeforeMount(async () => {
+        if (!chats.value.length) {
+            await chatStore.getChatList();
+        }
+        if (!chatHistory.value.length) {
+            await chatStore.setChatHistory(route.params.chatId as string);
+        }
 
-onBeforeMount(async () => {
-    if (!chats.value.length) {
-        await chatStore.getChatList();
-    }
-    if (!chatHistory.value.length) {
-        await chatStore.setChatHistory(route.params.chatId as string);
-    }
-
-    last(document.getElementById('chat-scroll')!.children)!.scrollIntoView(false);
-});
+        last(document.getElementById('chat-scroll')!.children)!.scrollIntoView(false);
+    });
 </script>
 
 <style scoped>
-.header-container {
-    position: absolute;
-    left: 0;
-    border-radius: 24px 24px 0 0;
-    border-bottom: 1px solid rgb(var(--v-theme-border-color));
-    z-index: 100;
-}
+    .header-container {
+        position: absolute;
+        left: 0;
+        border-radius: 24px 24px 0 0;
+        border-bottom: 1px solid rgb(var(--v-theme-border-color));
+        z-index: 100;
+    }
 
-#chat-scroll {
-    padding-top: 75px;
-    max-height: 84vh;
-    overflow-y: scroll;
-}
+    #chat-scroll {
+        padding-top: 75px;
+        max-height: 84vh;
+        overflow-y: scroll;
+    }
 
-.system-message {
-    white-space: pre-wrap; 
-    word-wrap: break-word;
-    font-family: inherit;
-}
+    .system-message {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: inherit;
+    }
 </style>

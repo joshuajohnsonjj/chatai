@@ -27,9 +27,7 @@ export const formatChatResponse = (rawResponse: string): string => {
     const startBulletRegex = /( \* )/g;
     const numberedListRegex = /(\d+\.)/g;
 
-    const result = rawResponse
-        .replace(startBulletRegex, '\n$1')
-        .replace(numberedListRegex, '\n$1');
+    const result = rawResponse.replace(startBulletRegex, '\n$1').replace(numberedListRegex, '\n$1');
 
     return result.trim();
-}
+};

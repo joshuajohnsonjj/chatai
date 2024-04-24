@@ -38,7 +38,10 @@ export class ChatService {
         user: DecodedUserTokenDto,
         replyThreadId?: string,
     ): Promise<GetChatResponseResponseDto> {
-        const chat = await this.prisma.chat.findUniqueOrThrow({ where: { id: chatId }, select: { associatedEntityId: true } });
+        const chat = await this.prisma.chat.findUniqueOrThrow({
+            where: { id: chatId },
+            select: { associatedEntityId: true },
+        });
 
         if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user[CognitoAttribute.ORG]) {
             this.logger.warn(`Blocked user ${user.idUser} from interacting with chat ${chatId}`);
