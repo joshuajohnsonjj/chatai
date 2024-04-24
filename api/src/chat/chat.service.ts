@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { CognitoAttribute } from 'src/types';
 import { v4 } from 'uuid';
 import { last } from 'lodash';
+import * as moment from 'moment';
 
 @Injectable()
 export class ChatService {
@@ -31,31 +32,25 @@ export class ChatService {
     ) {}
 
     async generateResponse(
+        id: string,
         chatId: string,
-        entityId: string,
         userPrompt: string,
         user: DecodedUserTokenDto,
+        replyThreadId?: string,
     ): Promise<GetChatResponseResponseDto> {
-        if (entityId !== user.idUser && entityId !== user[CognitoAttribute.ORG]) {
-            this.logger.warn(`Blocked user ${user.idUser} from interacting with entity ${entityId}`);
+        const chat = await this.prisma.chat.findUniqueOrThrow({ where: { id: chatId }, select: { associatedEntityId: true } });
+
+        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user[CognitoAttribute.ORG]) {
+            this.logger.warn(`Blocked user ${user.idUser} from interacting with chat ${chatId}`);
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
         this.logger.log(`Generating gpt response for chat ${chatId}`);
 
-        const threadId = v4();
-
-        this.prisma.chatMessage.create({
-            data: {
-                text: userPrompt,
-                isSystemMessage: false,
-                chatId,
-                threadId,
-            },
-        });
+        const threadId = replyThreadId ?? v4();
 
         const userPromptEmbedding = await this.ai.getTextEmbedding(userPrompt);
-        const queryResult = await this.qdrant.query(userPromptEmbedding, entityId);
+        const queryResult = await this.qdrant.query(userPromptEmbedding, chat.associatedEntityId);
         const matchedDataResult = await this.dynamdo.batchGetByIds(queryResult.map((res) => res.id));
 
         const matchedDataText = matchedDataResult.map((data) => data.text);
@@ -63,7 +58,18 @@ export class ChatService {
 
         // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
 
-        const [savedResponse] = await Promise.all([
+        const [, savedResponse] = await Promise.all([
+            this.prisma.chatMessage.create({
+                data: {
+                    id,
+                    text: userPrompt,
+                    isSystemMessage: false,
+                    chatId,
+                    threadId,
+                    // in order to ensure proper ordering on the FE move createdAt slightly back
+                    createdAt: moment().subtract(0.01, 'seconds').toDate(),
+                },
+            }),
             this.prisma.chatMessage.create({
                 data: {
                     text: generatedResponse,

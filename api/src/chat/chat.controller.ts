@@ -34,10 +34,11 @@ export class ChatController {
     ): Promise<GetChatResponseResponseDto> {
         // TODO: figure out how to spead up responses.. http streaming?
         return await this.service.generateResponse(
+            params.promptId,
             chatId,
-            params.entityId,
             params.text,
             req.user as DecodedUserTokenDto,
+            params.replyThreadId,
         );
     }
 

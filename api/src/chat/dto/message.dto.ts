@@ -1,12 +1,16 @@
-import { IsNumberString, IsString } from 'class-validator';
+import { IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class GetChatResponseQueryDto {
+    @IsUUID()
+    promptId: string;
+
     @IsString()
     text: string;
 
     @IsString()
-    entityId: string;
+    @IsOptional()
+    replyThreadId?: string;
 }
 
 export class GetChatResponseResponseDto {
