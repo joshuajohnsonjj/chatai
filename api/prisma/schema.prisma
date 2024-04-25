@@ -25,11 +25,13 @@ model DataSource {
 }
 
 model DataSourceType {
-  id            String             @id @default(uuid())
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @default(now())
-  name          DataSourceTypeName @unique
-  linkedSources DataSource[]
+  id                  String             @id @default(uuid())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now())
+  name                DataSourceTypeName @unique
+  category            DataSourceCategory
+  isLiveSyncAvailable Boolean            @default(false)
+  linkedSources       DataSource[]
 }
 
 model Organization {
@@ -122,6 +124,13 @@ enum DataSourceTypeName {
   NOTION
   GOOGLE_DRIVE
   FILE_UPLOAD
+}
+
+enum DataSourceCategory {
+  COMMUNICATION
+  PROJECT_MANAGEMENT
+  NOTE_TAKING
+  OTHER
 }
 
 enum DataSyncInterval {

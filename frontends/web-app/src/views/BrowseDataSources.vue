@@ -1,9 +1,3 @@
-<script lang="ts" setup>
-    import { ref } from 'vue';
-
-    const selected = ref('All');
-</script>
-
 <template>
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
         <v-btn
@@ -59,18 +53,38 @@
         </div>
 
         <div class="d-flex flex-wrap mt-6">
-            <div v-for="n in 20" :key="n" class="ma-2 pa-6 border rounded">
+            <div v-for="option in dataSourceOptions" :key="option.id" class="ma-2 pa-6 border rounded">
                 <div class="d-flex justify-start">
-                    <v-avatar image="@/assets/notion.png" size="45"></v-avatar>
+                    <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${option.name}.png`" size="45"></v-avatar>
                     <div class="ml-4">
-                        <p class="text-h6 text-primary">Notion</p>
-                        <p class="text-caption text-secondary">Note Taking</p>
+                        <p class="text-h6 text-primary">{{ formatStringStartCase(option.name) }}</p>
+                        <p class="text-caption text-secondary">{{ formatStringStartCase(option.category) }}</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </template>
+
+<script lang="ts" setup>
+    import { ref } from 'vue';
+    import { onBeforeMount } from 'vue';
+    import { storeToRefs } from 'pinia';
+    import { useDataSourceStore } from '../stores/dataSource';
+    import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
+    import { formatStringStartCase } from '../utility';
+
+    const selected = ref('All');
+
+    const dataSourceStore = useDataSourceStore();
+    const { dataSourceOptions } = storeToRefs(dataSourceStore);
+
+    onBeforeMount(async () => {
+        if (!dataSourceOptions.value.length) {
+            await dataSourceStore.retreiveDataSourceOptions();
+        }
+    });
+</script>
 
 <style scoped>
     .border {

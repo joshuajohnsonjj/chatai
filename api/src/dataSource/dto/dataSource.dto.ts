@@ -1,4 +1,4 @@
-import { EntityType } from '@prisma/client';
+import { DataSourceCategory, DataSourceTypeName, EntityType } from '@prisma/client';
 import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
@@ -31,4 +31,25 @@ export class CreateDataSourceResponseDto {
 export class TestDataSourceResponseDto {
     isValid: boolean;
     message: string;
+}
+
+export class ListDataSourceConnectionsResponseDto {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    lastSync: Date | null;
+    dataSourceTypeId: string;
+    ownerEntityId: string;
+    ownerEntityType: EntityType;
+    hasExternalId: boolean;
+    isSyncing: boolean;
+    dataSourceName: string;
+    dataSourceLiveSyncAvailable: boolean;
+}
+
+export class ListDataSourceTypesResponseDto {
+    id: string;
+    name: DataSourceTypeName;
+    category: DataSourceCategory;
+    isLiveSyncAvailable: boolean;
 }

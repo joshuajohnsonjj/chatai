@@ -76,3 +76,24 @@ export interface UserInfoResponse {
         stripeProductId: string;
     } | null;
 }
+
+export interface DataSourceConnectionsResponse {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    lastSync: Date | null;
+    dataSourceTypeId: string;
+    ownerEntityId: string;
+    ownerEntityType: string;
+    hasExternalId: boolean;
+    isSyncing: boolean;
+    dataSourceName: string;
+    dataSourceLiveSyncAvailable: boolean;
+}
+
+export interface DataSourceTypesResponse {
+    id: string;
+    name: string;
+    category: string;
+    isLiveSyncAvailable: boolean;
+}

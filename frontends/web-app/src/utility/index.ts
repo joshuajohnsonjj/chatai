@@ -1,4 +1,5 @@
 import moment from 'moment';
+import startCase from 'lodash/startCase';
 
 export const dateToString = (date: Date): string => {
     const momentDate = moment(date);
@@ -17,6 +18,8 @@ export const dateToString = (date: Date): string => {
         return momentDate.format('M/D/YYYY');
     }
 };
+
+export const formatStringStartCase = (original: string): string => startCase(original.toLowerCase());
 
 /**
  * Formats raw text response into prettier output

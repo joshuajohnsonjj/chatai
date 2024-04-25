@@ -4,6 +4,8 @@ import type {
     CreateDataSourceResponseDto,
     CreateDataSourceQueryDto,
     TestDataSourceResponseDto,
+    ListDataSourceConnectionsResponseDto,
+    ListDataSourceTypesResponseDto,
 } from './dto/dataSource.dto';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { DataSourceTypeName, EntityType } from '@prisma/client';
@@ -27,6 +29,7 @@ import type {
     SendMessageBatchRequest,
     SendMessageBatchRequestEntry,
 } from '@aws-sdk/client-sqs';
+import { omit } from 'lodash';
 
 @Injectable()
 export class DataSourceService {
@@ -117,6 +120,53 @@ export class DataSourceService {
         }
 
         return await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
+    }
+
+    async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
+        const queryRes = await this.prisma.dataSourceType.findMany({
+            select: {
+                id: true,
+                name: true,
+                category: true,
+                isLiveSyncAvailable: true,
+            },
+        });
+
+        return queryRes;
+    }
+
+    async listUserDataSourceConnections(user: DecodedUserTokenDto): Promise<ListDataSourceConnectionsResponseDto[]> {
+        const entityId = user[CognitoAttribute.ORG_USER_ROLE] ?? user.idUser;
+
+        const queryRes = await this.prisma.dataSource.findMany({
+            where: {
+                ownerEntityId: entityId,
+            },
+            select: {
+                id: true,
+                createdAt: true,
+                updatedAt: true,
+                lastSync: true,
+                dataSourceTypeId: true,
+                ownerEntityId: true,
+                ownerEntityType: true,
+                externalId: true,
+                isSyncing: true,
+                type: {
+                    select: {
+                        name: true,
+                        isLiveSyncAvailable: true,
+                    },
+                },
+            },
+        });
+
+        return queryRes.map((item) => ({
+            ...omit(item, ['externalId', 'type']),
+            hasExternalId: !!item.externalId,
+            dataSourceName: item.type.name,
+            dataSourceLiveSyncAvailable: item.type.isLiveSyncAvailable,
+        }));
     }
 
     async syncDataSource(dataSourceId: string): Promise<void> {

@@ -1,58 +1,3 @@
-<script lang="ts" setup>
-    const dataSources = [
-        {
-            id: 1,
-            name: 'Notion',
-            logo: '../assets/notion.png',
-            isSyncing: false,
-            isLiveSync: false,
-        },
-        {
-            id: 2,
-            name: 'Slack',
-            logo: '../assets/slack.png',
-            isSyncing: false,
-            isLiveSync: false,
-        },
-        {
-            id: 3,
-            name: 'Email',
-            logo: null,
-            icon: 'mdi-email',
-            isSyncing: false,
-            isLiveSync: true,
-        },
-        {
-            id: 4,
-            name: 'Zoom',
-            logo: '../assets/zoom.png',
-            isSyncing: false,
-            isLiveSync: true,
-        },
-        {
-            id: 5,
-            name: 'Jira',
-            logo: '../assets/jira.png',
-            isSyncing: true,
-            isLiveSync: false,
-        },
-        {
-            id: 6,
-            name: 'Notion',
-            logo: '../assets/notion.png',
-            isSyncing: false,
-            isLiveSync: false,
-        },
-        {
-            id: 7,
-            name: 'Notion',
-            logo: '../assets/notion.png',
-            isSyncing: false,
-            isLiveSync: false,
-        },
-    ];
-</script>
-
 <template>
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
         <div class="bg-background w-100 pa-6 rounded d-flex justify-start mb-6">
@@ -62,7 +7,7 @@
                 <div class="d-flex justify-start">
                     <p class="text-caption text-secondary sub-info-line-height">
                         <v-icon icon="mdi-cloud-outline" color="secondary"></v-icon>
-                        7 Data sources
+                        {{ dataSources.length }} Data sources
                     </p>
                     <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
                     <p class="text-caption text-secondary sub-info-line-height">
@@ -79,6 +24,7 @@
                 :key="dataSource.id"
                 class="bg-background rounded pa-6 ma-2 grow-hover"
                 style="min-width: 234px; position: relative"
+                @click="$router.push({ name: 'data-source-configure', params: { dataSourceId: dataSource.id } })"
             >
                 <div
                     v-if="dataSource.isLiveSync"
@@ -96,19 +42,24 @@
                 </div>
                 <div
                     v-else
-                    class="rounded sync-now text-caption text-success px-2"
+                    class="rounded sync-now text-caption text-success px-2 button-hover"
                     style="position: absolute; right: 12px; top: 12px"
                 >
                     Sync now
                 </div>
 
                 <div class="d-flex justify-start mb-4">
-                    <v-avatar image="@/assets/zoom.png" size="45"></v-avatar>
-                    <p class="text-h6 text-primary ml-4" style="line-height: 45px">{{ dataSource.name }}</p>
+                    <v-avatar
+                        :image="`${BASE_S3_DATASOURCE_LOGO_URL}${dataSource.dataSourceName}.png`"
+                        size="45"
+                    ></v-avatar>
+                    <p class="text-h6 text-primary ml-3" style="line-height: 50px">
+                        {{ formatStringStartCase(dataSource.dataSourceName) }}
+                    </p>
                 </div>
                 <p class="text-caption text-secondary mb-1">
                     <v-icon icon="mdi-clock-outline"></v-icon>
-                    Synced yesterday
+                    {{ dataSource.lastSync ? `Synced ${dateToString(dataSource.lastSync)}` : 'Not synced' }}
                 </p>
                 <p class="text-caption text-secondary">
                     <v-icon icon="mdi-calendar-star"></v-icon>
@@ -122,10 +73,28 @@
             class="w-100 mx-2 mt-6"
             prepend-icon="mdi-plus"
             @click="$router.push({ name: 'browse-data-sources' })"
-            >Add Integration</v-btn
         >
+            Add Integration
+        </v-btn>
     </div>
 </template>
+
+<script lang="ts" setup>
+    import { onBeforeMount } from 'vue';
+    import { storeToRefs } from 'pinia';
+    import { useDataSourceStore } from '../stores/dataSource';
+    import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
+    import { dateToString, formatStringStartCase } from '../utility';
+
+    const dataSourceStore = useDataSourceStore();
+    const { connections: dataSources } = storeToRefs(dataSourceStore);
+
+    onBeforeMount(async () => {
+        if (!dataSources.value.length) {
+            await dataSourceStore.retreiveConnections();
+        }
+    });
+</script>
 
 <style scoped>
     .sub-info-line-height {

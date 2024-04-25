@@ -4,7 +4,7 @@ import { sendAPIRequest } from './service';
 
 export const getUserInfo = async (): Promise<UserInfoResponse> => {
     const resp = await sendAPIRequest({
-        method: APIMethods.USER_INFO,
+        method: APIMethods.GET,
         headers: {
             'Content-Type': 'application/json',
         },

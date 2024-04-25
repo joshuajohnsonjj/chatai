@@ -5,7 +5,7 @@ import { sendAPIRequest } from './service';
 // TODO: implement pagination
 export const listChats = async (): Promise<ListChatsResponse> => {
     const resp = await sendAPIRequest({
-        method: APIMethods.CHATS_LIST,
+        method: APIMethods.GET,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -17,7 +17,7 @@ export const listChats = async (): Promise<ListChatsResponse> => {
 
 export const getChatHistory = async (chatId: string): Promise<ListChatHistoryResponse> => {
     const resp = await sendAPIRequest({
-        method: APIMethods.CHATS_HISTORY,
+        method: APIMethods.GET,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -33,7 +33,7 @@ export const sendChatMessage = async (
     threadId?: string,
 ): Promise<ChatMessageResponse> => {
     const resp = await sendAPIRequest({
-        method: APIMethods.SEND_CHAT,
+        method: APIMethods.POST,
         data: {
             threadId,
             text,

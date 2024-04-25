@@ -5,7 +5,7 @@ import { sendAPIRequest } from './service';
 export const loginUser = async (email: string, password: string): Promise<LoginUserResponse> => {
     const resp = await sendAPIRequest(
         {
-            method: APIMethods.LOGIN,
+            method: APIMethods.POST,
             data: {
                 username: email,
                 password,

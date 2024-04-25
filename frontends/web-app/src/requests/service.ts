@@ -9,7 +9,7 @@ const toast = useToast();
 
 const refreshTokenRequest = async (email: string, refreshToken: string) => {
     const refreshData: LoginUserResponse = await sendAPIRequest({
-        method: APIMethods.REFRESH,
+        method: APIMethods.POST,
         headers: {
             'Content-Type': 'application/json',
         },
@@ -20,7 +20,6 @@ const refreshTokenRequest = async (email: string, refreshToken: string) => {
         baseURL: 'http://localhost:3001',
         url: APIEndpoints.REFRESH,
     });
-    console.log(refreshData);
     localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(refreshData));
 };
 

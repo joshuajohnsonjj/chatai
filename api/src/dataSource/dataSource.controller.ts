@@ -1,8 +1,14 @@
-import { Controller, Body, Post, Param, Req } from '@nestjs/common';
+import { Controller, Body, Post, Param, Req, Get } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
 import { UseGuards } from '@nestjs/common/decorators';
-import { CreateDataSourceQueryDto, CreateDataSourceResponseDto, TestDataSourceResponseDto } from './dto/dataSource.dto';
+import {
+    CreateDataSourceQueryDto,
+    CreateDataSourceResponseDto,
+    ListDataSourceConnectionsResponseDto,
+    ListDataSourceTypesResponseDto,
+    TestDataSourceResponseDto,
+} from './dto/dataSource.dto';
 import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 
@@ -17,6 +23,16 @@ export class DataSourceController {
         @Req() req: Request,
     ): Promise<CreateDataSourceResponseDto> {
         return await this.service.createDataSource(body, req.user as DecodedUserTokenDto);
+    }
+
+    @Get()
+    async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
+        return await this.service.listDataSourceTypes();
+    }
+
+    @Get('/connections')
+    async listUserDataSourceConnections(@Req() req: Request): Promise<ListDataSourceConnectionsResponseDto[]> {
+        return await this.service.listUserDataSourceConnections(req.user as DecodedUserTokenDto);
     }
 
     @Post('test')

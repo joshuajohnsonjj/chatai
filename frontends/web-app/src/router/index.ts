@@ -8,15 +8,8 @@ import Search from '../views/Search.vue';
 import Support from '../views/Support.vue';
 import Settings from '../views/Settings.vue';
 import BrowseDataSources from '../views/BrowseDataSources.vue';
+import DataSourceConfigure from '../views/DataSourceConfigure.vue';
 import { useUserStore } from '../stores/user';
-import { useChatStore } from '../stores/chat';
-
-// const onChatViewsEnter = () => {
-//     const chatStore = useChatStore();
-//     if (!chatStore.chats.length) {
-//         chatStore.getChatList();
-//     }
-// }
 
 const onBeforeEnter = async (
     to: RouteLocationNormalized,
@@ -33,10 +26,6 @@ const onBeforeEnter = async (
         next({ name: 'login' });
         return;
     }
-
-    // if (to.meta.type === 'chat') {
-    //     onChatViewsEnter();
-    // }
 
     next();
 };
@@ -97,6 +86,15 @@ const router = createRouter({
                 type: 'data-source',
             },
             component: DataSources,
+            beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
+        },
+        {
+            path: '/data-sources/:dataSourceId/configure',
+            name: 'data-source-configure',
+            meta: {
+                type: 'data-source',
+            },
+            component: DataSourceConfigure,
             beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
         },
         {
