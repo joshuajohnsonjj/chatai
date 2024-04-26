@@ -9,27 +9,43 @@ datasource db {
 }
 
 model DataSource {
-  id               String         @id @default(uuid())
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @default(now())
-  lastSync         DateTime?
-  dataSourceTypeId String
-  ownerEntityId    String
-  ownerEntityType  EntityType
-  secret           String
-  externalId       String?        @unique
-  isSyncing        Boolean        @default(false)
-  type             DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
+  id                String         @id @default(uuid())
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @default(now())
+  lastSync          DateTime?
+  dataSourceTypeId  String
+  ownerEntityId     String
+  ownerEntityType   EntityType
+  secret            String         @unique
+  externalId        String?        @unique
+  isSyncing         Boolean        @default(false)
+  isLiveSyncEnabled Boolean        @default(false)
+  type              DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
+
+  googleDriveConnection GoogleDriveWebhookConnection?
 
   @@unique([ownerEntityId, dataSourceTypeId])
 }
 
+model GoogleDriveWebhookConnection {
+  id           String     @id @default(uuid())
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now())
+  connectionId String     @unique
+  resourceId   String
+  dataSourceId String     @unique
+  dataSource   DataSource @relation(fields: [dataSourceId], references: [id])
+}
+
 model DataSourceType {
-  id            String             @id @default(uuid())
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @default(now())
-  name          DataSourceTypeName @unique
-  linkedSources DataSource[]
+  id                      String             @id @default(uuid())
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @default(now())
+  name                    DataSourceTypeName @unique
+  category                DataSourceCategory
+  isLiveSyncAvailable     Boolean            @default(false)
+  requiredCredentialTypes String[]
+  linkedSources           DataSource[]
 }
 
 model Organization {
@@ -107,6 +123,7 @@ model ChatMessage {
   updatedAt       DateTime @default(now())
   text            String
   isSystemMessage Boolean
+  threadId        String
   chatId          String
   chat            Chat     @relation(fields: [chatId], references: [id])
 }
@@ -121,6 +138,13 @@ enum DataSourceTypeName {
   NOTION
   GOOGLE_DRIVE
   FILE_UPLOAD
+}
+
+enum DataSourceCategory {
+  COMMUNICATION
+  PROJECT_MANAGEMENT
+  NOTE_TAKING
+  OTHER
 }
 
 enum DataSyncInterval {

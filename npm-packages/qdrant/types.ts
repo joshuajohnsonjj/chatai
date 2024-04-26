@@ -18,6 +18,7 @@ export enum TQdrantPayloadKey {
 export enum QdrantDataSource {
     NOTION = 'notion',
     SLACK = 'slack',
+    GOOGLE_DRIVE = 'google_drive',
 }
 
 export interface QdrantPayload {

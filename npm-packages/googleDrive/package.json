@@ -1,5 +1,5 @@
 {
-  "name": "google-drive",
+  "name": "@joshuajohnsonjj38/google-drive",
   "version": "1.0.5",
   "main": "dist/index.js",
   "scripts": {
@@ -9,7 +9,8 @@
     "dist/*"
   ],
   "dependencies": {
-    "axios": "^1.6.8"
+    "axios": "^1.6.8",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "typescript": "^5.4.4"

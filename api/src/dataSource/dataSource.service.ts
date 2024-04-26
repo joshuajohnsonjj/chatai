@@ -9,10 +9,8 @@ import type {
 } from './dto/dataSource.dto';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { DataSourceTypeName, EntityType } from '@prisma/client';
-import { NotionSQSMessageBody, NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
+import { NotionWrapper } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
-import * as moment from 'moment';
-import { v4 } from 'uuid';
 import {
     AccessDeniedError,
     BadCredentialsError,
@@ -23,13 +21,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
-import { SQSClient, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
-import type {
-    SendMessageBatchCommandOutput,
-    SendMessageBatchRequest,
-    SendMessageBatchRequestEntry,
-} from '@aws-sdk/client-sqs';
+import { SQSClient } from '@aws-sdk/client-sqs';
 import { omit } from 'lodash';
+import { initGoogleDriveSync, initNotionSync, initSlackSync } from 'src/services/dataSource';
+import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
 
 @Injectable()
 export class DataSourceService {
@@ -58,11 +53,23 @@ export class DataSourceService {
                 user[CognitoAttribute.ORG_USER_ROLE],
             );
         } else if (params.ownerEntityId !== user.idUser) {
-            throw new BadRequestError('User id mismatch');
+            throw new AccessDeniedError('User id mismatch');
         }
 
+        const dataSourceType = await this.prisma.dataSourceType.findUniqueOrThrow({
+            where: {
+                id: params.dataSourceTypeId,
+            },
+            select: {
+                name: true,
+                requiredCredentialTypes: true,
+            },
+        });
+
+        this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
+
         const { isValid, message } = await this.testDataSourceConnection(
-            params.dataSourceTypeId,
+            dataSourceType.name,
             params.secret,
             params.externalId,
         );
@@ -119,7 +126,16 @@ export class DataSourceService {
             throw new BadRequestError('User id mismatch');
         }
 
-        return await this.testDataSourceConnection(params.dataSourceTypeId, params.secret, params.externalId);
+        const dataSourceType = await this.prisma.dataSourceType.findUniqueOrThrow({
+            where: {
+                id: params.dataSourceTypeId,
+            },
+            select: {
+                name: true,
+            },
+        });
+
+        return await this.testDataSourceConnection(dataSourceType.name, params.secret, params.externalId);
     }
 
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
@@ -201,166 +217,61 @@ export class DataSourceService {
 
             switch (dataSource.type.name) {
                 case DataSourceTypeName.NOTION:
-                    this.initNotionSync(dataSource.secret, dataSource.ownerEntityId, dataSource.lastSync, dataSourceId);
+                    initNotionSync(
+                        this.logger,
+                        this.sqsClient,
+                        this.rsaService.decrypt(dataSource.secret),
+                        this.configService.get<string>('SQS_NOTION_QUEUE_URL')!,
+                        dataSource.secret,
+                        dataSource.ownerEntityId,
+                        dataSource.lastSync,
+                        dataSourceId,
+                    );
                     break;
                 case DataSourceTypeName.SLACK:
-                    this.initSlackSync(dataSource.secret, dataSource.ownerEntityId, dataSourceId);
+                    initSlackSync(
+                        this.logger,
+                        this.sqsClient,
+                        this.rsaService.decrypt(dataSource.secret),
+                        this.configService.get<string>('SQS_SLACK_QUEUE_URL')!,
+                        dataSource.secret,
+                        dataSource.ownerEntityId,
+                        dataSourceId,
+                    );
+                    break;
+                case DataSourceTypeName.GOOGLE_DRIVE:
+                    initGoogleDriveSync(
+                        this.logger,
+                        this.sqsClient,
+                        this.rsaService.decrypt(dataSource.secret),
+                        this.configService.get<string>('SQS_GOOGLE_DRIVE_QUEUE_URL')!,
+                        dataSource.secret,
+                        dataSource.ownerEntityId,
+                        dataSource.lastSync,
+                        dataSourceId,
+                    );
                     break;
                 default:
-                    break;
+                    this.logger.error('Sync of an unsupported type was attempted', undefined, 'DataSource');
+                    throw new BadRequestError('Data source type not implemented');
             }
         });
     }
 
-    private async initNotionSync(
-        encryptedSecret: string,
-        ownerEntityId: string,
-        lastSync: Date | null,
-        dataSourceId: string,
-    ): Promise<void> {
-        this.logger.log(`Retreiving data source ${dataSourceId} Notion pages`, 'DataSource');
-
-        const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
-        const notionService = new NotionWrapper(decryptedSecret);
-        const messageGroupId = v4();
-        const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
-
-        let isComplete = false;
-        let nextCursor: string | null = null;
-        while (!isComplete) {
-            const resp = await notionService.listPages(nextCursor);
-            resp.results.forEach((page) => {
-                // Only process pages created/edited since last sync
-                if (!lastSync || moment(lastSync).isBefore(moment(page.last_edited_time))) {
-                    messageBatchEntries.push({
-                        Id: page.id,
-                        MessageBody: JSON.stringify({
-                            pageId: page.id,
-                            pageUrl: page.url,
-                            ownerEntityId: ownerEntityId,
-                            pageTitle: getPageTitle(page),
-                            secret: encryptedSecret,
-                            dataSourceId,
-                        } as NotionSQSMessageBody),
-                        MessageGroupId: messageGroupId,
-                    });
-                } else {
-                    isComplete = true;
-                }
-            });
-
-            if (!isComplete) {
-                isComplete = !resp.has_more;
-                nextCursor = resp.next_cursor;
-            }
-        }
-
-        this.sendSqsMessageBatches(
-            messageBatchEntries,
-            this.configService.get<string>('SQS_NOTION_QUEUE_URL')!,
-            dataSourceId,
-        );
-    }
-
-    private async initSlackSync(encryptedSecret: string, ownerEntityId: string, dataSourceId: string): Promise<void> {
-        this.logger.log(`Retreiving data source ${dataSourceId} Slack channels`, 'DataSource');
-
-        const decryptedSecret = this.rsaService.decrypt(encryptedSecret);
-        const slackService = new SlackWrapper(decryptedSecret);
-        const messageGroupId = v4();
-        const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
-
-        let isComplete = false;
-        let nextCursor: string | null = null;
-        while (!isComplete) {
-            const resp = await slackService.listConversations(nextCursor);
-            // TODO: check last sync time of data source, might have to do this on lambda side...
-            resp.channels.forEach((channel) => {
-                messageBatchEntries.push({
-                    Id: channel.id,
-                    MessageBody: JSON.stringify({
-                        channelId: channel.id,
-                        channelName: channel.name,
-                        ownerEntityId: ownerEntityId,
-                        secret: encryptedSecret,
-                        dataSourceId,
-                    }),
-                    MessageGroupId: messageGroupId,
-                });
-            });
-
-            if (!isComplete) {
-                isComplete = !resp?.response_metadata?.next_cursor;
-                nextCursor = resp?.response_metadata?.next_cursor;
-            }
-        }
-
-        this.sendSqsMessageBatches(
-            messageBatchEntries,
-            this.configService.get<string>('SQS_SLACK_QUEUE_URL')!,
-            dataSourceId,
-        );
-    }
-
-    private async sendSqsMessageBatches(
-        messageBatchEntries: SendMessageBatchRequestEntry[],
-        url: string,
-        dataSourceId: string,
-    ): Promise<void> {
-        const maxMessageBatchSize = 10;
-        const messageGrouoId = messageBatchEntries[0].MessageGroupId;
-        const messagePromises: Promise<SendMessageBatchCommandOutput>[] = [];
-
-        for (let i = 0; i < messageBatchEntries!.length; i += maxMessageBatchSize) {
-            const sqsMessageBatchInput: SendMessageBatchRequest = {
-                QueueUrl: url,
-                Entries: messageBatchEntries.slice(i, i + maxMessageBatchSize),
-            };
-
-            messagePromises.push(this.sqsClient.send(new SendMessageBatchCommand(sqsMessageBatchInput)));
-        }
-
-        messagePromises.push(
-            this.sqsClient.send(
-                new SendMessageBatchCommand({
-                    QueueUrl: url,
-                    Entries: [
-                        {
-                            Id: v4(),
-                            MessageBody: JSON.stringify({ isFinal: true, dataSourceId }),
-                            MessageGroupId: messageGrouoId,
-                        },
-                    ],
-                }),
-            ),
-        );
-
-        await Promise.all(messagePromises);
-
-        this.logger.log(
-            `Sent SQS messages for data source ${dataSourceId}. Message group: ${messageGrouoId}`,
-            'DataSource',
-        );
-    }
-
     private async testDataSourceConnection(
-        dataSourceTypeId: string,
+        dataSourceTypeName: string,
         secret: string,
         externalId?: string,
     ): Promise<{ isValid: boolean; message: string }> {
         const decryptedSecret = this.rsaService.decrypt(secret);
-        const dataSourceType = await this.prisma.dataSourceType.findUnique({
-            where: {
-                id: dataSourceTypeId,
-            },
-            select: {
-                name: true,
-            },
-        });
 
-        switch (dataSourceType?.name) {
+        switch (dataSourceTypeName) {
             case DataSourceTypeName.NOTION: {
                 const validity = await new NotionWrapper(decryptedSecret).testConnection();
+                return { isValid: validity, message: validity ? '' : 'Invalid token' };
+            }
+            case DataSourceTypeName.GOOGLE_DRIVE: {
+                const validity = await new GoogleDriveService(decryptedSecret).testConnection();
                 return { isValid: validity, message: validity ? '' : 'Invalid token' };
             }
             case DataSourceTypeName.SLACK: {
@@ -388,5 +299,16 @@ export class DataSourceService {
             this.logger.error('User is not an admin of the specified org', 'DataSource');
             throw new AccessDeniedError();
         }
+    }
+
+    private verifyRequiredCredentialTypesProvided(
+        requiredFields: string[],
+        createParams: CreateDataSourceQueryDto,
+    ): void {
+        requiredFields.forEach((field) => {
+            if (!createParams[field]) {
+                throw new BadRequestError('Missing required credentials for DataSource type');
+            }
+        });
     }
 }

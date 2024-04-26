@@ -13,6 +13,7 @@
     },
     "dependencies": {
         "@joshuajohnsonjj38/dynamo": "^1.0.1",
+        "@joshuajohnsonjj38/google-drive": "^1.0.5",
         "@joshuajohnsonjj38/notion": "^1.0.5",
         "@joshuajohnsonjj38/openai": "^1.0.4",
         "@joshuajohnsonjj38/qdrant": "^1.0.3",
