@@ -15,6 +15,7 @@ export const initGoogleDriveSync = async (
     ownerEntityId: string,
     lastSync: Date | null,
     dataSourceId: string,
+    userId: string,
     shouldInitiateWebhook: boolean,
 ): Promise<void> => {
     logger.log(`Retreiving data source ${dataSourceId} Google Drive documents`, 'DataSource');
@@ -61,5 +62,6 @@ export const initGoogleDriveSync = async (
         dataSourceId,
         DataSourceTypeName.GOOGLE_DRIVE,
         shouldInitiateWebhook,
+        userId,
     );
 };

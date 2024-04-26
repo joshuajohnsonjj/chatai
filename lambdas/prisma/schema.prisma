@@ -28,13 +28,14 @@ model DataSource {
 }
 
 model GoogleDriveWebhookConnection {
-  id           String     @id @default(uuid())
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @default(now())
-  connectionId String     @unique
-  resourceId   String
-  dataSourceId String     @unique
-  dataSource   DataSource @relation(fields: [dataSourceId], references: [id])
+  id            String     @id @default(uuid())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now())
+  connectionId  String     @unique
+  resourceId    String     @unique
+  creatorUserId String     @unique
+  dataSourceId  String     @unique
+  dataSource    DataSource @relation(fields: [dataSourceId], references: [id])
 }
 
 model DataSourceType {

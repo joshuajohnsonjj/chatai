@@ -24,7 +24,7 @@ import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { omit } from 'lodash';
 import { initGoogleDriveSync, initNotionSync, initSlackSync } from 'src/services/dataSourceSync';
-import { DriveException, GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
+import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
 
 @Injectable()
 export class DataSourceService {
@@ -99,7 +99,7 @@ export class DataSourceService {
                 },
             });
 
-            this.syncDataSource(dataSource.id);
+            this.syncDataSource(dataSource.id, user);
 
             return dataSource;
         } catch (e) {
@@ -151,6 +151,7 @@ export class DataSourceService {
                         id: true,
                         connectionId: true,
                         resourceId: true,
+                        creatorUserId: true,
                     },
                 },
             },
@@ -164,27 +165,23 @@ export class DataSourceService {
             throw new BadRequestError('No open google drive webhook connection for this data source');
         }
 
+        if (dataSource.googleDriveConnection.creatorUserId !== user.idUser) {
+            throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
+        }
+
         if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
             throw new AccessDeniedError('User not associated with this data source');
         }
 
         const decryptedSecret = this.rsaService.decrypt(dataSource.secret);
-        const result = await new GoogleDriveService(decryptedSecret).killWebhookConnection(
+
+        await new GoogleDriveService(decryptedSecret).killWebhookConnection(
             dataSource.googleDriveConnection.connectionId,
             dataSource.googleDriveConnection.resourceId,
         );
-
-        if (result.success) {
-            await this.prisma.googleDriveWebhookConnection.delete({
-                where: { id: dataSource.googleDriveConnection.id },
-            });
-        } else if (result.error === DriveException.WRONG_USER) {
-            throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
-        } else if (result.error === DriveException.AUTH) {
-            throw new BadRequestError('Google auth session expired.');
-        } else {
-            throw new InternalError('Unkown error occurred connecting to Google');
-        }
+        await this.prisma.googleDriveWebhookConnection.delete({
+            where: { id: dataSource.googleDriveConnection.id },
+        });
     }
 
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
@@ -234,7 +231,7 @@ export class DataSourceService {
         }));
     }
 
-    async syncDataSource(dataSourceId: string): Promise<void> {
+    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
         this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, 'DataSource');
 
         await this.prisma.$transaction(async (tx) => {
@@ -252,6 +249,10 @@ export class DataSourceService {
             if (!dataSource) {
                 this.logger.error(`Data source ${dataSourceId} not found`, 'DataSource');
                 throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+            }
+
+            if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
+                throw new AccessDeniedError('User not associated with this data source');
             }
 
             if (dataSource.isSyncing) {
@@ -298,6 +299,7 @@ export class DataSourceService {
                         dataSource.ownerEntityId,
                         dataSource.lastSync,
                         dataSourceId,
+                        user.idUser,
                         true,
                     );
                     break;

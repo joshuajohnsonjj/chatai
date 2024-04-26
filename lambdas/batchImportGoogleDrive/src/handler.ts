@@ -38,6 +38,7 @@ const createWebhookConnections = async (completedDataSources: GoogleDriveSQSFina
                     connectionId: response.id,
                     resourceId: response.resourceId,
                     dataSourceId: source.dataSourceId,
+                    creatorUserId: source.userId,
                 },
             });
         }),

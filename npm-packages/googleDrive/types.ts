@@ -113,5 +113,6 @@ export interface GoogleDriveSQSFinalBody {
     dataSourceId: string;
     secret: string;
     ownerEntityId: string;
+    userId: string;
     shouldInitiateWebhook: boolean;
 }

@@ -16,6 +16,7 @@ const createFinalMessageBody = (
     dataSourceId: string,
     entry: SendMessageBatchRequestEntry,
     shouldInitiateWebhook: boolean,
+    initiatingUserId?: string,
 ): string => {
     if (dataSourceType !== DataSourceTypeName.GOOGLE_DRIVE) {
         return JSON.stringify({ isFinal: true, dataSourceId });
@@ -27,6 +28,7 @@ const createFinalMessageBody = (
             secret: body.secret,
             ownerEntityId: body.ownerEntityId,
             shouldInitiateWebhook,
+            userId: initiatingUserId,
         } as GoogleDriveSQSFinalBody);
     }
 };
@@ -38,6 +40,7 @@ export const sendSqsMessageBatches = async (
     dataSourceId: string,
     dataSourceType: DataSourceTypeName,
     shouldInitiateWebhook = false,
+    initiatingUserId?: string,
 ): Promise<void> => {
     const messageGrouoId = messageBatchEntries[0].MessageGroupId;
     const messagePromises: Promise<SendMessageBatchCommandOutput>[] = [];
@@ -63,6 +66,7 @@ export const sendSqsMessageBatches = async (
                             dataSourceId,
                             messageBatchEntries[0],
                             shouldInitiateWebhook,
+                            initiatingUserId,
                         ),
                         MessageGroupId: messageGrouoId,
                     },
