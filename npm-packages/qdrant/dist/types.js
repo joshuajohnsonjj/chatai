@@ -11,4 +11,5 @@ var QdrantDataSource;
 (function (QdrantDataSource) {
     QdrantDataSource["NOTION"] = "notion";
     QdrantDataSource["SLACK"] = "slack";
+    QdrantDataSource["GOOGLE_DRIVE"] = "google_drive";
 })(QdrantDataSource || (exports.QdrantDataSource = QdrantDataSource = {}));

@@ -56,7 +56,6 @@ const processFile = async (
     const fileContent = await googleAPI.getFileContent(fileId);
     const text = buildPayloadTextsFile(fileName, fileContent);
     const payload: QdrantPayload = {
-        // TODO: publish qdrant update to npm, update imports
         date: new Date(modifiedDate).getTime(),
         dataSource: QdrantDataSource.GOOGLE_DRIVE,
         ownerId: ownerEntityId,
@@ -135,4 +134,3 @@ export const handler: Handler = async (event: SQSEvent) => {
         ]);
     }
 };
-// TODO: publish google drive types update to npm, update imports
