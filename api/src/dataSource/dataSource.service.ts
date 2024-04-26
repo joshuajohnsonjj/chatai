@@ -138,7 +138,7 @@ export class DataSourceService {
         return await this.testDataSourceConnection(dataSourceType.name, params.secret, params.externalId);
     }
 
-    async killGoogleDriveWebhookConnection(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
+    async killGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
         this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, 'DataSource');
 
         const dataSource = await this.prisma.dataSource.findUnique({
@@ -165,12 +165,8 @@ export class DataSourceService {
             throw new BadRequestError('No open google drive webhook connection for this data source');
         }
 
-        if (dataSource.googleDriveConnection.creatorUserId !== user.idUser) {
+        if (dataSource.googleDriveConnection.creatorUserId !== userId) {
             throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
-        }
-
-        if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
-            throw new AccessDeniedError('User not associated with this data source');
         }
 
         const decryptedSecret = this.rsaService.decrypt(dataSource.secret);

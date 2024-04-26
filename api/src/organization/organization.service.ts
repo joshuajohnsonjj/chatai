@@ -15,11 +15,15 @@ import { UserAuthService } from 'src/userAuth/userAuth.service';
 import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { ConfigService } from '@nestjs/config';
+import { DataSourceService } from 'src/dataSource/dataSource.service';
 
 @Injectable()
 export class OrganizationService {
     @Inject(UserAuthService)
     private readonly userAuthService: UserAuthService;
+
+    @Inject(DataSourceService)
+    private readonly dataSourceService: DataSourceService;
 
     constructor(
         private readonly prisma: PrismaService,
@@ -221,6 +225,18 @@ export class OrganizationService {
             where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
             select: { id: true },
         });
+
+        // if user started google drive webhook connection for org, kill it
+        const googleDriveConnection = await this.prisma.googleDriveWebhookConnection.findUnique({
+            where: { creatorUserId: reqUser.idUser },
+            select: { dataSourceId: true },
+        });
+        if (googleDriveConnection) {
+            await this.dataSourceService.killGoogleDriveWebhookConnection(
+                googleDriveConnection.dataSourceId,
+                reqUser.idUser,
+            );
+        }
 
         // downgrade user to individual free plan
         await Promise.all([

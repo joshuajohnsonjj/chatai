@@ -61,7 +61,6 @@ export class OrganizationController {
         return await this.service.listOrganizationInvites(orgId, req.user as DecodedUserTokenDto);
     }
 
-    // TODO: check for open google drive connection and kill
     @Delete('/:organizationId/member/:userId')
     async revokeOrgUserAccesse(
         @Param() orgId: string,

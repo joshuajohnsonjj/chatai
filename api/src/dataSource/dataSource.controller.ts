@@ -41,7 +41,10 @@ export class DataSourceController {
         @Body() body: DeleteGoogleDriveWebookQueryDto,
         @Req() req: Request,
     ): Promise<{ success: boolean }> {
-        await this.service.killGoogleDriveWebhookConnection(body.dataSourceId, req.user as DecodedUserTokenDto);
+        await this.service.killGoogleDriveWebhookConnection(
+            body.dataSourceId,
+            (req.user as DecodedUserTokenDto).idUser,
+        );
         return { success: true };
     }
 
