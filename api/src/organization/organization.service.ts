@@ -199,6 +199,8 @@ export class OrganizationService {
         userToRemoveId: string,
         reqUser: DecodedUserTokenDto,
     ): Promise<void> {
+        // FIXME: prevent removal of org owner
+        // TODO: allow transfer org ownership
         this.checkIsOrganizationAdmin(
             organizationId,
             reqUser[CognitoAttribute.ORG],

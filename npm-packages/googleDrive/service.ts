@@ -89,7 +89,6 @@ export class GoogleDriveService {
         return response.data;
     }
 
-    // TODO: store creator with pg record
     // TODO: catch error type for wrong user and respond with appropriate message
     /**
      * Only the original creator of the connection can destroy it (google api constraint)

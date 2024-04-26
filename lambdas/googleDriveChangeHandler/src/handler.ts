@@ -24,7 +24,6 @@ const qdrant = new QdrantWrapper(
 );
 const dynamo = new DynamoClient(process.env.AWS_REGION as string);
 
-// TODO: create endpoint in data source service to kill webhook conneciton
 const handleFileRemoved = async (fileId: string): Promise<void> => {
     await Promise.all([dynamo.deleteItemById(fileId), qdrant.deleteVectorById(fileId)]);
 };
