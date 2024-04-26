@@ -1,10 +1,11 @@
 import { Controller, Body, Post, Param, Req, Get } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
-import { UseGuards } from '@nestjs/common/decorators';
+import { Delete, UseGuards } from '@nestjs/common/decorators';
 import {
     CreateDataSourceQueryDto,
     CreateDataSourceResponseDto,
+    DeleteGoogleDriveWebookQueryDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     TestDataSourceResponseDto,
@@ -33,6 +34,15 @@ export class DataSourceController {
     @Get('/connections')
     async listUserDataSourceConnections(@Req() req: Request): Promise<ListDataSourceConnectionsResponseDto[]> {
         return await this.service.listUserDataSourceConnections(req.user as DecodedUserTokenDto);
+    }
+
+    @Delete('/connections/webhook/googleDrive')
+    async killGoogleDriveWebhookConnection(
+        @Body() body: DeleteGoogleDriveWebookQueryDto,
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.killGoogleDriveWebhookConnection(body.dataSourceId, req.user as DecodedUserTokenDto);
+        return { success: true };
     }
 
     @Post('test')

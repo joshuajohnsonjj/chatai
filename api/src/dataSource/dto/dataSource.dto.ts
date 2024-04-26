@@ -19,6 +19,11 @@ export class CreateDataSourceQueryDto {
     externalId?: string;
 }
 
+export class DeleteGoogleDriveWebookQueryDto {
+    @IsUUID()
+    dataSourceId: string;
+}
+
 export class CreateDataSourceResponseDto {
     id: string;
     createdAt: Date;

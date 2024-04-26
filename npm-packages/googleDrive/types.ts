@@ -8,6 +8,11 @@ export enum DriveAPIEndpints {
     STOP_LISTENING = '/channels/stop',
 }
 
+export enum DriveException {
+    WRONG_USER = 'WRONG_USER',
+    AUTH = 'AUTH',
+}
+
 export interface DriveListFilesRequestParams {
     pageSize: string;
     pageToken?: string;

@@ -24,7 +24,7 @@ import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { omit } from 'lodash';
 import { initGoogleDriveSync, initNotionSync, initSlackSync } from 'src/services/dataSourceSync';
-import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
+import { DriveException, GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
 
 @Injectable()
 export class DataSourceService {
@@ -123,7 +123,7 @@ export class DataSourceService {
                 user[CognitoAttribute.ORG_USER_ROLE],
             );
         } else if (params.ownerEntityId !== user.idUser) {
-            throw new BadRequestError('User id mismatch');
+            throw new AccessDeniedError('User id mismatch');
         }
 
         const dataSourceType = await this.prisma.dataSourceType.findUniqueOrThrow({
@@ -136,6 +136,55 @@ export class DataSourceService {
         });
 
         return await this.testDataSourceConnection(dataSourceType.name, params.secret, params.externalId);
+    }
+
+    async killGoogleDriveWebhookConnection(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
+        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, 'DataSource');
+
+        const dataSource = await this.prisma.dataSource.findUnique({
+            where: { id: dataSourceId },
+            select: {
+                ownerEntityId: true,
+                secret: true,
+                googleDriveConnection: {
+                    select: {
+                        id: true,
+                        connectionId: true,
+                        resourceId: true,
+                    },
+                },
+            },
+        });
+
+        if (!dataSource) {
+            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+        }
+
+        if (!dataSource.googleDriveConnection) {
+            throw new BadRequestError('No open google drive webhook connection for this data source');
+        }
+
+        if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
+            throw new AccessDeniedError('User not associated with this data source');
+        }
+
+        const decryptedSecret = this.rsaService.decrypt(dataSource.secret);
+        const result = await new GoogleDriveService(decryptedSecret).killWebhookConnection(
+            dataSource.googleDriveConnection.connectionId,
+            dataSource.googleDriveConnection.resourceId,
+        );
+
+        if (result.success) {
+            await this.prisma.googleDriveWebhookConnection.delete({
+                where: { id: dataSource.googleDriveConnection.id },
+            });
+        } else if (result.error === DriveException.WRONG_USER) {
+            throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
+        } else if (result.error === DriveException.AUTH) {
+            throw new BadRequestError('Google auth session expired.');
+        } else {
+            throw new InternalError('Unkown error occurred connecting to Google');
+        }
     }
 
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {

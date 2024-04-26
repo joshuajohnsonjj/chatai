@@ -1,6 +1,12 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import { DocsAPIEndpoints, DriveAPIEndpints } from './types';
-import type { DriveListFilesRequestParams, DriveListFilesResponse, GoogleDoc, StartDriveWatchResponse } from './types';
+import type {
+    DriveException,
+    DriveListFilesRequestParams,
+    DriveListFilesResponse,
+    GoogleDoc,
+    StartDriveWatchResponse,
+} from './types';
 import { v4 } from 'uuid';
 
 const MAX_TRIES = 3;
@@ -83,8 +89,15 @@ export class GoogleDriveService {
         return response.data;
     }
 
-    // TODO: Only owner can start/stop connection
-    public async killWebhookConnection(connectionId: string, resourceId: string): Promise<{ success: boolean }> {
+    // TODO: store creator with pg record
+    // TODO: catch error type for wrong user and respond with appropriate message
+    /**
+     * Only the original creator of the connection can destroy it (google api constraint)
+     */
+    public async killWebhookConnection(
+        connectionId: string,
+        resourceId: string,
+    ): Promise<{ success: boolean; error?: DriveException }> {
         const data = {
             id: connectionId,
             resourceId,
