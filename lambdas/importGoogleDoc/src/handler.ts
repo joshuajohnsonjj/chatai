@@ -3,7 +3,11 @@ import { isValidMessageBody } from './utility';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
-import { type GoogleDriveSQSFinalBody, GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
+import {
+    type GoogleDriveSQSFinalBody,
+    GoogleDriveService,
+    buildPayloadTextsFile,
+} from '@joshuajohnsonjj38/google-drive';
 import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
 import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
@@ -46,25 +50,13 @@ const processFile = async (
     ownerEntityId: string,
     fileUrl: string,
     fileName: string,
+    modifiedDate: string,
 ) => {
     const fileContent = await googleAPI.getFileContent(fileId);
-    const stringifiedFileContent = fileContent.body.content.map((block) => {
-        if (!block.paragraph) {
-            return;
-        }
-        const text = block.paragraph.elements
-            .map((el) => el.textRun.content)
-            .join('')
-            .replace(/\r?\n|\r/g, '');
-        return text;
-    });
-
-    // TODO: figure out how to break up large files...
-    const text = `Document Title: ${fileName}, Document content: ${stringifiedFileContent}`;
+    const text = buildPayloadTextsFile(fileName, fileContent);
     const payload: QdrantPayload = {
-        // FIXME: send date in message body
         // TODO: publish qdrant update to npm, update imports
-        date: new Date().getTime(),
+        date: new Date(modifiedDate).getTime(),
         dataSource: QdrantDataSource.GOOGLE_DRIVE,
         ownerId: ownerEntityId,
     };
@@ -115,6 +107,7 @@ export const handler: Handler = async (event: SQSEvent) => {
                 messageBody.ownerEntityId,
                 messageBody.fileUrl,
                 messageBody.fileName,
+                messageBody.modifiedDate,
             ),
         );
     }

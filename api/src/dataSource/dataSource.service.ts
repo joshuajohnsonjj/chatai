@@ -23,7 +23,7 @@ import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { SQSClient } from '@aws-sdk/client-sqs';
 import { omit } from 'lodash';
-import { initGoogleDriveSync, initNotionSync, initSlackSync } from 'src/services/dataSource';
+import { initGoogleDriveSync, initNotionSync, initSlackSync } from 'src/services/dataSourceSync';
 import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
 
 @Injectable()
@@ -249,6 +249,7 @@ export class DataSourceService {
                         dataSource.ownerEntityId,
                         dataSource.lastSync,
                         dataSourceId,
+                        true,
                     );
                     break;
                 default:

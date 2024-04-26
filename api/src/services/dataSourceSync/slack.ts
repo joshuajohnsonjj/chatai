@@ -3,6 +3,7 @@ import { v4 } from 'uuid';
 import { Logger } from '@nestjs/common';
 import { sendSqsMessageBatches } from '../sqs';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
+import { DataSourceTypeName } from '@prisma/client';
 
 export const initSlackSync = async (
     logger: Logger,
@@ -44,5 +45,5 @@ export const initSlackSync = async (
         }
     }
 
-    sendSqsMessageBatches(sqsClient, messageBatchEntries, slackQueueUrl, dataSourceId);
+    sendSqsMessageBatches(sqsClient, messageBatchEntries, slackQueueUrl, dataSourceId, DataSourceTypeName.SLACK);
 };

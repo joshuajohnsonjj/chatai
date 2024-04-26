@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import { v4 } from 'uuid';
 import { Logger } from '@nestjs/common';
 import { sendSqsMessageBatches } from '../sqs';
+import { DataSourceTypeName } from '@prisma/client';
 
 export const initGoogleDriveSync = async (
     logger: Logger,
@@ -14,6 +15,7 @@ export const initGoogleDriveSync = async (
     ownerEntityId: string,
     lastSync: Date | null,
     dataSourceId: string,
+    shouldInitiateWebhook: boolean,
 ): Promise<void> => {
     logger.log(`Retreiving data source ${dataSourceId} Google Drive documents`, 'DataSource');
 
@@ -37,6 +39,7 @@ export const initGoogleDriveSync = async (
                         fileName: file.name,
                         secret: encryptedSecret,
                         dataSourceId,
+                        modifiedDate: file.modifiedTime,
                     } as GoogleDriveSQSMessageBody),
                     MessageGroupId: messageGroupId,
                 });
@@ -51,5 +54,12 @@ export const initGoogleDriveSync = async (
         }
     }
 
-    sendSqsMessageBatches(sqsClient, messageBatchEntries, notionQueueUrl, dataSourceId);
+    sendSqsMessageBatches(
+        sqsClient,
+        messageBatchEntries,
+        notionQueueUrl,
+        dataSourceId,
+        DataSourceTypeName.GOOGLE_DRIVE,
+        shouldInitiateWebhook,
+    );
 };

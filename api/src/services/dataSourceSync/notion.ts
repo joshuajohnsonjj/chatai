@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import { v4 } from 'uuid';
 import { Logger } from '@nestjs/common';
 import { sendSqsMessageBatches } from '../sqs';
+import { DataSourceTypeName } from '@prisma/client';
 
 export const initNotionSync = async (
     logger: Logger,
@@ -51,5 +52,5 @@ export const initNotionSync = async (
         }
     }
 
-    sendSqsMessageBatches(sqsClient, messageBatchEntries, notionQueueUrl, dataSourceId);
+    sendSqsMessageBatches(sqsClient, messageBatchEntries, notionQueueUrl, dataSourceId, DataSourceTypeName.NOTION);
 };

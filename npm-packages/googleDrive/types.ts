@@ -74,6 +74,17 @@ export interface GoogleDoc {
     };
 }
 
+export interface GoogleDriveChangeEvent {
+    kind: 'drive#change';
+    removed: boolean;
+    file: GoogleDoc;
+    fileId: string;
+    time: string;
+    driveId: string;
+    changeType: 'drive' | 'file';
+    drive: unknown;
+}
+
 /**
  *
  * SQS types
@@ -89,10 +100,11 @@ export interface GoogleDriveSQSBaseBody {
     fileName: string;
     secret: string;
     dataSourceId: string;
+    modifiedDate: string;
 }
 
 export interface GoogleDriveSQSFinalBody {
-    isFinal: boolean;
+    isFinal: true;
     dataSourceId: string;
     secret: string;
     ownerEntityId: string;
