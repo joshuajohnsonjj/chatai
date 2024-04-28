@@ -1,12 +1,13 @@
 <script lang="ts" setup>
     defineProps<{
         withText?: string;
+        parentClass?: string;
     }>();
 </script>
 
 <template>
-    <div class="w-100" style="position: relative">
-        <div class="mx-8 horizantile-line"></div>
+    <div class="w-100" :class="parentClass" style="position: relative">
+        <div class="horizantile-line"></div>
         <div v-if="withText" class="line-text-overlay text-center bg-background">{{ withText }}</div>
     </div>
 </template>

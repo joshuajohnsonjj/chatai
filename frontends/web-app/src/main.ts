@@ -9,6 +9,7 @@ import { registerPlugins } from './plugins';
 
 import Toast, { POSITION } from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
+import './styles/main.scss';
 
 // Components
 import App from './App.vue';

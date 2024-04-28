@@ -5,6 +5,7 @@ import { DataSourceController } from './dataSource.controller';
 @Module({
     imports: [],
     providers: [DataSourceService, Logger],
+    exports: [DataSourceService],
     controllers: [DataSourceController],
 })
 export class DataSourceModule {}

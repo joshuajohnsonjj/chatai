@@ -1,6 +1,6 @@
 <template>
     <div class="bg-surface w-100 h-100 rounded-xl px-6" style="position: relative">
-        <div class="w-100 bg-surface header-container">
+        <div class="w-100 bg-surface header-container bottom-border-primary">
             <div class="d-flex justify-space-between">
                 <p class="text-h4 font-weight-medium text-primary pt-6 pb-4 pl-6">{{ selectedChat?.title }}</p>
                 <div class="pr-6 pt-4">
@@ -76,7 +76,6 @@
         position: absolute;
         left: 0;
         border-radius: 24px 24px 0 0;
-        border-bottom: 1px solid rgb(var(--v-theme-border-color));
         z-index: 100;
     }
 

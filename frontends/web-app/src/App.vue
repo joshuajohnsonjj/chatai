@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <v-main v-if="$route.name === 'login'">
+        <v-main v-if="!$route.meta?.sideNavEnabled">
             <router-view />
         </v-main>
         <v-main class="pt-6 px-4" v-else>

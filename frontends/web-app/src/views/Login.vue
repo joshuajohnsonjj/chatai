@@ -2,11 +2,12 @@
     <v-container>
         <v-row class="py-12">
             <v-col cols="6">
-                <div class="text-h3 font-weight-thin text-primary">Apoio</div>
-            </v-col>
-            <v-col cols="6">
-                <div class="text-h5 font-weight-medium text-primary">Welcome back!</div>
-                <div class="text-subtitle-1 text-secondary mb-6">Please login to your account</div>
+                <div class="text-h3 font-weight-thin text-primary mb-6">Apoio</div>
+                <div class="text-h4 font-weight-medium text-primary">Welcome back!</div>
+                <div class="text-subtitle-1 text-secondary mb-6">
+                    No account yet?
+                    <span class="link button-hover" @click="$router.push({ name: 'signup' })">Join Now</span>
+                </div>
 
                 <div class="text-label text-primary mb-1">Email</div>
                 <v-text-field
@@ -48,6 +49,9 @@
                         <p class="pl-4 line-height-60">Log in with Google</p>
                     </div>
                 </div>
+            </v-col>
+            <v-col cols="6" class="pa-12">
+                <div class="text-h3 font-weight-medium text-primary">Experience the future of productivity.</div>
             </v-col>
         </v-row>
     </v-container>
@@ -105,15 +109,6 @@
 </style>
 
 <style scoped>
-    .login-button {
-        background: rgb(var(--v-theme-gradient-purple));
-        background: linear-gradient(
-            90deg,
-            rgba(var(--v-theme-gradient-purple), 1) 0%,
-            rgba(var(--v-theme-gradient-blue), 1)
-        );
-    }
-
     .line-height-60 {
         line-height: 60px;
     }

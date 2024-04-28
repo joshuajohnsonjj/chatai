@@ -15,7 +15,7 @@
                 variant="outlined"
                 placeholder="Search integrations..."
             ></v-text-field>
-            <div class="w-50 border rounded ml-4 px-4 py-2 d-flex justify-space-between">
+            <div class="w-50 border-primary rounded ml-4 px-4 py-2 d-flex justify-space-between">
                 <div class="button-hover" :class="{ selected: selected === 'All' }" @click="selected = 'All'">
                     <p class="text-caption font-weight-light text-primary px-4" style="line-height: 38px">All</p>
                 </div>
@@ -87,10 +87,6 @@
 </script>
 
 <style scoped>
-    .border {
-        border: 1px solid rgb(var(--v-theme-border-color));
-    }
-
     .selected {
         background-color: rgb(var(--v-theme-background));
     }

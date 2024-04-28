@@ -8,7 +8,7 @@
 </script>
 
 <template>
-    <div class="rounded-lg container pa-4">
+    <div class="rounded-lg border-primary pa-4" style="max-width: 31%">
         <div class="d-flex justify-start">
             <div class="badge-container rounded" :class="`bg-${color}`">
                 <v-icon :icon="icon"></v-icon>
@@ -23,11 +23,6 @@
 </template>
 
 <style scoped>
-    .container {
-        border: 1px solid rgb(var(--v-theme-border-color));
-        max-width: 31%;
-    }
-
     .badge-container {
         width: 40px;
         height: 40px;

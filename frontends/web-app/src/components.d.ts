@@ -7,12 +7,18 @@ export {}
 
 declare module 'vue' {
     export interface GlobalComponents {
+        FullScreenBackgroundBlur: (typeof import('./components/common/FullScreenBackgroundBlur.vue'))['default'];
         HorizontalLine: (typeof import('./components/common/HorizontalLine.vue'))['default'];
         MessageInput: (typeof import('./components/chat/MessageInput.vue'))['default'];
         NavOpenClose: (typeof import('./components/customIcons/NavOpenClose.vue'))['default'];
         NewChatInfoBlock: (typeof import('./components/chat/NewChatInfoBlock.vue'))['default'];
+        PlanDetail: (typeof import('./components/onboarding/PlanDetail.vue'))['default'];
         RouterLink: (typeof import('vue-router'))['RouterLink'];
         RouterView: (typeof import('vue-router'))['RouterView'];
+        SearchActiveFilter: (typeof import('./components/search/SearchActiveFilter.vue'))['default'];
+        SearchBarWithPredictions: (typeof import('./components/search/SearchBarWithPredictions.vue'))['default'];
+        SearchFilters: (typeof import('./components/search/SearchFilters.vue'))['default'];
+        SearchResultRow: (typeof import('./components/search/SearchResultRow.vue'))['default'];
         SideNav: (typeof import('./components/SideNav.vue'))['default'];
         UserAvatar: (typeof import('./components/common/UserAvatar.vue'))['default'];
     }

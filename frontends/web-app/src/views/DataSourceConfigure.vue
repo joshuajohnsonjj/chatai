@@ -39,7 +39,7 @@
 
         <v-row>
             <v-col cols="6">
-                <v-sheet class="setting-container rounded pa-6">
+                <v-sheet class="border-primary rounded pa-6">
                     <p class="text-h6 text-primary">Access management</p>
                     <p class="text-caption text-secondary" style="max-width: 250px">
                         Your credentials are used to connect to and synchronize the data source
@@ -55,12 +55,12 @@
                 </v-sheet>
             </v-col>
             <v-col cols="6">
-                <v-sheet class="setting-container rounded pa-6"> Access management </v-sheet>
+                <v-sheet class="border-primary rounded pa-6"> Access management </v-sheet>
             </v-col>
         </v-row>
         <v-row>
             <v-col cols="12">
-                <v-sheet class="setting-container rounded pa-6"> Configurations </v-sheet>
+                <v-sheet class="border-primary rounded pa-6"> Configurations </v-sheet>
             </v-col>
         </v-row>
     </div>
@@ -92,9 +92,3 @@
     );
     console.log(selectedDataSource.value);
 </script>
-
-<style scoped>
-    .setting-container {
-        border: 1px solid rgb(var(--v-theme-border-color));
-    }
-</style>

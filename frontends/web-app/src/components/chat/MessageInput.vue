@@ -28,6 +28,7 @@
 
     const textField = ref<string>();
 
+    // FIXME: use vue useGoTo method
     const scrollToBottom = () => {
         last(document.getElementById('chat-scroll')!.children)!.scrollIntoView(false);
     };

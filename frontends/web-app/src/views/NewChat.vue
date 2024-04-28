@@ -56,12 +56,3 @@
         }
     });
 </script>
-
-<style scoped>
-    .header-container {
-        position: absolute;
-        left: 0;
-        border-radius: 24px 24px 0 0;
-        border-bottom: 1px solid rgb(var(--v-theme-border-color));
-    }
-</style>
