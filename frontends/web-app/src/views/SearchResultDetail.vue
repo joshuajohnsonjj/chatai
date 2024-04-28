@@ -48,9 +48,9 @@
             <div class="bg-background pa-6 rounded">
                 <div class="bg-surface-bright py-2 px-4 rounded d-flex justify-space-between">
                     <div class="font-weight-medium text-h6 text-primary pt-1">Content preview</div>
-                    <v-btn variant="text" class="text-caption">Copy to clipboard</v-btn>
+                    <v-btn variant="text" class="text-caption" @click="copyToClipboard">Copy to clipboard</v-btn>
                 </div>
-                <div class="pa-6 text-body-1 text-primary">
+                <div id="content-preview" class="pa-6 text-body-1 text-primary">
                     Features
                     <ul>
                         <li>No need to hire a lawyer, all legal/title etc handled</li>
@@ -94,10 +94,19 @@
 <script lang="ts" setup>
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import moment from 'moment';
+    import { useToast } from 'vue-toastification';
+
+    const toast = useToast();
 
     function openSource() {
         const url =
             'https://www.notion.so/Seller-financing-platform-16fb35ef252f4b05b44786df36c16d91?pvs=4#5983b7088475403ebf61506fd0e82eb9';
         window.open(url, '_blank')!.focus();
+    }
+
+    function copyToClipboard() {
+        const copyText = document.getElementById('content-preview')!.innerText;
+        navigator.clipboard.writeText(copyText);
+        toast.success('Content coppied to clipboard!');
     }
 </script>
