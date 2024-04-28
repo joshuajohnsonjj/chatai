@@ -45,7 +45,7 @@
                         Your credentials are used to connect to and synchronize the data source
                     </p>
 
-                    <p class="mt-8 mb-2 text-paragraph font-weight-medium text-primary">API Key</p>
+                    <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">API Key</p>
                     <v-text-field type="password" placeholder="****************" variant="outlined"></v-text-field>
 
                     <div class="d-flex justify-end mt-4">

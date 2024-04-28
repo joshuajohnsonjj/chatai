@@ -14,7 +14,7 @@
                 @click="$router.push({ name: option.routeName })"
             >
                 <v-icon :icon="option.icon" :color="option.color" style="height: 45px"></v-icon>
-                <p class="pl-4 text-paragraph text-primary" style="line-height: 45px">{{ option.title }}</p>
+                <p class="pl-4 text-body-1 text-primary" style="line-height: 45px">{{ option.title }}</p>
             </div>
 
             <HorizontalLine />
@@ -28,7 +28,7 @@
                     @click="onChatSelected(option.id)"
                 >
                     <div class="chat-square" :class="`bg-info`"></div>
-                    <p class="pl-4 text-paragraph text-primary" style="line-height: 40px">{{ option.title }}</p>
+                    <p class="pl-4 text-body-1 text-primary" style="line-height: 40px">{{ option.title }}</p>
                 </div>
             </div>
 

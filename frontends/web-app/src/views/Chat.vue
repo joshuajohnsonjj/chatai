@@ -16,7 +16,7 @@
                     <div v-for="message in thread.messages" :key="message.id">
                         <div v-if="!message.isSystemMessage" class="bg-surface-bright rounded py-2 px-4 d-flex">
                             <v-avatar image="@/assets/avatar.jpg" size="32"></v-avatar>
-                            <p class="ml-4 mt-1 me-auto text-paragraph text-primary">{{ message.text }}</p>
+                            <p class="ml-4 mt-1 me-auto text-body-1 text-primary">{{ message.text }}</p>
                             <v-btn
                                 variant="plain"
                                 icon="mdi-tooltip-edit-outline"
@@ -25,7 +25,7 @@
                             ></v-btn>
                         </div>
                         <div v-else>
-                            <p class="text-paragraph text-primary mt-4 system-message">
+                            <p class="text-body-1 text-primary mt-4 system-message">
                                 {{ formatChatResponse(message.text) }}
                             </p>
                         </div>

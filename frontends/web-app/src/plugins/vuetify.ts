@@ -23,7 +23,7 @@ const darkTheme = {
         success: '#49FD8E',
         info: '#8D55EA',
         warning: '#D84C0F',
-        error: '#CE1C',
+        error: '#F03D3D',
         blue: '#3D90F0',
         gray: '#404447',
         pink: '#A479A0',

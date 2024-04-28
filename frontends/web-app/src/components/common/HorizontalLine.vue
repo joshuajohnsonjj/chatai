@@ -2,12 +2,13 @@
     defineProps<{
         withText?: string;
         parentClass?: string;
+        thinkness?: string;
     }>();
 </script>
 
 <template>
     <div class="w-100" :class="parentClass" style="position: relative">
-        <div class="horizantile-line"></div>
+        <div class="horizantile-line" :style="`border-width: ${thinkness ?? '1px'}`"></div>
         <div v-if="withText" class="line-text-overlay text-center bg-background">{{ withText }}</div>
     </div>
 </template>

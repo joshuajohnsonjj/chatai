@@ -4,7 +4,7 @@
             <div class="d-flex justify-start mb-4">
                 <v-avatar image="@/assets/avatar.jpg" size="49"></v-avatar>
                 <div class="ml-2">
-                    <p class="text-paragraph text-primary font-weight-medium">
+                    <p class="text-body-1 text-primary font-weight-medium">
                         {{ `${userData.firstName} ${userData.lastName}` }}
                     </p>
                     <p class="text-caption text-secondary">{{ email }}</p>

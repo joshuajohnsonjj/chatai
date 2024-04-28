@@ -4,7 +4,7 @@
             <v-col :cols="isSearchStarted ? '1' : '12'" class="d-flex justify-center">
                 <img
                     src="../assets/orb.gif"
-                    :width="isSearchStarted ? '100' : '300'"
+                    :width="isSearchStarted ? '90' : '300'"
                     style="z-index: 100; height: fit-content"
                 />
             </v-col>
@@ -29,18 +29,18 @@
             </v-col>
         </v-row>
 
-        <v-row class="d-flex justify-start mb-3">
-            <SearchActiveFilter
-                v-for="param in activeQueryParams"
-                :key="param.value"
-                :value="param.value"
-                :type="param.type"
-            />
-        </v-row>
+        <div v-if="isSearchStarted" class="mt-4">
+            <div class="d-flex justify-space-between">
+                <SearchActiveFilters />
 
-        <HorizontalLine />
+                <div class="text-secondary text-body-2">20 results</div>
+            </div>
+            <HorizontalLine thinkness="3px" />
 
-        <SearchResultRow />
+            <div style="height: 76.8vh; overflow-y: scroll">
+                <SearchResultRow v-for="n in 20" :key="n" />
+            </div>
+        </div>
     </div>
 </template>
 
