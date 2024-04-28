@@ -6,7 +6,7 @@
                 <div class="text-h4 font-weight-medium text-primary">Welcome back!</div>
                 <div class="text-subtitle-1 text-secondary mb-6">
                     No account yet?
-                    <span class="link button-hover" @click="$router.push({ name: 'signup' })">Join Now</span>
+                    <span class="link button-hover" @click="$router.push({ name: RouteName.SIGNUP })">Join Now</span>
                 </div>
 
                 <div class="text-label text-primary mb-1">Email</div>
@@ -64,6 +64,7 @@
     import { useRouter } from 'vue-router';
     import { EMAIL_STORAGE_KEY } from '../constants';
     import { storeToRefs } from 'pinia';
+    import { RouteName } from '../types/router';
 
     const userStore = useUserStore();
     const toast = useToast();
@@ -98,7 +99,7 @@
             localStorage.removeItem(EMAIL_STORAGE_KEY);
         }
 
-        router.push({ name: 'chats' });
+        router.push({ name: RouteName.CHAT });
     }
 </script>
 

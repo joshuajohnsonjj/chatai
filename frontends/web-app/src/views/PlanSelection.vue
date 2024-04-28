@@ -52,7 +52,7 @@
             <v-btn color="success" variant="tonal" class="text-caption rounded pa-0 mt-2 ml-2 mr-8">Save 12%</v-btn>
         </div>
         <div class="d-flex justify-center">
-            <v-btn v-if="!!selectedPlan" style="width: 300px" color="blue" variant="tonal" @click="$router.push('/')"
+            <v-btn v-if="!!selectedPlan" style="width: 300px" color="blue" variant="tonal" @click="$router.push({ name: RouteName.CHAT })"
                 >continue</v-btn
             >
         </div>
@@ -62,7 +62,8 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { UserType } from '../types/user-store';
-
+    import { RouteName } from '../types/router';
+    
     // TODO: put plan in query string so back button will work
     const userType = ref<UserType | null>(null);
     const selectedPlan = ref<string | null>(null);

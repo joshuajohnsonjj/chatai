@@ -7,14 +7,16 @@ import Signup from '../views/Signup.vue';
 import PlanSelection from '../views/PlanSelection.vue';
 import DataSources from '../views/DataSources.vue';
 import Search from '../views/Search.vue';
+import SearchResultDetail from '../views/SearchResultDetail.vue';
 import Support from '../views/Support.vue';
 import Settings from '../views/Settings.vue';
 import BrowseDataSources from '../views/BrowseDataSources.vue';
 import DataSourceConfigure from '../views/DataSourceConfigure.vue';
 import { useUserStore } from '../stores/user';
+import { RouteName, RouteType } from '../types/router';
 
 const onBeforeEnter = async (
-    to: RouteLocationNormalized,
+    _to: RouteLocationNormalized,
     _from: RouteLocationNormalized,
     next: NavigationGuardNext,
 ) => {
@@ -32,7 +34,6 @@ const onBeforeEnter = async (
     next();
 };
 
-// TODO: create enums for route data
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
@@ -41,9 +42,9 @@ const router = createRouter({
          */
         {
             path: '/',
-            name: 'chats',
+            name: RouteName.CHAT,
             meta: {
-                type: 'chat',
+                type: RouteType.CHAT,
                 sideNavEnabled: true,
             },
             component: NewChat,
@@ -51,9 +52,9 @@ const router = createRouter({
         },
         {
             path: '/chats/:chatId',
-            name: 'chat-messages',
+            name: RouteName.MESSAGES,
             meta: {
-                type: 'chat',
+                type: RouteType.CHAT,
                 sideNavEnabled: true,
             },
             component: Chat,
@@ -65,19 +66,31 @@ const router = createRouter({
          */
         {
             path: '/search',
-            name: 'search',
+            name: RouteName.SEARCH,
             meta: {
-                type: 'search',
+                type: RouteType.SEARCH,
                 sideNavEnabled: true,
             },
             component: Search,
             beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
         },
         {
-            path: '/support',
-            name: 'support',
+            path: '/search/:resultId/detail',
+            name: RouteName.SEARCH_RESULT,
             meta: {
-                type: 'support',
+                type: RouteType.SEARCH,
+                sideNavEnabled: true,
+            },
+            component: SearchResultDetail,
+            beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
+        },
+
+
+        {
+            path: '/support',
+            name: RouteName.SUPPORT,
+            meta: {
+                type: RouteType.SUPPORT,
                 sideNavEnabled: true,
             },
             component: Support,
@@ -85,9 +98,9 @@ const router = createRouter({
         },
         {
             path: '/settings',
-            name: 'settings',
+            name: RouteName.SETTINGS,
             meta: {
-                type: 'settings',
+                type: RouteType.SETTINGS,
                 sideNavEnabled: true,
             },
             component: Settings,
@@ -99,9 +112,9 @@ const router = createRouter({
          */
         {
             path: '/data-sources',
-            name: 'data-sources',
+            name: RouteName.DATA_SOURCES,
             meta: {
-                type: 'data-source',
+                type: RouteType.DATA_SOURCE,
                 sideNavEnabled: true,
             },
             component: DataSources,
@@ -109,9 +122,9 @@ const router = createRouter({
         },
         {
             path: '/data-sources/:dataSourceId/configure',
-            name: 'data-source-configure',
+            name: RouteName.DATA_SOURCE_CONFIG,
             meta: {
-                type: 'data-source',
+                type: RouteType.DATA_SOURCE,
                 sideNavEnabled: true,
             },
             component: DataSourceConfigure,
@@ -119,9 +132,9 @@ const router = createRouter({
         },
         {
             path: '/data-sources/browse',
-            name: 'browse-data-sources',
+            name: RouteName.BROWSE_DATA_SOURCES,
             meta: {
-                type: 'data-source',
+                type: RouteType.DATA_SOURCE,
                 sideNavEnabled: true,
             },
             component: BrowseDataSources,
@@ -129,31 +142,35 @@ const router = createRouter({
         },
 
         /**
-         * Auth/Onboarding routes
+         * Auth routes
          */
         {
             path: '/login',
-            name: 'login',
+            name: RouteName.LOGIN,
             meta: {
-                type: 'auth',
+                type: RouteType.AUTH,
                 sideNavEnabled: false,
             },
             component: Login,
         },
         {
             path: '/signup',
-            name: 'signup',
+            name: RouteName.SIGNUP,
             meta: {
-                type: 'auth',
+                type: RouteType.AUTH,
                 sideNavEnabled: false,
             },
             component: Signup,
         },
+
+        /**
+         * Onboarding routes
+         */
         {
             path: '/onboarding/plan-selection',
-            name: 'plan-selection',
+            name: RouteName.PLAN_SELECT,
             meta: {
-                type: 'onboarding',
+                type: RouteType.ONBOARDING,
                 sideNavEnabled: false,
             },
             component: PlanSelection,

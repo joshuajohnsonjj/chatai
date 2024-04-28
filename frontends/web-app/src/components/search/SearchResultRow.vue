@@ -26,8 +26,8 @@
         </v-col>
 
         <v-col cols="2">
-            <v-btn variant="tonal" color="info" class="mb-1">view details</v-btn>
-            <v-btn variant="tonal" color="blue">open source</v-btn>
+            <v-btn variant="tonal" color="info" class="mb-1" @click="viewDetail">view details</v-btn>
+            <v-btn variant="tonal" color="blue" @click="openSource">open source</v-btn>
         </v-col>
     </v-row>
 
@@ -35,5 +35,22 @@
 </template>
 
 <script lang="ts" setup>
-    import { BASE_S3_DATASOURCE_LOGO_URL } from '../../constants';
+import { BASE_S3_DATASOURCE_LOGO_URL } from '../../constants';
+import { useRouter } from 'vue-router';
+import { useSearchStore } from '../../stores/search';
+import { RouteName } from '../../types/router';
+
+const searchStore = useSearchStore();
+    
+const router = useRouter();
+
+function viewDetail() {
+    searchStore.selectedSearchResult = 'abc';
+    router.push({ name: RouteName.SEARCH_RESULT, params: { resultId: 'abc' } });
+}
+
+function openSource() {
+    const url = 'https://www.notion.so/Seller-financing-platform-16fb35ef252f4b05b44786df36c16d91?pvs=4#5983b7088475403ebf61506fd0e82eb9';
+    window.open(url, '_blank')!.focus();
+}
 </script>

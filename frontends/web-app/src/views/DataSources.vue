@@ -24,7 +24,7 @@
                 :key="dataSource.id"
                 class="bg-background rounded pa-6 ma-2 grow-hover"
                 style="min-width: 234px; position: relative"
-                @click="$router.push({ name: 'data-source-configure', params: { dataSourceId: dataSource.id } })"
+                @click="$router.push({ name: RouteName.DATA_SOURCE_CONFIG, params: { dataSourceId: dataSource.id } })"
             >
                 <div
                     v-if="dataSource.isLiveSync"
@@ -72,7 +72,7 @@
             variant="outlined"
             class="w-100 mx-2 mt-6"
             prepend-icon="mdi-plus"
-            @click="$router.push({ name: 'browse-data-sources' })"
+            @click="$router.push({ name: RouteName.BROWSE_DATA_SOURCES })"
         >
             Add Integration
         </v-btn>
@@ -85,7 +85,8 @@
     import { useDataSourceStore } from '../stores/dataSource';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import { dateToString, formatStringStartCase } from '../utility';
-
+    import { RouteName } from '../types/router';
+    
     const dataSourceStore = useDataSourceStore();
     const { connections: dataSources } = storeToRefs(dataSourceStore);
 

@@ -41,7 +41,8 @@
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
     import { useRouter } from 'vue-router';
-
+    import { RouteName, RouteType } from '../types/router';
+    
     const router = useRouter();
     const chatStore = useChatStore();
     const { chats: chatOptions, selectedChat } = storeToRefs(chatStore);
@@ -51,36 +52,36 @@
             title: 'Chats',
             icon: 'mdi-message-text-outline',
             color: 'blue',
-            metaType: 'chat',
-            routeName: 'chats',
+            metaType: RouteType.CHAT,
+            routeName: RouteName.CHAT,
         },
         {
             title: 'Search',
             icon: 'mdi-magnify',
             color: 'success',
-            metaType: 'search',
-            routeName: 'search',
+            metaType: RouteType.SEARCH,
+            routeName: RouteName.SEARCH,
         },
         {
             title: 'Integrations',
             icon: 'mdi-cloud-outline',
             color: 'pink',
-            metaType: 'data-source',
-            routeName: 'data-sources',
+            metaType: RouteType.DATA_SOURCE,
+            routeName: RouteName.DATA_SOURCES,
         },
         {
             title: 'Help & support',
             icon: 'mdi-lifebuoy',
             color: 'warning',
-            metaType: 'support',
-            routeName: 'support',
+            metaType: RouteType.SUPPORT,
+            routeName: RouteName.SUPPORT,
         },
         {
             title: 'Settings',
             icon: 'mdi-cog-outline',
             color: 'info',
-            metaType: 'settings',
-            routeName: 'settings',
+            metaType: RouteType.SETTINGS,
+            routeName: RouteName.SETTINGS,
         },
     ];
 

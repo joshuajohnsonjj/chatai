@@ -5,7 +5,7 @@
                 <div class="text-h4 font-weight-medium text-primary">Get started for free</div>
                 <div class="text-subtitle-1 text-secondary mb-6">
                     Already have an account?
-                    <span class="link button-hover" @click="$router.push({ name: 'login' })">Login</span>
+                    <span class="link button-hover" @click="$router.push({ name: RouteName.LOGIN })">Login</span>
                 </div>
 
                 <v-row>
@@ -95,7 +95,8 @@
     import { useRouter } from 'vue-router';
     import { EMAIL_STORAGE_KEY } from '../constants';
     import { storeToRefs } from 'pinia';
-
+    import { RouteName } from '../types/router';
+    
     const userStore = useUserStore();
     const toast = useToast();
     const router = useRouter();
