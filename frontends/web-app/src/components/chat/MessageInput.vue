@@ -22,15 +22,18 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useChatStore } from '../../stores/chat';
-    import last from 'lodash/last';
+    import { useGoTo } from 'vuetify';
 
     const chatStore = useChatStore();
+    const goTo = useGoTo();
 
     const textField = ref<string>();
 
-    // FIXME: use vue useGoTo method
     const scrollToBottom = () => {
-        last(document.getElementById('chat-scroll')!.children)!.scrollIntoView(false);
+        goTo('#bottom-of-chat-scroll', {
+            container: '#chat-scroll',
+            duration: 0,
+        });
     };
 </script>
 

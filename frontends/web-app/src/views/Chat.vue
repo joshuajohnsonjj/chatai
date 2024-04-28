@@ -19,7 +19,7 @@
                             <p class="ml-4 mt-1 me-auto text-body-1 text-primary">{{ message.text }}</p>
                             <v-btn
                                 variant="plain"
-                                icon="mdi-tooltip-edit-outline"
+                                icon="mdi-square-edit-outline"
                                 color="secondary"
                                 style="height: 30px; width: 30px"
                             ></v-btn>
@@ -40,6 +40,7 @@
                     {{ dateToString(last(thread.messages).createdAt) }}
                 </p>
             </v-sheet>
+            <div id="bottom-of-chat-scroll" style="height: 1px"></div>
         </div>
 
         <MessageInput />
@@ -49,12 +50,15 @@
 <script lang="ts" setup>
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
-    import { onBeforeMount } from 'vue';
+    import { onBeforeMount, onMounted, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import last from 'lodash/last';
     import { dateToString, formatChatResponse } from '../utility';
+    import { useGoTo } from 'vuetify';
 
     const chatStore = useChatStore();
+    const goTo = useGoTo();
+
     const { chats, selectedChat, chatHistory, isLoadingThreadResponse } = storeToRefs(chatStore);
 
     const route = useRoute();
@@ -66,9 +70,22 @@
         if (!chatHistory.value.length) {
             await chatStore.setChatHistory(route.params.chatId as string);
         }
-
-        last(document.getElementById('chat-scroll')!.children)!.scrollIntoView(false);
     });
+
+    onMounted(() => {
+        scrollToBottom();
+    });
+
+    watch(selectedChat, async () => {
+        scrollToBottom();
+    });
+
+    const scrollToBottom = () => {
+        goTo('#bottom-of-chat-scroll', {
+            container: '#chat-scroll',
+            duration: 0,
+        });
+    };
 </script>
 
 <style scoped>
