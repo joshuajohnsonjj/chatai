@@ -7,7 +7,12 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    BaseModal: (typeof import('./components/common/modal/BaseModal.vue'))['default']
+    BaseModalContainer: (typeof import('./components/common/modal/BaseModalContainer.vue'))['default']
     Configure: typeof import('./components/dataSource/Configure.vue')['default']
+    copy: (typeof import('./components/common/modal/DialogModal copy.vue'))['default']
+    DialogModal: typeof import('./components/common/DialogModal.vue')['default']
+    DialogModeal: (typeof import('./components/common/DialogModeal.vue'))['default']
     FullScreenBackgroundBlur: typeof import('./components/common/FullScreenBackgroundBlur.vue')['default']
     HorizontalLine: typeof import('./components/common/HorizontalLine.vue')['default']
     MessageInput: typeof import('./components/chat/MessageInput.vue')['default']

@@ -1,4 +1,6 @@
 <template>
+    <DialogModal max-width="500px" :is-open="isModalOpen" @modal-change="(open: boolean) => (isModalOpen = open)" />
+
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
         <v-btn
             icon="mdi-arrow-left"
@@ -77,6 +79,9 @@
                 </div>
             </div>
         </div>
+        <div class="ml-2 mt-2 link button-hover text-secondary text-caption" @click="isModalOpen = true">
+            Don't see what you're looking for?
+        </div>
     </div>
 </template>
 
@@ -92,6 +97,7 @@
     import { RouteName } from '../types/router';
 
     const selected = ref('All');
+    const isModalOpen = ref(false);
 
     const dataSourceStore = useDataSourceStore();
     const { dataSourceOptions } = storeToRefs(dataSourceStore);

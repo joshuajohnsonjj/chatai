@@ -28,7 +28,7 @@
         <div
             v-if="isFocused && !!searchText"
             id="searchPredictionContainer"
-            class="bg-surface rounded w-100 mt-2 pa-4"
+            class="bg-surface rounded w-100 mt-2 pa-4 shadow"
             style="position: absolute"
         >
             <div class="text-secondary text-caption">CONTENT QUERY</div>
@@ -195,11 +195,5 @@
 <style scoped>
     .focused {
         border: 2px solid rgb(var(--v-theme-success));
-    }
-
-    #searchPredictionContainer {
-        -webkit-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
-        -moz-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
-        box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
     }
 </style>

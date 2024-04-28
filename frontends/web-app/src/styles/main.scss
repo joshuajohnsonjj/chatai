@@ -32,3 +32,9 @@
 .bottom-border-primary {
     border-bottom: 1px solid rgb(var(--v-theme-border-color));
 }
+
+.shadow {
+    -webkit-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
+    -moz-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
+    box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
+}
