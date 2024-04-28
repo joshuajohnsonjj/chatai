@@ -96,4 +96,5 @@ export interface DataSourceTypesResponse {
     name: string;
     category: string;
     isLiveSyncAvailable: boolean;
+    userConnectedDataSourceId?: string;
 }

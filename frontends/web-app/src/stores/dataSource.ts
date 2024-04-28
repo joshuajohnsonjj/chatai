@@ -12,7 +12,16 @@ export const useDataSourceStore = defineStore('dataSource', () => {
     };
 
     const retreiveDataSourceOptions = async () => {
+        if (!connections.value.length) {
+            await retreiveConnections();
+        }
+
         dataSourceOptions.value = await listDataSourceOptions();
+        dataSourceOptions.value.forEach((option) => {
+            option.userConnectedDataSourceId = connections.value.find(
+                (dataSource) => dataSource.dataSourceName === option.name,
+            )?.id;
+        });
     };
 
     return {

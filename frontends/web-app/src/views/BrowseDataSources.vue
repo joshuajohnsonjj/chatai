@@ -7,7 +7,7 @@
             style="width: 40px; height: 40px"
             @click="$router.go(-1)"
         ></v-btn>
-        <p class="text-h5 text-primary my-5">Add Data Source Integration</p>
+        <p class="text-h5 text-primary my-5 font-weight-medium">Add Data Source Integration</p>
         <div class="d-flex justify-space-between">
             <v-text-field
                 clearable
@@ -16,12 +16,12 @@
                 placeholder="Search integrations..."
             ></v-text-field>
             <div class="w-50 border-primary rounded ml-4 px-4 py-2 d-flex justify-space-between">
-                <div class="button-hover" :class="{ selected: selected === 'All' }" @click="selected = 'All'">
+                <div class="button-hover" :class="{ 'filter-selected': selected === 'All' }" @click="selected = 'All'">
                     <p class="text-caption font-weight-light text-primary px-4" style="line-height: 38px">All</p>
                 </div>
                 <div
                     class="button-hover"
-                    :class="{ selected: selected === 'Communication' }"
+                    :class="{ 'filter-selected': selected === 'Communication' }"
                     @click="selected = 'Communication'"
                 >
                     <p class="text-caption font-weight-light text-primary px-4" style="line-height: 38px">
@@ -30,7 +30,7 @@
                 </div>
                 <div
                     class="button-hover"
-                    :class="{ selected: selected === 'Project Mgmt' }"
+                    :class="{ 'filter-selected': selected === 'Project Mgmt' }"
                     @click="selected = 'Project Mgmt'"
                 >
                     <p class="text-caption font-weight-light text-primary px-4" style="line-height: 38px">
@@ -39,21 +39,35 @@
                 </div>
                 <div
                     class="button-hover"
-                    :class="{ selected: selected === 'Note Taking' }"
+                    :class="{ 'filter-selected': selected === 'Note Taking' }"
                     @click="selected = 'Note Taking'"
                 >
                     <p class="text-caption font-weight-light text-primary px-4" style="line-height: 38px">
                         Note Taking
                     </p>
                 </div>
-                <div class="button-hover" :class="{ selected: selected === 'Other' }" @click="selected = 'Other'">
+                <div
+                    class="button-hover"
+                    :class="{ 'filter-selected': selected === 'Other' }"
+                    @click="selected = 'Other'"
+                >
                     <p class="text-caption font-weight-light text-primary px-4" style="line-height: 38px">Other</p>
                 </div>
             </div>
         </div>
 
         <div class="d-flex flex-wrap mt-6">
-            <div v-for="option in dataSourceOptions" :key="option.id" class="ma-2 pa-6 border rounded">
+            <div
+                v-for="option in dataSourceOptions"
+                :key="option.id"
+                class="ma-2 pa-6 border rounded grow-hover"
+                :class="{ 'pr-12': !!option.userConnectedDataSourceId }"
+                style="position: relative"
+                @click="toDataSourceConfiguration(option)"
+            >
+                <div v-if="!!option.userConnectedDataSourceId" class="data-source-connected-badge">
+                    <v-icon icon="mdi-check-bold" size="x-small" color="success"></v-icon>
+                </div>
                 <div class="d-flex justify-start">
                     <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${option.name}.png`" size="45"></v-avatar>
                     <div class="ml-4">
@@ -73,21 +87,47 @@
     import { useDataSourceStore } from '../stores/dataSource';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import { formatStringStartCase } from '../utility';
+    import { DataSourceTypesResponse } from '../types/responses';
+    import { useRouter } from 'vue-router';
+    import { RouteName } from '../types/router';
 
     const selected = ref('All');
 
     const dataSourceStore = useDataSourceStore();
     const { dataSourceOptions } = storeToRefs(dataSourceStore);
 
+    const router = useRouter();
+
     onBeforeMount(async () => {
         if (!dataSourceOptions.value.length) {
             await dataSourceStore.retreiveDataSourceOptions();
         }
     });
+
+    function toDataSourceConfiguration(option: DataSourceTypesResponse) {
+        if (!option.userConnectedDataSourceId) {
+            router.push({ name: RouteName.DATA_SOURCE_ADD, params: { dataSourceTypeId: option.id } });
+        } else {
+            router.push({
+                name: RouteName.DATA_SOURCE_CONFIG,
+                params: { dataSourceId: option.userConnectedDataSourceId },
+            });
+        }
+    }
 </script>
 
 <style scoped>
-    .selected {
+    .filter-selected {
         background-color: rgb(var(--v-theme-background));
+    }
+
+    .data-source-connected-badge {
+        background: rgba(var(--v-theme-success), 0.25);
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 3px 6px;
+        border-radius: 50%;
+        font-size: 12px;
     }
 </style>

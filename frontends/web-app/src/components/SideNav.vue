@@ -42,7 +42,7 @@
     import { useChatStore } from '../stores/chat';
     import { useRouter } from 'vue-router';
     import { RouteName, RouteType } from '../types/router';
-    
+
     const router = useRouter();
     const chatStore = useChatStore();
     const { chats: chatOptions, selectedChat } = storeToRefs(chatStore);

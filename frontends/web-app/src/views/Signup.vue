@@ -96,7 +96,7 @@
     import { EMAIL_STORAGE_KEY } from '../constants';
     import { storeToRefs } from 'pinia';
     import { RouteName } from '../types/router';
-    
+
     const userStore = useUserStore();
     const toast = useToast();
     const router = useRouter();

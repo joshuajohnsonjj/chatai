@@ -12,6 +12,7 @@ import Support from '../views/Support.vue';
 import Settings from '../views/Settings.vue';
 import BrowseDataSources from '../views/BrowseDataSources.vue';
 import DataSourceConfigure from '../views/DataSourceConfigure.vue';
+import DataSourceAdd from '../views/DataSourceAdd.vue';
 import { useUserStore } from '../stores/user';
 import { RouteName, RouteType } from '../types/router';
 
@@ -85,7 +86,6 @@ const router = createRouter({
             beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
         },
 
-
         {
             path: '/support',
             name: RouteName.SUPPORT,
@@ -128,6 +128,16 @@ const router = createRouter({
                 sideNavEnabled: true,
             },
             component: DataSourceConfigure,
+            beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
+        },
+        {
+            path: '/data-sources/types/:dataSourceTypeId/add',
+            name: RouteName.DATA_SOURCE_ADD,
+            meta: {
+                type: RouteType.DATA_SOURCE,
+                sideNavEnabled: true,
+            },
+            component: DataSourceAdd,
             beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
         },
         {

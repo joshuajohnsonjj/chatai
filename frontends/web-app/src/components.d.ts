@@ -7,6 +7,7 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    Configure: typeof import('./components/dataSource/Configure.vue')['default']
     FullScreenBackgroundBlur: typeof import('./components/common/FullScreenBackgroundBlur.vue')['default']
     HorizontalLine: typeof import('./components/common/HorizontalLine.vue')['default']
     MessageInput: typeof import('./components/chat/MessageInput.vue')['default']

@@ -7,6 +7,7 @@ export enum RouteName {
     SETTINGS = 'settings',
     DATA_SOURCES = 'data-sources',
     DATA_SOURCE_CONFIG = 'data-source-configure',
+    DATA_SOURCE_ADD = 'data-source-add',
     BROWSE_DATA_SOURCES = 'browse-data-sources',
     LOGIN = 'login',
     SIGNUP = 'signup',

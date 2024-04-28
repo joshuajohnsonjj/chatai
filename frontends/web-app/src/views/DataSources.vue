@@ -86,7 +86,7 @@
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import { dateToString, formatStringStartCase } from '../utility';
     import { RouteName } from '../types/router';
-    
+
     const dataSourceStore = useDataSourceStore();
     const { connections: dataSources } = storeToRefs(dataSourceStore);
 
