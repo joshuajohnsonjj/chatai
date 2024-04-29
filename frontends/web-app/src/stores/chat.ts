@@ -12,6 +12,7 @@ export const useChatStore = defineStore('chat', () => {
     const chats = ref<ChatResponse[]>([]);
     const selectedChat = ref<ChatResponse | null>(null);
     const chatHistory = ref<ChatThreadResponse[]>([]);
+    const replyingInThreadId = ref<string | null>(null);
     const isLoading = ref(false);
     const isLoadingThreadResponse = ref<string | null>(null);
 
@@ -35,6 +36,10 @@ export const useChatStore = defineStore('chat', () => {
         const chatHistoryData = await getChatHistory(selected.id);
         chatHistory.value = chatHistoryData.threads;
         isLoading.value = false;
+    };
+
+    const setReplyMode = (threadId: string | null) => {
+        replyingInThreadId.value = threadId;
     };
 
     const sendMessage = async (text: string, replyThreadId?: string) => {
@@ -77,8 +82,10 @@ export const useChatStore = defineStore('chat', () => {
         chatHistory,
         isLoadingThreadResponse,
         isLoading,
+        replyingInThreadId,
         setChatHistory,
         getChatList,
         sendMessage,
+        setReplyMode,
     };
 });

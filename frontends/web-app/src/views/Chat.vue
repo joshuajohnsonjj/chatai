@@ -1,4 +1,6 @@
 <template>
+    <FullScreenBackgroundBlur v-if="!!replyingInThreadId" @click="chatStore.setReplyMode(null)" />
+
     <div class="bg-surface w-100 h-100 rounded-xl px-6" style="position: relative">
         <div class="w-100 bg-surface header-container bottom-border-primary">
             <div class="d-flex justify-space-between">
@@ -11,8 +13,13 @@
         </div>
 
         <div id="chat-scroll" class="d-flex flex-column mb-6">
-            <v-sheet v-for="thread in chatHistory" :key="thread.threadId" class="my-2">
-                <div class="bg-background rounded pa-6">
+            <v-sheet
+                v-for="thread in chatHistory"
+                :key="thread.threadId"
+                class="my-2"
+                :class="{ 'reply-view': thread.threadId === replyingInThreadId }"
+            >
+                <div class="bg-background rounded px-6 pt-6">
                     <div v-for="message in thread.messages" :key="message.id">
                         <div v-if="!message.isSystemMessage" class="bg-surface-bright rounded py-2 px-4 d-flex">
                             <v-avatar image="@/assets/avatar.jpg" size="32"></v-avatar>
@@ -24,11 +31,35 @@
                                 style="height: 30px; width: 30px"
                             ></v-btn>
                         </div>
-                        <div v-else class="system-response-container">
-                            <div
-                                class="text-body-1 text-primary mt-4 system-message"
-                                v-html="markdown(message.text)"
-                            ></div>
+                        <div v-else>
+                            <div class="d-flex">
+                                <v-avatar
+                                    image="@/assets/orb.gif"
+                                    size="65"
+                                    class="pt-2"
+                                    style="margin-left: -5px"
+                                ></v-avatar>
+                                <div
+                                    class="text-body-1 text-primary mt-4 system-message"
+                                    v-html="markdown(message.text)"
+                                ></div>
+                            </div>
+
+                            <div class="d-flex justify-end">
+                                <v-btn
+                                    variant="plain"
+                                    color="secondary"
+                                    icon="mdi-content-copy"
+                                    @click="copyToClipboard(message.text)"
+                                ></v-btn>
+                                <v-btn
+                                    v-if="message.id === last(thread.messages).id"
+                                    variant="plain"
+                                    color="secondary"
+                                    icon="mdi-chat-outline"
+                                    @click="chatStore.setReplyMode(thread.threadId)"
+                                ></v-btn>
+                            </div>
                         </div>
                     </div>
 
@@ -51,19 +82,20 @@
 <script lang="ts" setup>
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
-    import { onBeforeMount, onMounted, watch } from 'vue';
+    import { onBeforeMount, onMounted, ref, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import last from 'lodash/last';
     import { dateToString } from '../utility';
     import { markdown } from '../utility/markdown';
     import { useGoTo } from 'vuetify';
+    import { useToast } from 'vue-toastification';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();
-
-    const { chats, selectedChat, chatHistory, isLoadingThreadResponse } = storeToRefs(chatStore);
-
     const route = useRoute();
+    const toast = useToast();
+
+    const { chats, selectedChat, chatHistory, isLoadingThreadResponse, replyingInThreadId } = storeToRefs(chatStore);
 
     onBeforeMount(async () => {
         if (!chats.value.length) {
@@ -88,6 +120,11 @@
             duration: 0,
         });
     };
+
+    function copyToClipboard(copyText: string): void {
+        navigator.clipboard.writeText(copyText);
+        toast.success('Content coppied to clipboard!');
+    }
 </script>
 
 <style scoped>
@@ -95,7 +132,7 @@
         position: absolute;
         left: 0;
         border-radius: 24px 24px 0 0;
-        z-index: 100;
+        z-index: 50;
     }
 
     #chat-scroll {
@@ -103,8 +140,13 @@
         max-height: 84vh;
         overflow-y: scroll;
     }
+
+    .reply-view {
+        z-index: 100;
+    }
 </style>
 
+<!-- Unscoped for v-html message rendering -->
 <style>
     .system-message > ul,
     .system-message > ol {
