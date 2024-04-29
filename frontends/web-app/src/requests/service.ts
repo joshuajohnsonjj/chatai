@@ -8,18 +8,21 @@ import { TOKEN_STORAGE_KEY } from '../constants';
 const toast = useToast();
 
 const refreshTokenRequest = async (email: string, refreshToken: string) => {
-    const refreshData: LoginUserResponse = await sendAPIRequest({
-        method: APIMethods.POST,
-        headers: {
-            'Content-Type': 'application/json',
+    const refreshData: LoginUserResponse = await sendAPIRequest(
+        {
+            method: APIMethods.POST,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            data: {
+                username: email,
+                refreshToken,
+            },
+            baseURL: 'http://localhost:3001',
+            url: APIEndpoints.REFRESH,
         },
-        data: {
-            username: email,
-            refreshToken,
-        },
-        baseURL: 'http://localhost:3001',
-        url: APIEndpoints.REFRESH,
-    });
+        false,
+    );
     localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(refreshData));
 };
 
@@ -39,7 +42,7 @@ export const sendAPIRequest = async (req: AxiosRequestConfig, withAuthRetry = tr
         const isBadToken = e.response.data.error.name === 'UnauthorizedException';
         if (isBadToken && withAuthRetry && tokenData.email && tokenData.refreshToken) {
             await refreshTokenRequest(tokenData.email, tokenData.refreshToken);
-            await sendAPIRequest(req, false);
+            return await sendAPIRequest(req, false);
         } else if (isBadToken) {
             localStorage.removeItem(TOKEN_STORAGE_KEY);
             window.location.pathname = '/login';

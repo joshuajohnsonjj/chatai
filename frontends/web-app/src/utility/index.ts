@@ -20,17 +20,3 @@ export const dateToString = (date: Date): string => {
 };
 
 export const formatStringStartCase = (original: string): string => startCase(original.toLowerCase());
-
-/**
- * Formats raw text response into prettier output
- *      - formats numbered/bulleted lists
- *      - TODO: format code
- */
-export const formatChatResponse = (rawResponse: string): string => {
-    const startBulletRegex = /( \* )/g;
-    const numberedListRegex = /(\d+\.)/g;
-
-    const result = rawResponse.replace(startBulletRegex, '\n$1').replace(numberedListRegex, '\n$1');
-
-    return result.trim();
-};

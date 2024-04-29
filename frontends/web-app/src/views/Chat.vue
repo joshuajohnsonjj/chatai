@@ -24,10 +24,11 @@
                                 style="height: 30px; width: 30px"
                             ></v-btn>
                         </div>
-                        <div v-else>
-                            <p class="text-body-1 text-primary mt-4 system-message">
-                                {{ formatChatResponse(message.text) }}
-                            </p>
+                        <div v-else class="system-response-container">
+                            <div
+                                class="text-body-1 text-primary mt-4 system-message"
+                                v-html="markdown(message.text)"
+                            ></div>
                         </div>
                     </div>
 
@@ -53,7 +54,8 @@
     import { onBeforeMount, onMounted, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import last from 'lodash/last';
-    import { dateToString, formatChatResponse } from '../utility';
+    import { dateToString } from '../utility';
+    import { markdown } from '../utility/markdown';
     import { useGoTo } from 'vuetify';
 
     const chatStore = useChatStore();
@@ -101,10 +103,11 @@
         max-height: 84vh;
         overflow-y: scroll;
     }
+</style>
 
-    .system-message {
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        font-family: inherit;
+<style>
+    .system-message > ul,
+    .system-message > ol {
+        padding-left: 1.25rem;
     }
 </style>
