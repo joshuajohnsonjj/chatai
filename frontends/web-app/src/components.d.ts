@@ -6,27 +6,27 @@
 export {}
 
 declare module 'vue' {
-    export interface GlobalComponents {
-        BaseModal: (typeof import('./components/common/modal/BaseModal.vue'))['default'];
-        BaseModalContainer: (typeof import('./components/common/modal/BaseModalContainer.vue'))['default'];
-        Configure: (typeof import('./components/dataSource/Configure.vue'))['default'];
-        copy: (typeof import('./components/common/modal/DialogModal copy.vue'))['default'];
-        DialogModal: (typeof import('./components/common/DialogModal.vue'))['default'];
-        DialogModeal: (typeof import('./components/common/DialogModeal.vue'))['default'];
-        FullScreenBackgroundBlur: (typeof import('./components/common/FullScreenBackgroundBlur.vue'))['default'];
-        HorizontalLine: (typeof import('./components/common/HorizontalLine.vue'))['default'];
-        MessageInput: (typeof import('./components/chat/MessageInput.vue'))['default'];
-        NavOpenClose: (typeof import('./components/customIcons/NavOpenClose.vue'))['default'];
-        NewChatInfoBlock: (typeof import('./components/chat/NewChatInfoBlock.vue'))['default'];
-        PlanDetail: (typeof import('./components/onboarding/PlanDetail.vue'))['default'];
-        RouterLink: (typeof import('vue-router'))['RouterLink'];
-        RouterView: (typeof import('vue-router'))['RouterView'];
-        SearchActiveFilter: (typeof import('./components/search/SearchActiveFilter.vue'))['default'];
-        SearchActiveFilters: (typeof import('./components/search/SearchActiveFilters.vue'))['default'];
-        SearchBarWithPredictions: (typeof import('./components/search/SearchBarWithPredictions.vue'))['default'];
-        SearchFilters: (typeof import('./components/search/SearchFilters.vue'))['default'];
-        SearchResultRow: (typeof import('./components/search/SearchResultRow.vue'))['default'];
-        SideNav: (typeof import('./components/SideNav.vue'))['default'];
-        UserAvatar: (typeof import('./components/common/UserAvatar.vue'))['default'];
-    }
+  export interface GlobalComponents {
+    BaseModal: (typeof import('./components/common/modal/BaseModal.vue'))['default']
+    BaseModalContainer: (typeof import('./components/common/modal/BaseModalContainer.vue'))['default']
+    Configure: typeof import('./components/dataSource/Configure.vue')['default']
+    copy: (typeof import('./components/common/modal/DialogModal copy.vue'))['default']
+    DialogModal: typeof import('./components/common/DialogModal.vue')['default']
+    DialogModeal: (typeof import('./components/common/DialogModeal.vue'))['default']
+    FullScreenBackgroundBlur: typeof import('./components/common/FullScreenBackgroundBlur.vue')['default']
+    HorizontalLine: typeof import('./components/common/HorizontalLine.vue')['default']
+    MessageInput: typeof import('./components/chat/MessageInput.vue')['default']
+    NavOpenClose: typeof import('./components/customIcons/NavOpenClose.vue')['default']
+    NewChatInfoBlock: typeof import('./components/chat/NewChatInfoBlock.vue')['default']
+    PlanDetail: typeof import('./components/onboarding/PlanDetail.vue')['default']
+    RouterLink: typeof import('vue-router')['RouterLink']
+    RouterView: typeof import('vue-router')['RouterView']
+    SearchActiveFilter: (typeof import('./components/search/SearchActiveFilter.vue'))['default']
+    SearchActiveFilters: typeof import('./components/search/SearchActiveFilters.vue')['default']
+    SearchBarWithPredictions: typeof import('./components/search/SearchBarWithPredictions.vue')['default']
+    SearchFilters: typeof import('./components/search/SearchFilters.vue')['default']
+    SearchResultRow: typeof import('./components/search/SearchResultRow.vue')['default']
+    SideNav: typeof import('./components/SideNav.vue')['default']
+    UserAvatar: typeof import('./components/common/UserAvatar.vue')['default']
+  }
 }

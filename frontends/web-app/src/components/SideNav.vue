@@ -5,7 +5,7 @@
             <NavOpenClose style="width: 25px" />
         </div>
 
-        <div class="mt-6">
+        <div class="mt-6" style="height: 71%;">
             <div
                 v-for="option in menuOptions"
                 :key="option.title"
@@ -23,17 +23,24 @@
                 <div
                     v-for="option in chatOptions"
                     :key="option.id"
-                    class="d-flex justify-start px-4 rounded mt-2 button-hover"
+                    class="d-flex justify-space-between px-4 rounded mt-2 button-hover"
                     :class="{ selectedChat: selectedChat?.id === option.id }"
                     @click="onChatSelected(option.id)"
                 >
-                    <div class="chat-square" :class="`bg-info`"></div>
-                    <p class="pl-4 text-body-1 text-primary" style="line-height: 40px">{{ option.title }}</p>
+                    <div class="d-flex justify-start">
+                        <div class="chat-square" :class="`bg-info`"></div>
+                        <p class="pl-4 text-body-1 text-primary" style="line-height: 40px">{{ option.title }}</p>
+                    </div>
+                    <v-btn icon="mdi-dots-horizontal" variant="plain" color="secondary"></v-btn>
+                </div>
+                <div class="d-flex justify-start px-4 rounded mt-2 button-hover">
+                    <v-icon icon="mdi-plus-circle" color="secondary" size="x-small" class="mt-3"></v-icon>
+                    <p class="pl-4 text-body-1 text-primary" style="line-height: 40px">New chat</p>
                 </div>
             </div>
-
-            <UserAvatar />
         </div>
+
+        <UserAvatar />
     </div>
 </template>
 
