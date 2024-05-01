@@ -8,6 +8,7 @@ import { RegisterRequestDto } from './dto/register.request.dto';
 import { ResetRequestDto } from './dto/reset.request.dto';
 import { BadRequestError } from 'src/exceptions';
 
+// TODO: make stripe cust id required in db
 @Controller('v1/userAuth')
 export class UserAuthController {
     constructor(private readonly authService: UserAuthService) {}

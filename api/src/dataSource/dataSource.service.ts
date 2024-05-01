@@ -21,17 +21,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
-import { SQSClient } from '@aws-sdk/client-sqs';
-import { omit } from 'lodash';
-import { initGoogleDriveSync, initNotionSync, initSlackSync } from 'src/services/dataSourceSync';
+import { omit, snakeCase } from 'lodash';
 import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
+import axios from 'axios';
 
 @Injectable()
 export class DataSourceService {
-    private readonly sqsClient = new SQSClient({
-        region: this.configService.get<string>('AWS_REGION')!,
-    });
-
     private readonly rsaService = new RsaCipher(this.configService.get<string>('RSA_PRIVATE_KEY')!);
 
     constructor(
@@ -261,48 +256,15 @@ export class DataSourceService {
                 data: { isSyncing: true, updatedAt: new Date() },
             });
 
-            switch (dataSource.type.name) {
-                case DataSourceTypeName.NOTION:
-                    initNotionSync(
-                        this.logger,
-                        this.sqsClient,
-                        this.rsaService.decrypt(dataSource.secret),
-                        this.configService.get<string>('SQS_NOTION_QUEUE_URL')!,
-                        dataSource.secret,
-                        dataSource.ownerEntityId,
-                        dataSource.lastSync,
-                        dataSourceId,
-                    );
-                    break;
-                case DataSourceTypeName.SLACK:
-                    initSlackSync(
-                        this.logger,
-                        this.sqsClient,
-                        this.rsaService.decrypt(dataSource.secret),
-                        this.configService.get<string>('SQS_SLACK_QUEUE_URL')!,
-                        dataSource.secret,
-                        dataSource.ownerEntityId,
-                        dataSourceId,
-                    );
-                    break;
-                case DataSourceTypeName.GOOGLE_DRIVE:
-                    initGoogleDriveSync(
-                        this.logger,
-                        this.sqsClient,
-                        this.rsaService.decrypt(dataSource.secret),
-                        this.configService.get<string>('SQS_GOOGLE_DRIVE_QUEUE_URL')!,
-                        dataSource.secret,
-                        dataSource.ownerEntityId,
-                        dataSource.lastSync,
-                        dataSourceId,
-                        user.idUser,
-                        true,
-                    );
-                    break;
-                default:
-                    this.logger.error('Sync of an unsupported type was attempted', undefined, 'DataSource');
-                    throw new BadRequestError('Data source type not implemented');
-            }
+            axios({
+                baseURL: this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+                url: snakeCase(dataSource.type.name),
+                method: 'post',
+                data: {
+                    dataSourceId,
+                    userId: user.idUser,
+                },
+            });
         });
     }
 

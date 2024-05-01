@@ -6,7 +6,6 @@ import type {
     NotionEquation,
     NotionParagraph,
     NotionRichTextData,
-    NotionSQSMessageBody,
     NotionTable,
     NotionTableRow,
     NotionToDo,
@@ -151,28 +150,6 @@ export const publishBlockData = async (
             url: pageUrl,
         }),
     ]);
-};
-
-export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {
-    if (
-        'pageId' in body &&
-        typeof body.pageId === 'string' &&
-        'pageUrl' in body &&
-        typeof body.pageUrl === 'string' &&
-        'ownerEntityId' in body &&
-        typeof body.ownerEntityId === 'string' &&
-        'pageTitle' in body &&
-        typeof body.pageTitle === 'string' &&
-        'secret' in body &&
-        typeof body.secret === 'string' &&
-        typeof body.dataSourceId === 'string'
-    ) {
-        return true;
-    }
-    if ('isFinal' in body && typeof body.isFinal === 'boolean' && typeof body.dataSourceId === 'string') {
-        return true;
-    }
-    return false;
 };
 
 export const isNewLineBlock = (block: NotionBlock): boolean =>

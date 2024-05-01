@@ -14,9 +14,15 @@ const generative_ai_1 = require("@google/generative-ai");
 const types_1 = require("./types");
 class OpenAIWrapper {
     constructor(secretKey) {
+        /**
+         * Generates text embedding vector values for a provided string input.
+         *
+         * NOTE: will truncate long strings to a max of 5000 characters in order
+         * to adhear to googles max request payload size of 10000 bytes.
+         */
         this.getTextEmbedding = (textInput) => __awaiter(this, void 0, void 0, function* () {
             const model = this.client.getGenerativeModel({ model: types_1.GeminiModels.EMBEDDINGS });
-            const result = yield model.embedContent(textInput);
+            const result = yield model.embedContent(textInput.substring(0, 5000));
             const embedding = result.embedding;
             return embedding.values;
         });

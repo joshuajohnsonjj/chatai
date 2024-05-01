@@ -8,10 +8,16 @@ export class OpenAIWrapper {
         this.client = new GoogleGenerativeAI(secretKey);
     }
 
+    /**
+     * Generates text embedding vector values for a provided string input.
+     * 
+     * NOTE: will truncate long strings to a max of 5000 characters in order
+     * to adhear to googles max request payload size of 10000 bytes.
+     */
     public getTextEmbedding = async (textInput: string): Promise<number[]> => {
         const model = this.client.getGenerativeModel({ model: GeminiModels.EMBEDDINGS });
 
-        const result = await model.embedContent(textInput);
+        const result = await model.embedContent(textInput.substring(0, 5000));
         const embedding = result.embedding;
 
         return embedding.values;

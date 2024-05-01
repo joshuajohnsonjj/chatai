@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: 'Invoked via API Gateway, pushes messages to sqs for all notion pages to be imported for entity'
+
+Resources:
+    initiateNotionImport:
+        Type: 'AWS::Serverless::Function'
+        Properties:
+            Handler: initiateNotionImport/src/handler.handler
+            Runtime: nodejs20.x
+            CodeUri: ./dist
+            Timeout: 600
+            Events:
+                SyncDataSourceInitiator:
+                    Type: Api
+                    Properties:
+                        Path: /notion
+                        Method: POST

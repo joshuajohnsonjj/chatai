@@ -169,7 +169,6 @@ export interface NotionRichTextData {
  * SQS types
  *
  */
-
 export type NotionSQSMessageBody = NotionSQSBaseBody | NotionSQSFinalBody;
 
 export interface NotionSQSBaseBody {

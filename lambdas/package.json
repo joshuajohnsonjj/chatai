@@ -6,22 +6,24 @@
         "build": "tsc",
         "local": "node -e \"console.log(require('./dist/handlers/batchImportNotion').handler(require('./testEvents/event1.json')));\"",
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
-        "generate:schema": "npx prisma generate --schema=./prisma/schema.prisma"
+        "generate": "npx prisma generate --schema=./prisma/schema.prisma"
     },
     "prisma": {
         "seed": "ts-node prisma/seed.ts"
     },
     "dependencies": {
+        "@aws-sdk/client-sqs": "^3.565.0",
         "@joshuajohnsonjj38/dynamo": "^1.0.1",
         "@joshuajohnsonjj38/google-drive": "^1.0.6",
         "@joshuajohnsonjj38/notion": "^1.0.5",
-        "@joshuajohnsonjj38/openai": "^1.0.4",
+        "@joshuajohnsonjj38/openai": "^1.0.5",
         "@joshuajohnsonjj38/qdrant": "^1.0.5",
         "@joshuajohnsonjj38/secret-mananger": "1.0.3",
         "@joshuajohnsonjj38/slack": "^1.0.3",
         "@prisma/client": "5.12.1",
         "aws-lambda": "^1.0.7",
-        "dotenv": "^16.4.5"
+        "dotenv": "^16.4.5",
+        "moment": "^2.30.1"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.137",
