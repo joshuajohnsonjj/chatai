@@ -10,7 +10,8 @@
     "dist/*"
   ],
   "dependencies": {
-    "@google/generative-ai": "^0.7.1"
+    "@google/generative-ai": "^0.7.1",
+    "axios": "^1.6.8"
   },
   "devDependencies": {
     "typescript": "^5.4.4"

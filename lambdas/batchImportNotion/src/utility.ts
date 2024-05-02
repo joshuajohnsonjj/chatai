@@ -12,14 +12,14 @@ import type {
     NotionWrapper,
 } from '@joshuajohnsonjj38/notion';
 import { JoinableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
-import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
 import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
-const openAI = new OpenAIWrapper(process.env.GEMINI_KEY as string);
+const openAI = new GeminiService(process.env.GEMINI_KEY as string);
 const qdrant = new QdrantWrapper(
     process.env.QDRANT_HOST as string,
     process.env.QDRANT_COLLECTION as string,

@@ -1,7 +1,10 @@
 import { type GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { ChatHistory, GeminiModels } from './types';
+import axios from 'axios';
 
-export class OpenAIWrapper {
+// TODO: implement 
+
+export class GeminiService {
     private readonly client: GoogleGenerativeAI;
 
     constructor(secretKey: string) {

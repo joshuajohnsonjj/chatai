@@ -1,13 +1,13 @@
 import { APIGatewayEvent, Handler } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
 import { SlackEventAPIPayload, SlackWrapper } from '@joshuajohnsonjj38/slack';
-import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { createClient } from 'redis';
 
 const prisma = new PrismaClient();
-const openAI = new OpenAIWrapper(process.env.OPENAI_SECRET as string);
+const openAI = new GeminiService(process.env.OPENAI_SECRET as string);
 const qdrant = new QdrantWrapper(
     process.env.QDRANT_HOST as string,
     process.env.QDRANT_COLLECTION as string,

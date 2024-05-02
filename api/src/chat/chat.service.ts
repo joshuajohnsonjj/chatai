@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '@joshuajohnsonjj38/openai';
 import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
 import type { ChatThreadResponseDto, GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
@@ -23,7 +23,7 @@ export class ChatService {
 
     private readonly dynamdo = new DynamoClient(this.configService.get<string>('AWS_REGION')!);
 
-    private readonly ai = new OpenAIWrapper(this.configService.get<string>('GEMINI_KEY')!);
+    private readonly ai = new GeminiService(this.configService.get<string>('GEMINI_KEY')!);
 
     constructor(
         private readonly prisma: PrismaService,

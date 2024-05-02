@@ -8,7 +8,7 @@ import {
     docWebUrl,
     buildPayloadTextsFile,
 } from '@joshuajohnsonjj38/google-drive';
-import { OpenAIWrapper } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
 import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
 
@@ -16,7 +16,7 @@ dotenv.config({ path: __dirname + '/../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 const prisma = new PrismaClient();
-const openAI = new OpenAIWrapper(process.env.GEMINI_KEY as string);
+const openAI = new GeminiService(process.env.GEMINI_KEY as string);
 const qdrant = new QdrantWrapper(
     process.env.QDRANT_HOST as string,
     process.env.QDRANT_COLLECTION as string,
