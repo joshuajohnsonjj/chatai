@@ -24,9 +24,6 @@ export interface MongoAuthorCollectionDoc {
     email?: string;
 }
 
-/**
- * _id should be entityId:label ??
- */
 export interface MongoAnnotationLabelCollectionDoc {
     _id: string;
     entityId: string;
@@ -34,17 +31,7 @@ export interface MongoAnnotationLabelCollectionDoc {
 }
 
 export interface VectorQueryFilter {
-    $and?: (
-        | {
-              ownerEntityId: Record<string, string>;
-          }
-        | {
-              dataSourceType?: Record<string, string[]>;
-          }
-        | {
-              authorName?: Record<string, string[]>;
-          }
-    )[];
+    $and?: any;
 }
 
 export interface QueryFilter {

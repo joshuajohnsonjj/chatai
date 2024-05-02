@@ -1,4 +1,4 @@
-import { type Document, MongoClient } from 'mongodb';
+import { MongoClient } from 'mongodb';
 import type {
     DataElementQueryInput,
     DataElementVectorInput,
@@ -156,6 +156,16 @@ export class MongoDBService {
             });
         }
 
+        if (query.dateRangeLower || query.dateRangeUpper) {
+            filter['$and']!.createdAt = {};
+            if (query.dateRangeLower) {
+                filter['$and']!.createdAt['$gte'] = query.dateRangeLower;
+            }
+            if (query.dateRangeUpper) {
+                filter['$and']!.createdAt['$lte'] = query.dateRangeUpper;
+            }
+        }
+
         const pipeline = [
             {
                 $vectorSearch: {
@@ -178,33 +188,105 @@ export class MongoDBService {
             },
         ];
 
-        const result = this.client.db(this.dbName).collection(MongoDBService.elementCollection).aggregate(pipeline);
+        const result = await this.elementCollConnection.aggregate(pipeline).toArray();
 
-        return await result.toArray();
-    }
+        if (!query.topics) {
+            return result;
+        }
 
-    public async writeDataElements(data: MongoDataElementCollectionDoc[]): Promise<void> {
-        await this.writeDocs(data, MongoDBService.elementCollection);
-    }
-
-    public async writeAuthors(data: MongoAuthorCollectionDoc[]): Promise<void> {
-        await this.writeDocs(data, MongoDBService.authorCollection);
-    }
-
-    public async writeLabels(labels: string[], entityId: string): Promise<void> {
-        await this.writeDocs(
-            labels.map((label) => ({
-                _id: `${entityId}:${label}`,
-                entityId,
-                label,
-            })),
-            MongoDBService.labelCollection,
+        // Since Mongo doesn't support partial array query in filter w/ vector search
+        // do this here. Perhaps eventually they'll add native support for this.
+        return result.filter((element) =>
+            element.annotations.some((annotation: string) => query.topics!.includes(annotation)),
         );
     }
 
-    private async writeDocs(docs: Document[], coll: string): Promise<void> {
-        const res = await this.client.db(this.dbName).collection(coll).insertMany(docs);
+    public async writeDataElements(data: MongoDataElementCollectionDoc): Promise<void> {
+        await this.elementCollConnection.insertOne(data);
+    }
 
-        console.log(`wrote ${Object.keys(res.insertedIds).length} documents to mongo`);
+    public async writeAuthors(data: MongoAuthorCollectionDoc): Promise<void> {
+        await this.authorCollConnection.insertOne(data);
+    }
+
+    public async searchAuthorOptions(name: string, entityId: string): Promise<Partial<MongoAuthorCollectionDoc>[]> {
+        const pipeline = [
+            {
+                $search: {
+                    compound: {
+                        must: [
+                            {
+                                text: {
+                                    query: entityId,
+                                    path: 'entityId',
+                                },
+                            },
+                        ],
+                        should: [
+                            {
+                                text: {
+                                    query: name,
+                                    path: 'name',
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                $project: {
+                    label: 1,
+                    score: { $meta: 'searchScore' },
+                },
+            },
+        ];
+        const cursor = this.authorCollConnection.aggregate(pipeline);
+        return await cursor.toArray();
+    }
+
+    public async writeLabels(labels: string[], entityId: string): Promise<void> {
+        await Promise.all(
+            labels.map((label) =>
+                this.labelCollConnection.replaceOne({ entityId, label }, { entityId, label }, { upsert: true }),
+            ),
+        );
+    }
+
+    public async searchLabelOptions(
+        text: string,
+        entityId: string,
+    ): Promise<Partial<MongoAnnotationLabelCollectionDoc>[]> {
+        const pipeline = [
+            {
+                $search: {
+                    compound: {
+                        must: [
+                            {
+                                text: {
+                                    query: entityId,
+                                    path: 'entityId',
+                                },
+                            },
+                        ],
+                        should: [
+                            {
+                                text: {
+                                    query: text,
+                                    path: 'label',
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+            {
+                $project: {
+                    label: 1,
+                    score: { $meta: 'searchScore' },
+                },
+            },
+        ];
+        const cursor = this.labelCollConnection.aggregate(pipeline);
+        return await cursor.toArray();
     }
 }
