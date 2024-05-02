@@ -175,6 +175,46 @@ export class DataSourceService {
         });
     }
 
+    async createGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
+        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, 'DataSource');
+
+        const dataSource = await this.prisma.dataSource.findUnique({
+            where: { id: dataSourceId },
+            select: {
+                ownerEntityId: true,
+                secret: true,
+                googleDriveConnection: {
+                    select: {
+                        id: true,
+                    },
+                },
+            },
+        });
+
+        if (!dataSource) {
+            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+        }
+
+        if (dataSource.googleDriveConnection) {
+            throw new BadRequestError('Connection already exists');
+        }
+
+        const decryptedSecret = this.rsaService.decrypt(dataSource.secret);
+        const googleAPI = new GoogleDriveService(decryptedSecret);
+        const response = await googleAPI.initiateWebhookConnection(
+            dataSource.ownerEntityId,
+            this.configService.get<string>('GOOGLE_WEBHOOK_HANDLER_ADDRESS')!,
+        );
+        await this.prisma.googleDriveWebhookConnection.create({
+            data: {
+                connectionId: response.id,
+                resourceId: response.resourceId,
+                dataSourceId: dataSourceId,
+                creatorUserId: userId,
+            },
+        });
+    }
+
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
         const queryRes = await this.prisma.dataSourceType.findMany({
             select: {
@@ -265,6 +305,23 @@ export class DataSourceService {
                     userId: user.idUser,
                 },
             });
+        });
+    }
+
+    async completedImports(dataSourceIds: string[]) {
+        this.logger.log(`Updating data source ${dataSourceIds}`, 'DataSource');
+
+        await this.prisma.dataSource.updateMany({
+            where: {
+                id: {
+                    in: dataSourceIds,
+                },
+            },
+            data: {
+                lastSync: new Date(),
+                isSyncing: false,
+                updatedAt: new Date(),
+            },
         });
     }
 

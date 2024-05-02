@@ -1,7 +1,7 @@
-import { Controller, Body, Post, Param, Req, Get } from '@nestjs/common';
+import { Controller, Body, Post, Param, Req, Get, Delete, Patch } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
-import { Delete, UseGuards } from '@nestjs/common/decorators';
+import { UseGuards } from '@nestjs/common/decorators';
 import {
     CreateDataSourceQueryDto,
     CreateDataSourceResponseDto,
@@ -14,11 +14,11 @@ import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 
 @Controller('v1/dataSource')
-@UseGuards(AuthGuard('jwt'))
 export class DataSourceController {
     constructor(private readonly service: DataSourceService) {}
 
     @Post()
+    @UseGuards(AuthGuard('jwt'))
     async createDataSource(
         @Body() body: CreateDataSourceQueryDto,
         @Req() req: Request,
@@ -27,16 +27,19 @@ export class DataSourceController {
     }
 
     @Get()
+    @UseGuards(AuthGuard('jwt'))
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
         return await this.service.listDataSourceTypes();
     }
 
     @Get('/connections')
+    @UseGuards(AuthGuard('jwt'))
     async listUserDataSourceConnections(@Req() req: Request): Promise<ListDataSourceConnectionsResponseDto[]> {
         return await this.service.listUserDataSourceConnections(req.user as DecodedUserTokenDto);
     }
 
     @Delete('/connections/webhook/googleDrive')
+    @UseGuards(AuthGuard('jwt'))
     async killGoogleDriveWebhookConnection(
         @Body() body: DeleteGoogleDriveWebookQueryDto,
         @Req() req: Request,
@@ -48,7 +51,21 @@ export class DataSourceController {
         return { success: true };
     }
 
+    @Post('/connections/webhook/googleDrive')
+    @UseGuards(AuthGuard('jwt'))
+    async createGoogleDriveWebhookConnection(
+        @Body() body: DeleteGoogleDriveWebookQueryDto,
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.createGoogleDriveWebhookConnection(
+            body.dataSourceId,
+            (req.user as DecodedUserTokenDto).idUser,
+        );
+        return { success: true };
+    }
+
     @Post('test')
+    @UseGuards(AuthGuard('jwt'))
     async testDataSourceCredential(
         @Body() body: CreateDataSourceQueryDto,
         @Req() req: Request,
@@ -57,11 +74,22 @@ export class DataSourceController {
     }
 
     @Post('/:dataSourceId/sync')
+    @UseGuards(AuthGuard('jwt'))
     async syncDataSource(
         @Param() { dataSourceId }: { dataSourceId: string },
         @Req() req: Request,
     ): Promise<{ success: boolean }> {
         await this.service.syncDataSource(dataSourceId, req.user as DecodedUserTokenDto);
         return { success: true };
+    }
+
+    @Patch('/completedImports')
+    async completedImports(
+        @Body() body: { dataSourceIds: string[] },
+        @Req() req: Request,
+    ): Promise<void> {
+        console.log(req.headers);
+        // TODO: check api key in request header
+        await this.service.completedImports(body.dataSourceIds);
     }
 }

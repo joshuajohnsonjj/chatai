@@ -16,28 +16,6 @@ dotenv.config({ path: __dirname + '/../.env' });
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 const openAI = new GeminiService(process.env.GEMINI_KEY as string);
 
-// TODO: move this else where
-// const createWebhookConnections = async (completedDataSources: GoogleDriveSQSFinalBody[]): Promise<void> => {
-//     await Promise.all(
-//         completedDataSources.map(async (source) => {
-//             const googleKey = rsaService.decrypt(source.secret);
-//             const googleAPI = new GoogleDriveService(googleKey);
-//             const response = await googleAPI.initiateWebhookConnection(
-//                 source.ownerEntityId,
-//                 process.env.GOOGLE_WEBHOOK_HANDLER_ADDRESS as string,
-//             );
-//             await prisma.googleDriveWebhookConnection.create({
-//                 data: {
-//                     connectionId: response.id,
-//                     resourceId: response.resourceId,
-//                     dataSourceId: source.dataSourceId,
-//                     creatorUserId: source.userId,
-//                 },
-//             });
-//         }),
-//     );
-// };
-
 const processFile = async (
     mongo: MongoDBService,
     googleAPI: GoogleDriveService,
