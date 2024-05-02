@@ -6,6 +6,7 @@ import type {
     NotionEquation,
     NotionParagraph,
     NotionRichTextData,
+    NotionSQSMessageBody,
     NotionTable,
     NotionTableRow,
     NotionToDo,
@@ -150,6 +151,21 @@ export const publishBlockData = async (
             url: pageUrl,
         }),
     ]);
+};
+
+export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {
+    if (
+        typeof body.pageId === 'string' &&
+        typeof body.pageUrl === 'string' &&
+        typeof body.ownerEntityId === 'string' &&
+        typeof body.pageTitle === 'string' &&
+        typeof body.secret === 'string' &&
+        typeof body.dataSourceId === 'string' &&
+        typeof body.isFinal === 'boolean'
+    ) {
+        return true;
+    }
+    return false;
 };
 
 export const isNewLineBlock = (block: NotionBlock): boolean =>

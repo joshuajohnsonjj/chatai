@@ -6,7 +6,7 @@ Resources:
     batchImportNotion:
         Type: 'AWS::Serverless::Function'
         Properties:
-            Handler: shandler.handler
+            Handler: handler.handler
             Runtime: nodejs20.x
             CodeUri: ./dist
             Timeout: 600

@@ -7,6 +7,7 @@ import moment from 'moment';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
 import { type InitiateImportRequestData } from '../../lib/types';
+import { v4 } from 'uuid';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -18,7 +19,7 @@ export const handler: Handler = async (req) => {
 
     const decryptedSecret = rsaService.decrypt(data.secret);
     const notionService = new NotionWrapper(decryptedSecret);
-    // const messageGroupId = v4();
+    const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
     let isComplete = false;
@@ -42,7 +43,9 @@ export const handler: Handler = async (req) => {
                         pageTitle: getPageTitle(page),
                         secret: data.secret,
                         dataSourceId: data.dataSourceId,
+                        isFinal: false,
                     } as NotionSQSMessageBody),
+                    MessageGroupId: messageGroupId,
                 });
             } else {
                 isComplete = true;
@@ -54,6 +57,11 @@ export const handler: Handler = async (req) => {
             nextCursor = resp.next_cursor;
         }
     }
+
+    messageBatchEntries[messageBatchEntries.length - 1].MessageBody = JSON.stringify({
+        ...JSON.parse(messageBatchEntries[messageBatchEntries.length - 1].MessageBody as string),
+        isFinal: true,
+    });
 
     await sendSqsMessageBatches(
         messageBatchEntries,
