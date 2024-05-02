@@ -41,8 +41,8 @@ export enum TextAnalysisEntityType {
 }
 
 export interface TextAnalyisisEntity {
-    name: string,
-    type: TextAnalysisEntityType,
+    name: string;
+    type: TextAnalysisEntityType;
     metadata: Record<string, string>;
     mentions: {
         text: {
@@ -61,8 +61,8 @@ export interface TextAnalyisisEntity {
  * https://cloud.google.com/natural-language/docs/categories
  */
 export interface TextAnalyisisCategory {
-  name: string;
-  confidence: number;
+    name: string;
+    confidence: number;
 }
 
 export interface AnalyizeTextResponse {
@@ -76,10 +76,6 @@ export interface AnalyizeTextResponse {
 }
 
 export interface CleanedAnalyzeTextResponse {
-    entities: {
-        name: string;
-        type: TextAnalysisEntityType;
-        confidence: number;
-    }[];
-    categories: TextAnalyisisCategory[];
+    entities: string[];
+    categories: string[];
 }

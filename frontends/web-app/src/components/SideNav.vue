@@ -5,7 +5,7 @@
             <NavOpenClose style="width: 25px" />
         </div>
 
-        <div class="mt-6" style="height: 71%;">
+        <div class="mt-6" style="height: 71%">
             <div
                 v-for="option in menuOptions"
                 :key="option.title"

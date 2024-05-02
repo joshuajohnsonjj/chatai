@@ -1,8 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from '@joshuajohnsonjj38/openai';
-import { QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
-import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
+import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import type { ChatThreadResponseDto, GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
@@ -15,20 +14,15 @@ import * as moment from 'moment';
 
 @Injectable()
 export class ChatService {
-    private readonly qdrant = new QdrantWrapper(
-        this.configService.get<string>('QDRANT_HOST')!,
-        this.configService.get<string>('QDRANT_COLLECTION')!,
-        this.configService.get<string>('QDRANT_KEY')!,
-    );
-
-    private readonly dynamdo = new DynamoClient(this.configService.get<string>('AWS_REGION')!);
-
     private readonly ai = new GeminiService(this.configService.get<string>('GEMINI_KEY')!);
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
         private readonly logger: Logger,
+
+        @Inject('MONGO_DB_CONNECTION')
+        private readonly mongo: MongoDBService,
     ) {}
 
     async generateResponse(
@@ -53,10 +47,12 @@ export class ChatService {
         const threadId = replyThreadId ?? v4();
 
         const userPromptEmbedding = await this.ai.getTextEmbedding(userPrompt);
-        const queryResult = await this.qdrant.query(userPromptEmbedding, chat.associatedEntityId);
-        const matchedDataResult = await this.dynamdo.batchGetByIds(queryResult.map((res) => res.id));
+        const matchedDataResult = await this.mongo.queryDataElementsByVector({
+            vectorizedQuery: userPromptEmbedding,
+            entityId: chat.associatedEntityId,
+        });
 
-        const matchedDataText = matchedDataResult.map((data) => data.text);
+        const matchedDataText = matchedDataResult.map((data) => data.text ?? '');
         const generatedResponse = await this.ai.getGptReponseFromSourceData(userPrompt, matchedDataText);
 
         // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)

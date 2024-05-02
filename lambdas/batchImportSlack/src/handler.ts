@@ -1,22 +1,22 @@
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { Handler, SQSEvent } from 'aws-lambda';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 import { type SlackMessage, SlackWrapper } from '@joshuajohnsonjj38/slack';
 import { GeminiService } from '@joshuajohnsonjj38/openai';
-import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
-import { createClient } from 'redis';
+// import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
+// import { createClient } from 'redis';
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient();
 const openAI = new GeminiService(process.env.OPENAI_SECRET as string);
-const qdrant = new QdrantWrapper(
-    process.env.QDRANT_HOST as string,
-    process.env.QDRANT_COLLECTION as string,
-    process.env.QDRANT_KEY as string,
-);
-const redisClient = createClient({
-    url: process.env.REDIS_URL,
-});
+// const qdrant = new QdrantWrapper(
+//     process.env.QDRANT_HOST as string,
+//     process.env.QDRANT_COLLECTION as string,
+//     process.env.QDRANT_KEY as string,
+// );
+// const redisClient = createClient({
+//     url: process.env.REDIS_URL,
+// });
 
 const processMessages = async (
     slackAPI: SlackWrapper,
@@ -27,18 +27,17 @@ const processMessages = async (
 ): Promise<void> => {
     await Promise.all(
         messages.map(async (message) => {
-            const payload: QdrantPayload = {
-                date: new Date(message.ts).getTime(),
-                // text: message.text,
-                dataSource: QdrantDataSource.SLACK,
-                ownerId,
-                // slackChannelId: channelId,
-                // slackChannelName: channelName,
-                // authorName: (await slackAPI.getUserInfoById(message.user)).real_name,
-            };
-
-            const embedding = await openAI.getTextEmbedding(message.text);
-            await qdrant.upsert(`${channelId}:${message.ts}`, embedding, payload);
+            // const payload: QdrantPayload = {
+            //     date: new Date(message.ts).getTime(),
+            //     // text: message.text,
+            //     dataSource: QdrantDataSource.SLACK,
+            //     ownerId,
+            //     // slackChannelId: channelId,
+            //     // slackChannelName: channelName,
+            //     // authorName: (await slackAPI.getUserInfoById(message.user)).real_name,
+            // };
+            // const embedding = await openAI.getTextEmbedding(message.text);
+            // await qdrant.upsert(`${channelId}:${message.ts}`, embedding, payload);
         }),
     );
 };
@@ -83,9 +82,9 @@ export const handler: Handler = async (event: SQSEvent) => {
     const processingChannelPromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
 
-    if (!redisClient.isOpen) {
-        await redisClient.connect();
-    }
+    // if (!redisClient.isOpen) {
+    //     await redisClient.connect();
+    // }
 
     for (const record of event.Records) {
         const messageBody = JSON.parse(record.body);
@@ -104,16 +103,16 @@ export const handler: Handler = async (event: SQSEvent) => {
     }
 
     await Promise.all(processingChannelPromises);
-    await prisma.dataSource.updateMany({
-        where: {
-            id: {
-                in: completedDataSources,
-            },
-        },
-        data: {
-            lastSync: new Date(),
-            isSyncing: false,
-            updatedAt: new Date(),
-        },
-    });
+    // await prisma.dataSource.updateMany({
+    //     where: {
+    //         id: {
+    //             in: completedDataSources,
+    //         },
+    //     },
+    //     data: {
+    //         lastSync: new Date(),
+    //         isSyncing: false,
+    //         updatedAt: new Date(),
+    //     },
+    // });
 };

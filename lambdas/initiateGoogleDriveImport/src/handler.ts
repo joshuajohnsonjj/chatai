@@ -14,7 +14,7 @@ const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 const prisma = new PrismaClient();
 
 export const handler: Handler = async (event: APIGatewayEvent) => {
-    const messageData: { dataSourceId: string, userId: string } = JSON.parse(event.body as string);
+    const messageData: { dataSourceId: string; userId: string } = JSON.parse(event.body as string);
     console.log(`Retreiving data source ${messageData.dataSourceId} Google Drive documents`, 'DataSource');
 
     const dataSource = await prisma.dataSource.findUniqueOrThrow({

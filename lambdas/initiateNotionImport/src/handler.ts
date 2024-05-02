@@ -63,8 +63,5 @@ export const handler: Handler = async (req) => {
         isFinal: true,
     });
 
-    await sendSqsMessageBatches(
-        messageBatchEntries,
-        process.env.NOTION_QUEUE_URL as string,
-    );
+    await sendSqsMessageBatches(messageBatchEntries, process.env.NOTION_QUEUE_URL as string);
 };

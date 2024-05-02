@@ -1,0 +1,21 @@
+{
+  "name": "@joshuajohnsonjj38/mongodb",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "files": [
+    "dist/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.12.5",
+    "typescript": "^5.4.4"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mongodb": "6.5"
+  },
+  "description": ""
+}

@@ -5,17 +5,17 @@
             <p class="text-body-1 text-primary">Update your profile</p>
         </div>
 
-        <div style="max-height: 80.4vh; overflow-y: scroll;">
+        <div style="max-height: 80.4vh; overflow-y: scroll">
             <v-row class="border-primary rounded pa-6 ma-8">
                 <v-col cols="3">
                     <div class="text-h6 font-weight-medium text-primary">Profile photo</div>
                     <div class="text-body-2 text-secondary">This image will be displayed on your profile.</div>
                 </v-col>
                 <v-col cols="9">
-                    <div class="border-primary rounded pa-6 bg-surface-bright" style="height: 200px;">IMAGE DROPPER</div>
+                    <div class="border-primary rounded pa-6 bg-surface-bright" style="height: 200px">IMAGE DROPPER</div>
                 </v-col>
             </v-row>
-    
+
             <v-row class="border-primary rounded pa-6 ma-8">
                 <v-col cols="3">
                     <div class="text-h6 font-weight-medium text-primary">Details</div>
@@ -64,7 +64,7 @@
                     </div>
                 </v-col>
             </v-row>
-    
+
             <v-row class="border-primary rounded pa-6 ma-8">
                 <v-col cols="3">
                     <div class="text-h6 font-weight-medium text-primary">Security</div>
@@ -92,9 +92,7 @@
                             ></v-text-field>
                         </div>
 
-                        <div class="mt-5">
-                            MFA Enabled/Disabled
-                        </div>
+                        <div class="mt-5">MFA Enabled/Disabled</div>
                     </div>
                 </v-col>
             </v-row>

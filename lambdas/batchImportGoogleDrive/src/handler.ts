@@ -1,7 +1,6 @@
 import type { Handler, SQSEvent } from 'aws-lambda';
 import { isValidMessageBody } from './utility';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
-import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import {
     type GoogleDriveSQSFinalBody,
@@ -9,43 +8,38 @@ import {
     buildPayloadTextsFile,
 } from '@joshuajohnsonjj38/google-drive';
 import { GeminiService } from '@joshuajohnsonjj38/openai';
-import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
-import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
+import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
+import { DataSourceTypeName } from '@prisma/client';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
-const prisma = new PrismaClient();
 const openAI = new GeminiService(process.env.GEMINI_KEY as string);
-const qdrant = new QdrantWrapper(
-    process.env.QDRANT_HOST as string,
-    process.env.QDRANT_COLLECTION as string,
-    process.env.QDRANT_KEY as string,
-);
-const dynamo = new DynamoClient(process.env.AWS_REGION as string);
 
-const createWebhookConnections = async (completedDataSources: GoogleDriveSQSFinalBody[]): Promise<void> => {
-    await Promise.all(
-        completedDataSources.map(async (source) => {
-            const googleKey = rsaService.decrypt(source.secret);
-            const googleAPI = new GoogleDriveService(googleKey);
-            const response = await googleAPI.initiateWebhookConnection(
-                source.ownerEntityId,
-                process.env.GOOGLE_WEBHOOK_HANDLER_ADDRESS as string,
-            );
-            await prisma.googleDriveWebhookConnection.create({
-                data: {
-                    connectionId: response.id,
-                    resourceId: response.resourceId,
-                    dataSourceId: source.dataSourceId,
-                    creatorUserId: source.userId,
-                },
-            });
-        }),
-    );
-};
+// TODO: move this else where
+// const createWebhookConnections = async (completedDataSources: GoogleDriveSQSFinalBody[]): Promise<void> => {
+//     await Promise.all(
+//         completedDataSources.map(async (source) => {
+//             const googleKey = rsaService.decrypt(source.secret);
+//             const googleAPI = new GoogleDriveService(googleKey);
+//             const response = await googleAPI.initiateWebhookConnection(
+//                 source.ownerEntityId,
+//                 process.env.GOOGLE_WEBHOOK_HANDLER_ADDRESS as string,
+//             );
+//             await prisma.googleDriveWebhookConnection.create({
+//                 data: {
+//                     connectionId: response.id,
+//                     resourceId: response.resourceId,
+//                     dataSourceId: source.dataSourceId,
+//                     creatorUserId: source.userId,
+//                 },
+//             });
+//         }),
+//     );
+// };
 
 const processFile = async (
+    mongo: MongoDBService,
     googleAPI: GoogleDriveService,
     fileId: string,
     ownerEntityId: string,
@@ -55,23 +49,39 @@ const processFile = async (
 ) => {
     const fileContent = await googleAPI.getFileContent(fileId);
     const text = buildPayloadTextsFile(fileName, fileContent);
-    const payload: QdrantPayload = {
-        date: new Date(modifiedDate).getTime(),
-        dataSource: QdrantDataSource.GOOGLE_DRIVE,
-        ownerId: ownerEntityId,
-    };
+    // const payload: QdrantPayload = {
+    //     date: new Date(modifiedDate).getTime(),
+    //     dataSource: QdrantDataSource.GOOGLE_DRIVE,
+    //     ownerId: ownerEntityId,
+    // };
 
     const embedding = await openAI.getTextEmbedding(text);
-    await Promise.all([
-        qdrant.upsert(fileId, embedding, payload),
-        dynamo.putItem({
-            id: fileId,
+    const annotations = await openAI.getTextAnnotation(text);
+    await mongo.writeDataElements([
+        {
+            _id: fileId,
             ownerEntityId,
             text,
-            createdAt: new Date().toISOString(),
+            embedding,
+            createdAt: new Date(modifiedDate).getTime(),
             url: fileUrl,
-        }),
+            // FIXME: get author
+            // authorName?: string;
+            // authorRef?: string;
+            annotations: [...annotations.categories, ...annotations.entities],
+            dataSourceType: DataSourceTypeName.GOOGLE_DRIVE,
+        },
     ]);
+    // await Promise.all([
+    //     qdrant.upsert(fileId, embedding, payload),
+    //     dynamo.putItem({
+    //         id: fileId,
+    //         ownerEntityId,
+    //         text,
+    //         createdAt: new Date().toISOString(),
+    //         url: fileUrl,
+    //     }),
+    // ]);
 };
 
 /**
@@ -81,6 +91,9 @@ export const handler: Handler = async (event: SQSEvent) => {
     // TODO: error handling, dead letter queue?
     const processingFilePromises: Promise<void>[] = [];
     const completedDataSources: GoogleDriveSQSFinalBody[] = [];
+
+    const mongo = new MongoDBService(process.env.MONGO_CONN_STRING as string, process.env.MONGO_DB_NAME as string);
+    await mongo.init();
 
     console.log(`Processing ${event.Records.length} messages`);
 
@@ -102,6 +115,7 @@ export const handler: Handler = async (event: SQSEvent) => {
 
         processingFilePromises.push(
             processFile(
+                mongo,
                 googleAPI,
                 messageBody.fileId,
                 messageBody.ownerEntityId,
@@ -114,23 +128,23 @@ export const handler: Handler = async (event: SQSEvent) => {
 
     await Promise.all(processingFilePromises);
 
-    if (completedDataSources.length) {
-        console.log('Sync completed ofr data source records:', completedDataSources);
+    // if (completedDataSources.length) {
+    //     console.log('Sync completed ofr data source records:', completedDataSources);
 
-        await Promise.all([
-            prisma.dataSource.updateMany({
-                where: {
-                    id: {
-                        in: completedDataSources.map((message) => message.dataSourceId),
-                    },
-                },
-                data: {
-                    lastSync: new Date(),
-                    isSyncing: false,
-                    updatedAt: new Date(),
-                },
-            }),
-            createWebhookConnections(completedDataSources),
-        ]);
-    }
+    //     await Promise.all([
+    //         prisma.dataSource.updateMany({
+    //             where: {
+    //                 id: {
+    //                     in: completedDataSources.map((message) => message.dataSourceId),
+    //                 },
+    //             },
+    //             data: {
+    //                 lastSync: new Date(),
+    //                 isSyncing: false,
+    //                 updatedAt: new Date(),
+    //             },
+    //         }),
+    //         createWebhookConnections(completedDataSources),
+    //     ]);
+    // }
 };

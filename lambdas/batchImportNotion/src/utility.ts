@@ -14,19 +14,13 @@ import type {
 } from '@joshuajohnsonjj38/notion';
 import { JoinableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
 import { GeminiService } from '@joshuajohnsonjj38/openai';
-import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
-import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
+import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
+import { DataSourceTypeName } from '@prisma/client';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
-const openAI = new GeminiService(process.env.GEMINI_KEY as string);
-const qdrant = new QdrantWrapper(
-    process.env.QDRANT_HOST as string,
-    process.env.QDRANT_COLLECTION as string,
-    process.env.QDRANT_KEY as string,
-);
-const dynamo = new DynamoClient(process.env.AWS_REGION as string);
+const gemini = new GeminiService(process.env.GEMINI_KEY as string);
 
 /**
  * Takes Notion block table data and converts into a
@@ -119,10 +113,10 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
 };
 
 /**
- * Publishes text embeddings to Qdrant and saves text
- * with other relevant metadata in Dynamo.
+ * Publishes text embeddings and metadata to mongo
  */
 export const publishBlockData = async (
+    mongo: MongoDBService,
     aggregatedBlockText: string,
     parentBlock: NotionBlock,
     pageTitle: string,
@@ -134,22 +128,19 @@ export const publishBlockData = async (
     }
 
     const text = `Page Title: ${pageTitle}, Page Excerpt: ${aggregatedBlockText}`;
-    const payload: QdrantPayload = {
-        date: new Date(parentBlock.last_edited_time).getTime(),
-        dataSource: QdrantDataSource.NOTION,
-        ownerId,
-    };
+    const [embedding, annotations] = await Promise.all([gemini.getTextEmbedding(text), gemini.getTextAnnotation(text)]);
 
-    const embedding = await openAI.getTextEmbedding(text);
-    await Promise.all([
-        qdrant.upsert(parentBlock.id, embedding, payload),
-        dynamo.putItem({
-            id: parentBlock.id,
+    await mongo.writeDataElements([
+        {
+            _id: parentBlock.id,
             ownerEntityId: ownerId,
             text,
-            createdAt: new Date().toISOString(),
+            embedding,
+            createdAt: new Date().getTime(),
             url: pageUrl,
-        }),
+            annotations: [...annotations.categories, ...annotations.entities],
+            dataSourceType: DataSourceTypeName.NOTION,
+        },
     ]);
 };
 

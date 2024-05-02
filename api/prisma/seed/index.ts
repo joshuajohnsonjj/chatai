@@ -1,4 +1,12 @@
-import { ChatType, DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType, PrismaClient, UserType } from '@prisma/client';
+import {
+    ChatType,
+    DataSourceCategory,
+    DataSourceTypeName,
+    DataSyncInterval,
+    EntityType,
+    PrismaClient,
+    UserType,
+} from '@prisma/client';
 
 const prisma = new PrismaClient();
 async function main() {
@@ -45,7 +53,7 @@ async function main() {
                 category: DataSourceCategory.OTHER,
                 requiredCredentialTypes: ['secret'],
             },
-        ]
+        ],
     });
 
     await prisma.dataSource.createMany({
@@ -56,8 +64,8 @@ async function main() {
                 ownerEntityId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
                 ownerEntityType: EntityType.INDIVIDUAL,
                 secret: 'RbpMDiBN38ZFvT3QV7hrLTG1VGTF6RTJOAthw/9hd1B8yDVV0h34qyH2oQ6rMZRrAUDiSo7CNlanK/5aOuaYaAXxMF/+wZMfWGwpWlckGlF4uM8mq6YszuU9rx6LCUvFPWy4rGnKKqI0cbhJPKF8XWt6LnggPA0ppyF4uG4gDfCfDFnqUthP/PI8hmbl/eKWK3WclwzVMwO1IaP0GSTo6VUi3v6ODCSDWCHZ6KQSL2hoZGMBCp8XabmTaQXd+OVAPlz6JGh7f3fSz+ywVgzuEUWjw8sYNBNlJMaz920x+1YsWe4fk0lOrNtK6+MxBY5CgUBW1W/KiRhjZ489kjFGtQ==',
-            }
-        ]
+            },
+        ],
     });
 
     await prisma.user.createMany({
@@ -71,7 +79,7 @@ async function main() {
                 lastName: 'Johnson',
                 stripeCustomerId: 'cus_Pwe9PbMP6aZArt',
             },
-        ]
+        ],
     });
 
     await prisma.chat.createMany({
@@ -82,8 +90,8 @@ async function main() {
                 title: 'Lil boii chat yo',
                 chatType: ChatType.SYSTEM,
                 associatedEntityId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
-            }
-        ]
+            },
+        ],
     });
 }
 

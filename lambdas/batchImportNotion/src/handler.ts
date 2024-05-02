@@ -13,6 +13,7 @@ import {
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import * as dotenv from 'dotenv';
 import { sendSqsMessage } from '../../lib/sqs';
+import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -30,6 +31,7 @@ const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
  * weight.
  */
 const processBlockList = async (
+    mongo: MongoDBService,
     notionAPI: NotionWrapper,
     blocks: NotionBlock[],
     ownerId: string,
@@ -46,14 +48,14 @@ const processBlockList = async (
             (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) &&
             connectedBlocks.length
         ) {
-            await publishBlockData(builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
+            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
             builtBlocksTextString = '';
             connectedBlocks = [];
             continue;
         } else if (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) {
             continue;
         } else if (!shouldConnectToCurrentBlockGroup(connectedBlocks, parentBlock)) {
-            await publishBlockData(builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
+            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
             builtBlocksTextString = '';
             connectedBlocks = [];
         }
@@ -64,7 +66,7 @@ const processBlockList = async (
                 aggregatedNestedBlocks.slice(1),
                 parentBlock[parentBlock.type] as NotionTable,
             );
-            await publishBlockData(aggregatedBlockText, parentBlock, pageTitle, pageUrl, ownerId);
+            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, ownerId);
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
             const columnBlocks = await notionAPI.listPageBlocks(parentBlock.id, null);
             await Promise.all(
@@ -74,7 +76,7 @@ const processBlockList = async (
                         .slice(1)
                         .map((block) => getTextFromBlock(block))
                         .join('\n');
-                    await publishBlockData(aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, ownerId);
+                    await publishBlockData(mongo, aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, ownerId);
                 }),
             );
         } else {
@@ -86,11 +88,12 @@ const processBlockList = async (
     }
 
     if (connectedBlocks.length) {
-        await publishBlockData(builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
+        await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
     }
 };
 
 const processPage = async (
+    mongo: MongoDBService,
     notionAPI: NotionWrapper,
     pageId: string,
     ownerId: string,
@@ -108,7 +111,7 @@ const processPage = async (
         nextCursor = blockResponse.next_cursor;
     }
 
-    await processBlockList(notionAPI, blocks, ownerId, pageUrl, pageTitle);
+    await processBlockList(mongo, notionAPI, blocks, ownerId, pageUrl, pageTitle);
 };
 
 /**
@@ -127,6 +130,9 @@ export const handler: Handler = async (event: SQSEvent) => {
     // TODO: error handling, dead letter queue?
     const processingPagePromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
+
+    const mongo = new MongoDBService(process.env.MONGO_CONN_STRING as string, process.env.MONGO_DB_NAME as string);
+    await mongo.init();
 
     console.log(`Processing ${event.Records.length} messages`);
 
@@ -147,6 +153,7 @@ export const handler: Handler = async (event: SQSEvent) => {
 
         processingPagePromises.push(
             processPage(
+                mongo,
                 notionAPI,
                 messageBody.pageId,
                 messageBody.ownerEntityId,
@@ -157,6 +164,7 @@ export const handler: Handler = async (event: SQSEvent) => {
     }
 
     await Promise.all(processingPagePromises);
+    await mongo.terminate();
 
     if (completedDataSources.length) {
         console.log('Sync completed ofr data source records:', completedDataSources);

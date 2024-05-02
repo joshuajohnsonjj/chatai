@@ -1,5 +1,11 @@
 import { type GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
-import { AnalyizeTextReqPayload, AnalyizeTextResponse, ChatHistory, CleanedAnalyzeTextResponse, GeminiModels } from './types';
+import {
+    AnalyizeTextReqPayload,
+    AnalyizeTextResponse,
+    ChatHistory,
+    CleanedAnalyzeTextResponse,
+    GeminiModels,
+} from './types';
 import axios from 'axios';
 import { IMPORTABLE_ENTITY_TYPES } from './constants';
 
@@ -51,7 +57,7 @@ export class GeminiService {
 
     /**
      * Generates text embedding vector values for a provided string input.
-     * 
+     *
      * NOTE: will truncate long strings to a max of 5000 characters in order
      * to adhear to googles max request payload size of 10000 bytes.
      */
@@ -119,13 +125,13 @@ export class GeminiService {
         minCategoryConfidence: number,
         minEntityConfidence: number,
     ): CleanedAnalyzeTextResponse => ({
-        entities: raw.entities.filter(
-            (entity) => IMPORTABLE_ENTITY_TYPES.includes(entity.type) && entity.mentions[0]?.probability >= minEntityConfidence
-        ).map((entity) => ({
-            name: entity.name,
-            type: entity.type,
-            confidence: entity.mentions[0].probability,
-        })),
-        categories: raw.categories.filter((cat) => cat.confidence >= minCategoryConfidence),
+        entities: raw.entities
+            .filter(
+                (entity) =>
+                    IMPORTABLE_ENTITY_TYPES.includes(entity.type) &&
+                    entity.mentions[0]?.probability >= minEntityConfidence,
+            )
+            .map((entity) => entity.name),
+        categories: raw.categories.filter((cat) => cat.confidence >= minCategoryConfidence).map((cat) => cat.name),
     });
 }
