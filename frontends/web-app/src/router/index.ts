@@ -23,11 +23,11 @@ const onBeforeEnter = async (
 ) => {
     const userStore = useUserStore();
 
-    if (!userStore.userData.id) {
+    if (!userStore.userData?.id) {
         await userStore.setCurrentUser();
     }
 
-    if (!userStore.userData.id) {
+    if (!userStore.userData?.id) {
         next({ name: 'login' });
         return;
     }

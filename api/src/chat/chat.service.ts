@@ -1,13 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { GeminiService } from '../../../npm-packages/gemini';
+import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import type { ChatThreadResponseDto, GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
-import { CognitoAttribute } from 'src/types';
 import { v4 } from 'uuid';
 import { last } from 'lodash';
 import * as moment from 'moment';
@@ -37,7 +36,7 @@ export class ChatService {
             select: { associatedEntityId: true },
         });
 
-        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user[CognitoAttribute.ORG]) {
+        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
             this.logger.warn(`Blocked user ${user.idUser} from interacting with chat ${chatId}`);
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
@@ -111,7 +110,7 @@ export class ChatService {
             throw new ResourceNotFoundError(chatId, 'Chat');
         }
 
-        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user[CognitoAttribute.ORG]) {
+        if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
             throw new AccessDeniedError('User unauthorized to read this data');
         }
 
@@ -147,7 +146,7 @@ export class ChatService {
     }
 
     async listChats(page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
-        const associatedEntityId = user[CognitoAttribute.ORG] ?? user.idUser;
+        const associatedEntityId = user.organization ?? user.idUser;
 
         const pageSize = 20;
         const chatsQuery = await this.prisma.chat.findMany({

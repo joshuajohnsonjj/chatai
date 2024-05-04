@@ -82,7 +82,7 @@
 <script lang="ts" setup>
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
-    import { onBeforeMount, onMounted, ref, watch } from 'vue';
+    import { onBeforeMount, onMounted, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import last from 'lodash/last';
     import { dateToString } from '../utility';

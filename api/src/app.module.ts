@@ -8,6 +8,7 @@ import { UserAuthModule } from './userAuth/userAuth.module';
 import { ConfigModule } from '@nestjs/config';
 import { Logger, Module } from '@nestjs/common';
 import { UserModule } from './user/user.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
     imports: [
@@ -16,6 +17,7 @@ import { UserModule } from './user/user.module';
         DataSourceModule,
         OrganizationModule,
         UserAuthModule,
+        SearchModule,
         UserModule,
         ConfigModule.forRoot({
             envFilePath: ['.env.test', '.env.prod'],

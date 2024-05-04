@@ -33,12 +33,21 @@
             <div class="d-flex justify-space-between">
                 <SearchActiveFilters />
 
-                <div class="text-secondary text-body-2">20 results</div>
+                <div class="text-secondary text-body-2">{{ totalResultCount }} results</div>
             </div>
             <HorizontalLine thinkness="3px" />
 
             <div style="height: 76.8vh; overflow-y: scroll">
-                <SearchResultRow v-for="n in 20" :key="n" />
+                <SearchResultRow
+                    v-for="result in searchResults"
+                    :key="result._id"
+                    :id="result._id"
+                    :source-type="result.dataSourceType"
+                    :timestamp="result.createdAt"
+                    :title="result.text.substring(12, result.text.indexOf(', Page Excerpt:'))"
+                    :body="result.text.substring(result.text.indexOf('Page Excerpt: ') + 14)"
+                    :url="result.url"
+                />
             </div>
         </div>
     </div>
@@ -50,7 +59,7 @@
     import { storeToRefs } from 'pinia';
 
     const searchStore = useSearchStore();
-    const { activeQueryParams } = storeToRefs(searchStore);
+    const { activeQueryParams, searchResults, totalResultCount } = storeToRefs(searchStore);
 
     const searchIsFocused = ref(false);
 

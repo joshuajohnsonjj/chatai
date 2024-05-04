@@ -36,7 +36,7 @@ const processBlockList = async (
     mongo: MongoDBService,
     notionAPI: NotionWrapper,
     blocks: NotionBlock[],
-    ownerId: string,
+    entityId: string,
     pageUrl: string,
     pageTitle: string,
 ) => {
@@ -51,14 +51,14 @@ const processBlockList = async (
             (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) &&
             connectedBlocks.length
         ) {
-            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
+            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId);
             builtBlocksTextString = '';
             connectedBlocks = [];
             continue;
         } else if (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) {
             continue;
         } else if (!shouldConnectToCurrentBlockGroup(connectedBlocks, parentBlock)) {
-            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
+            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId);
             builtBlocksTextString = '';
             connectedBlocks = [];
         }
@@ -69,7 +69,7 @@ const processBlockList = async (
                 aggregatedNestedBlocks.slice(1),
                 parentBlock[parentBlock.type] as NotionTable,
             );
-            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, ownerId);
+            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, entityId);
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
             const columnBlocks = await notionAPI.listPageBlocks(parentBlock.id, null);
             await Promise.all(
@@ -79,7 +79,7 @@ const processBlockList = async (
                         .slice(1)
                         .map((block) => getTextFromBlock(block))
                         .join('\n');
-                    await publishBlockData(mongo, aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, ownerId);
+                    await publishBlockData(mongo, aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, entityId);
                 }),
             );
         } else {
@@ -91,7 +91,7 @@ const processBlockList = async (
     }
 
     if (connectedBlocks.length) {
-        await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, ownerId);
+        await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId);
     }
 };
 
@@ -99,7 +99,7 @@ const processPage = async (
     mongo: MongoDBService,
     notionAPI: NotionWrapper,
     pageId: string,
-    ownerId: string,
+    entityId: string,
     pageUrl: string,
     pageTitle: string,
 ) => {
@@ -114,11 +114,14 @@ const processPage = async (
         nextCursor = blockResponse.next_cursor;
     }
 
-    await processBlockList(mongo, notionAPI, blocks, ownerId, pageUrl, pageTitle);
+    await processBlockList(mongo, notionAPI, blocks, entityId, pageUrl, pageTitle);
 };
 
 /**
  * Lambda SQS handler
+ *
+ * TODO: should set page title as outer document property. include it in embedding
+ * TODO: add hash to url for direct to block mapping
  *
  * Message body expected to have following data
  *      pageId: string,
@@ -131,7 +134,8 @@ const processPage = async (
  */
 export const handler: Handler = async (event: SQSEvent): Promise<void> => {
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
-        process.env.MONGO_CONN_STRING as string, process.env.MONGO_DB_NAME as string
+        process.env.MONGO_CONN_STRING as string,
+        process.env.MONGO_DB_NAME as string,
     );
 
     // TODO: error handling, dead letter queue?
@@ -173,13 +177,13 @@ export const handler: Handler = async (event: SQSEvent): Promise<void> => {
         console.log('Sync completed of data source records:', completedDataSources);
 
         // TODO: fill in host env once first live deployment happens
-        await axios({
-            method: 'patch',
-            baseURL: process.env.BASE_API_HOST,
-            url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
-            data: {
-                dataSourceIds: completedDataSources,
-            },
-        });
+        // await axios({
+        //     method: 'patch',
+        //     baseURL: process.env.BASE_API_HOST,
+        //     url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
+        //     data: {
+        //         dataSourceIds: completedDataSources,
+        //     },
+        // });
     }
 };

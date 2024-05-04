@@ -20,3 +20,6 @@ export const dateToString = (date: Date): string => {
 };
 
 export const formatStringStartCase = (original: string): string => startCase(original.toLowerCase());
+
+export const maxStrLenToElipse = (str: string, maxLen = 170): string =>
+    str.length < maxLen - 3 ? str : str.substring(0, maxLen - 3) + '...';

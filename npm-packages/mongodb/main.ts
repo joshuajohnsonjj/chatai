@@ -126,7 +126,7 @@ export class MongoDBService {
     public async queryDataElementsByVector(
         query: DataElementVectorInput,
         limit = 3,
-    ): Promise<Partial<MongoDataElementCollectionDoc>[]> {
+    ): Promise<MongoDataElementCollectionDoc[]> {
         const filter: VectorQueryFilter = {
             $and: [
                 {
@@ -176,10 +176,13 @@ export class MongoDBService {
             },
             {
                 $project: {
+                    ownerEntityId: 1,
                     text: 1,
+                    createdAt: 1,
                     url: 1,
                     authorName: 1,
                     annotations: 1,
+                    dataSourceType: 1,
                     score: { $meta: 'vectorSearchScore' },
                 },
             },
@@ -188,25 +191,33 @@ export class MongoDBService {
         const result = await this.elementCollConnection.aggregate(pipeline).toArray();
 
         if (!query.topics) {
-            return result;
+            return result as MongoDataElementCollectionDoc[];
         }
 
         // Since Mongo doesn't support partial array query in filter w/ vector search
         // do this here. Perhaps eventually they'll add native support for this.
         return result.filter((element) =>
             element.annotations.some((annotation: string) => query.topics!.includes(annotation)),
-        );
+        ) as MongoDataElementCollectionDoc[];
     }
 
+    /**
+     * Performs an upsert operation based on the _id property
+     */
     public async writeDataElements(data: MongoDataElementCollectionDoc): Promise<void> {
-        await this.elementCollConnection.insertOne(data);
+        await this.elementCollConnection.replaceOne({ _id: data._id }, data, { upsert: true });
     }
 
+    /**
+     * Performs an upsert operation based on combination of org id and author name
+     */
     public async writeAuthors(data: MongoAuthorCollectionDoc): Promise<void> {
-        await this.authorCollConnection.insertOne(data);
+        await this.authorCollConnection.replaceOne({ organizationId: data.organizationId, name: data.name }, data, {
+            upsert: true,
+        });
     }
 
-    public async searchAuthorOptions(name: string, entityId: string): Promise<Partial<MongoAuthorCollectionDoc>[]> {
+    public async searchAuthorOptions(text: string, entityId: string): Promise<{ name: string }[]> {
         const pipeline = [
             {
                 $search: {
@@ -222,7 +233,7 @@ export class MongoDBService {
                         should: [
                             {
                                 text: {
-                                    query: name,
+                                    query: text,
                                     path: 'name',
                                 },
                             },
@@ -232,15 +243,18 @@ export class MongoDBService {
             },
             {
                 $project: {
-                    label: 1,
+                    name: 1,
                     score: { $meta: 'searchScore' },
                 },
             },
         ];
         const cursor = this.authorCollConnection.aggregate(pipeline);
-        return await cursor.toArray();
+        return (await cursor.toArray()) as { name: string }[];
     }
 
+    /**
+     * Performs an upsert operation based on combination of entity id and label text
+     */
     public async writeLabels(labels: string[], entityId: string): Promise<void> {
         await Promise.all(
             labels.map((label) =>
@@ -249,10 +263,8 @@ export class MongoDBService {
         );
     }
 
-    public async searchLabelOptions(
-        text: string,
-        entityId: string,
-    ): Promise<Partial<MongoAnnotationLabelCollectionDoc>[]> {
+    // TODO: fix this bad query
+    public async searchLabelOptions(text: string, entityId: string): Promise<{ label: string }[]> {
         const pipeline = [
             {
                 $search: {
@@ -284,6 +296,6 @@ export class MongoDBService {
             },
         ];
         const cursor = this.labelCollConnection.aggregate(pipeline);
-        return await cursor.toArray();
+        return (await cursor.toArray()) as { label: string }[];
     }
 }

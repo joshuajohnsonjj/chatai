@@ -121,25 +121,32 @@ export const publishBlockData = async (
     parentBlock: NotionBlock,
     pageTitle: string,
     pageUrl: string,
-    ownerId: string,
+    entityId: string,
 ): Promise<void> => {
     if (!aggregatedBlockText || !aggregatedBlockText.length) {
         return;
     }
 
     const text = `Page Title: ${pageTitle}, Page Excerpt: ${aggregatedBlockText}`;
-    const [embedding, annotations] = await Promise.all([gemini.getTextEmbedding(text), gemini.getTextAnnotation(text)]);
+    const [embedding, annotations] = await Promise.all([
+        gemini.getTextEmbedding(aggregatedBlockText),
+        gemini.getTextAnnotation(aggregatedBlockText),
+    ]);
+    const annotationLabels = [...annotations.categories, ...annotations.entities];
 
-    await mongo.writeDataElements({
-        _id: parentBlock.id,
-        ownerEntityId: ownerId,
-        text,
-        embedding,
-        createdAt: new Date().getTime(),
-        url: pageUrl,
-        annotations: annotations.categories,
-        dataSourceType: NOTION_DATA_SOURCE_NAME,
-    });
+    await Promise.all([
+        mongo.writeLabels(annotationLabels, entityId),
+        mongo.writeDataElements({
+            _id: parentBlock.id,
+            ownerEntityId: entityId,
+            text,
+            embedding,
+            createdAt: new Date().getTime(),
+            url: pageUrl,
+            annotations: annotationLabels,
+            dataSourceType: NOTION_DATA_SOURCE_NAME,
+        }),
+    ]);
 };
 
 export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {

@@ -8,7 +8,7 @@ export class GetChatResponseQueryDto {
     @IsString()
     text: string;
 
-    @IsString()
+    @IsUUID()
     @IsOptional()
     replyThreadId?: string;
 }

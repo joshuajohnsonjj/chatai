@@ -12,11 +12,18 @@
             <div class="d-flex justify-start">
                 <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${'NOTION'}.png`" size="80"></v-avatar>
                 <div class="ml-4">
-                    <p class="text-h5 text-primary font-weight-medium mb-1">Seller Financing Platform</p>
+                    <p class="text-h5 text-primary font-weight-medium mb-1">
+                        {{
+                            selectedSearchResult.text.substring(
+                                12,
+                                selectedSearchResult.text.indexOf(', Page Excerpt:'),
+                            )
+                        }}
+                    </p>
                     <div class="d-flex justify-start">
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-calendar-outline" color="secondary"></v-icon>
-                            Linked since: {{ moment('4/12/24 11:15 AM').format('M/D/YYYY H:MM A') }}
+                            Linked since: {{ moment(selectedSearchResult.createdAt).format('M/D/YYYY H:MM A') }}
                         </p>
                     </div>
                     <div class="d-flex justify-start">
@@ -50,42 +57,17 @@
                     <div class="font-weight-medium text-h6 text-primary pt-1">Content preview</div>
                     <v-btn variant="text" class="text-caption" @click="copyToClipboard">Copy to clipboard</v-btn>
                 </div>
-                <div id="content-preview" class="pa-6 text-body-1 text-primary">
-                    Features
-                    <ul>
-                        <li>No need to hire a lawyer, all legal/title etc handled</li>
-                        <li>No/Low closing costs</li>
-                        <li>We provide “Lender-grade” underwriting tools to seller</li>
-                        <li>Loan servicing</li>
-                        <li>payments</li>
-                        <li>escrow</li>
-                        <li>default protection?</li>
-                        <li>Secondary market?</li>
-                        <li>B2B play</li>
-                        <li>Large developers, etc</li>
-                        <li>
-                            Longer play - as we market to sophisticated sellers, creating SAP/Oracle integration will be
-                            an important selling point
-                        </li>
-                        <li>
-                            Think through other relevant ERPs - may want to research which ones are commonly used by
-                            real estate companies
-                        </li>
-                        <li>Short term - integrating to something like Quickbooks</li>
-
-                        <li>B2B play</li>
-                        <li>Large developers, etc</li>
-                        <li>
-                            Longer play - as we market to sophisticated sellers, creating SAP/Oracle integration will be
-                            an important selling point
-                        </li>
-                        <li>
-                            Think through other relevant ERPs - may want to research which ones are commonly used by
-                            real estate companies
-                        </li>
-                        <li>Short term - integrating to something like Quickbooks</li>
-                    </ul>
-                </div>
+                <div
+                    id="content-preview"
+                    class="pa-6 text-body-1 text-primary"
+                    v-html="
+                        markdown(
+                            selectedSearchResult.text.substring(
+                                selectedSearchResult.text.indexOf('Page Excerpt: ') + 14,
+                            ),
+                        )
+                    "
+                ></div>
             </div>
         </div>
     </div>
@@ -95,13 +77,18 @@
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import moment from 'moment';
     import { useToast } from 'vue-toastification';
+    import { useSearchStore } from '../stores/search';
+    import { storeToRefs } from 'pinia';
+    import { markdown } from '../utility/markdown';
+
+    const searchStore = useSearchStore();
+    const { selectedSearchResult } = storeToRefs(searchStore);
 
     const toast = useToast();
 
     function openSource() {
-        const url =
-            'https://www.notion.so/Seller-financing-platform-16fb35ef252f4b05b44786df36c16d91?pvs=4#5983b7088475403ebf61506fd0e82eb9';
-        window.open(url, '_blank')!.focus();
+        // TODO: handle null url
+        window.open(selectedSearchResult.value?.url, '_blank')!.focus();
     }
 
     function copyToClipboard() {
@@ -110,3 +97,11 @@
         toast.success('Content coppied to clipboard!');
     }
 </script>
+
+<!-- Unscoped for v-html message rendering -->
+<style>
+    #content-preview > ul,
+    #content-preview > ol {
+        padding-left: 1.25rem;
+    }
+</style>

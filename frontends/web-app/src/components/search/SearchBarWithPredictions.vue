@@ -33,7 +33,7 @@
         >
             <div class="text-secondary text-caption">CONTENT QUERY</div>
             <div
-                @click="handleParam"
+                @click="handleParam(0)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 0,
@@ -49,7 +49,7 @@
 
             <div class="text-secondary text-caption mt-2">TOPICS</div>
             <div
-                @click="handleParam"
+                @click="handleParam(1)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 1,
@@ -65,7 +65,7 @@
                 <v-icon v-if="perdictionSelectorCurrentIndex === 1" icon="mdi-keyboard-return"></v-icon>
             </div>
             <div
-                @click="handleParam"
+                @click="handleParam(2)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 2,
@@ -79,7 +79,7 @@
                 <v-icon v-if="perdictionSelectorCurrentIndex === 2" icon="mdi-keyboard-return"></v-icon>
             </div>
             <div
-                @click="handleParam"
+                @click="handleParam(3)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 3,
@@ -97,7 +97,7 @@
 
             <div class="text-secondary text-caption mt-2">PEOPLE</div>
             <div
-                @click="handleParam"
+                @click="handleParam(4)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 4,
@@ -111,7 +111,7 @@
                 <v-icon v-if="perdictionSelectorCurrentIndex === 4" icon="mdi-keyboard-return"></v-icon>
             </div>
             <div
-                @click="handleParam"
+                @click="handleParam(5)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 5,
@@ -125,7 +125,7 @@
                 <v-icon v-if="perdictionSelectorCurrentIndex === 5" icon="mdi-keyboard-return"></v-icon>
             </div>
             <div
-                @click="handleParam"
+                @click="handleParam(6)"
                 class="d-flex mt-1 mb-2 rounded button-hover"
                 :class="{
                     'bg-surface-bright': perdictionSelectorCurrentIndex === 6,
@@ -145,7 +145,9 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useSearchStore } from '../../stores/search';
+    import { useUserStore } from '../../stores/user';
     import { storeToRefs } from 'pinia';
+    import { SearchQueryParamType } from '../../types/search-store';
 
     defineProps<{
         placeholder: string;
@@ -156,11 +158,43 @@
 
     const searchStore = useSearchStore();
     const { activeQueryParams } = storeToRefs(searchStore);
+    const userStore = useUserStore();
+    const { userData } = storeToRefs(userStore);
 
     const isFocused = ref(false);
     const searchText = ref('');
     const perdictionSelectorCurrentIndex = ref(0);
-    const maxPredictionSelectorIndex = ref(6);
+
+    const suggestionsList = ref<any[]>([
+        {
+            type: SearchQueryParamType.TEXT,
+            value: '',
+        },
+        {
+            type: SearchQueryParamType.TOPIC,
+            value: '2023 Financial Statements',
+        },
+        {
+            type: SearchQueryParamType.TOPIC,
+            value: '2023 Market Analysis',
+        },
+        {
+            type: SearchQueryParamType.TOPIC,
+            value: 'Market Research',
+        },
+        {
+            type: SearchQueryParamType.AUTHOR,
+            value: 'Stavros Halkias',
+        },
+        {
+            type: SearchQueryParamType.AUTHOR,
+            value: 'Bill Burr',
+        },
+        {
+            type: SearchQueryParamType.AUTHOR,
+            value: 'Andrew Schulz',
+        },
+    ]);
 
     document.onkeydown = (e) => {
         if (!isFocused.value || !searchText.value) {
@@ -169,11 +203,11 @@
 
         if (e.key === 'ArrowUp' && perdictionSelectorCurrentIndex.value > 0) {
             perdictionSelectorCurrentIndex.value -= 1;
-        } else if (e.key === 'ArrowDown' && perdictionSelectorCurrentIndex.value < maxPredictionSelectorIndex.value) {
+        } else if (e.key === 'ArrowDown' && perdictionSelectorCurrentIndex.value < suggestionsList.value.length) {
             perdictionSelectorCurrentIndex.value += 1;
         } else if (e.key === 'ArrowUp' && perdictionSelectorCurrentIndex.value === 0) {
-            perdictionSelectorCurrentIndex.value = maxPredictionSelectorIndex.value;
-        } else if (e.key === 'ArrowDown' && perdictionSelectorCurrentIndex.value === maxPredictionSelectorIndex.value) {
+            perdictionSelectorCurrentIndex.value = suggestionsList.value.length;
+        } else if (e.key === 'ArrowDown' && perdictionSelectorCurrentIndex.value === suggestionsList.value.length) {
             perdictionSelectorCurrentIndex.value = 0;
         } else if (e.key === 'Escape') {
             searchText.value = '';
@@ -184,10 +218,17 @@
         }
     };
 
-    function handleParam() {
+    function handleParam(clickedIndex?: number) {
         isFocused.value = false;
         emit('focusChange');
-        searchStore.addQueryParam({ value: searchText.value, type: 'content' });
+
+        const ndx = clickedIndex ?? perdictionSelectorCurrentIndex.value;
+        const selected = suggestionsList.value[ndx];
+
+        searchStore.addQueryParam(selected.type, ndx === 0 ? searchText.value : selected.value);
+
+        searchStore.executeSearchQuery(userData.value!.organizationId ?? userData.value!.id);
+
         searchText.value = '';
     }
 </script>

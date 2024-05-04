@@ -42,11 +42,7 @@ export class DataSourceService {
         this.logger.log('Creating new data source', 'DataSource');
 
         if (params.ownerEntityType === EntityType.ORGANIZATION) {
-            this.checkIsOrganizationAdmin(
-                params.ownerEntityId,
-                user[CognitoAttribute.ORG],
-                user[CognitoAttribute.ORG_USER_ROLE],
-            );
+            this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
         }
@@ -112,11 +108,7 @@ export class DataSourceService {
         this.logger.log('Testing data source credential', 'DataSource');
 
         if (params.ownerEntityType === EntityType.ORGANIZATION) {
-            this.checkIsOrganizationAdmin(
-                params.ownerEntityId,
-                user[CognitoAttribute.ORG],
-                user[CognitoAttribute.ORG_USER_ROLE],
-            );
+            this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
         }
@@ -358,9 +350,9 @@ export class DataSourceService {
         }
     }
 
-    private checkIsOrganizationAdmin(reqOrgId: string, userOrgId: string, role: OganizationUserRole): void {
+    private checkIsOrganizationAdmin(reqOrgId: string, userOrgId: string, role: string): void {
         if (
-            ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role) ||
+            ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role as OganizationUserRole) ||
             reqOrgId !== userOrgId
         ) {
             this.logger.error('User is not an admin of the specified org', 'DataSource');

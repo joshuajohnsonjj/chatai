@@ -57,7 +57,7 @@
     "time": "12/Mar/2020:19:03:58 +0000",
     "timeEpoch": 1583348638390
   },
-  "body": "{\"dataSourceId\": \"f0967a92-d948-4334-8751-cf586856a149\"}",
+  "body": "{\"dataSourceId\": \"f0967a92-d948-4334-8751-cf586856a149\", \"dataSourceType\":\"NOTION\", \"userId\":\"74284498-0011-7023-fc9c-67ab0f1e0a90\", \"ownerEntityId\":\"74284498-0011-7023-fc9c-67ab0f1e0a90\", \"secret\":\"RbpMDiBN38ZFvT3QV7hrLTG1VGTF6RTJOAthw/9hd1B8yDVV0h34qyH2oQ6rMZRrAUDiSo7CNlanK/5aOuaYaAXxMF/+wZMfWGwpWlckGlF4uM8mq6YszuU9rx6LCUvFPWy4rGnKKqI0cbhJPKF8XWt6LnggPA0ppyF4uG4gDfCfDFnqUthP/PI8hmbl/eKWK3WclwzVMwO1IaP0GSTo6VUi3v6ODCSDWCHZ6KQSL2hoZGMBCp8XabmTaQXd+OVAPlz6JGh7f3fSz+ywVgzuEUWjw8sYNBNlJMaz920x+1YsWe4fk0lOrNtK6+MxBY5CgUBW1W/KiRhjZ489kjFGtQ==\"}",
   "pathParameters": {
     "parameter1": "value1"
   },

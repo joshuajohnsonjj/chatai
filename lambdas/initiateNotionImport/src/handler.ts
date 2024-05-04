@@ -9,7 +9,7 @@ import { sendSqsMessageBatches } from '../../lib/sqs';
 import { type InitiateImportRequestData } from '../../lib/types';
 import { v4 } from 'uuid';
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: __dirname + '/../../../../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 

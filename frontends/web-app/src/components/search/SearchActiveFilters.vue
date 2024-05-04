@@ -9,7 +9,7 @@
         >
             <v-icon icon="mdi-close" class="filter-cancel-icon"></v-icon>
             <v-icon :icon="SEARCH_FILTER_TYPE_TO_ICON[param.type]" size="x-small"></v-icon>
-            <div class="text-primary text-caption ml-1">{{ param.value }}</div>
+            <div class="text-primary text-caption ml-1">{{ maxStrLenToElipse(param.value, 55) }}</div>
         </div>
     </v-row>
 </template>
@@ -18,6 +18,7 @@
     import { SEARCH_FILTER_TYPE_TO_ICON } from '../../constants';
     import { useSearchStore } from '../../stores/search';
     import { storeToRefs } from 'pinia';
+    import { maxStrLenToElipse } from '../../utility';
 
     const searchStore = useSearchStore();
     const { activeQueryParams } = storeToRefs(searchStore);

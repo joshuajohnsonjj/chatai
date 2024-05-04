@@ -6,3 +6,6 @@ jspm_packages
 .serverless
 
 nodejs/
+
+test.js
+**/test.js

@@ -8,17 +8,7 @@ import { TOKEN_STORAGE_KEY } from '../constants';
 export const useUserStore = defineStore('user', () => {
     const isLoading = ref(false);
 
-    const userData = ref<UserInfo>({
-        id: null,
-        type: null,
-        planId: null,
-        organizationId: null,
-        email: null,
-        firstName: null,
-        lastName: null,
-        phoneNumber: null,
-        stripeCustomerId: null,
-    });
+    const userData = ref<UserInfo>();
 
     const userOrgData = ref<OrgInfo>({
         id: null,

@@ -122,7 +122,7 @@ export class OrganizationService {
         body: InvitUserQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<InviteResponseDto> {
-        this.checkIsOrganizationAdmin(organizationId, user[CognitoAttribute.ORG], user[CognitoAttribute.ORG_USER_ROLE]);
+        this.checkIsOrganizationAdmin(organizationId, user.organization, user.oganizationUserRole);
 
         // TODO: check if user exists already/in other org
         const org = await this.prisma.organization.findUnique({
@@ -159,7 +159,7 @@ export class OrganizationService {
         inviteId: string,
         user: DecodedUserTokenDto,
     ): Promise<InviteResponseDto> {
-        this.checkIsOrganizationAdmin(organizationId, user[CognitoAttribute.ORG], user[CognitoAttribute.ORG_USER_ROLE]);
+        this.checkIsOrganizationAdmin(organizationId, user.organization, user.oganizationUserRole);
 
         const org = await this.prisma.organization.findUnique({
             where: { id: organizationId },
@@ -185,11 +185,7 @@ export class OrganizationService {
     }
 
     async revokeOrgInvite(organizationId: string, invitationId: string, reqUser: DecodedUserTokenDto): Promise<void> {
-        this.checkIsOrganizationAdmin(
-            organizationId,
-            reqUser[CognitoAttribute.ORG],
-            reqUser[CognitoAttribute.ORG_USER_ROLE],
-        );
+        this.checkIsOrganizationAdmin(organizationId, reqUser.organization, reqUser.oganizationUserRole);
 
         await this.prisma.userInvite.delete({ where: { id: invitationId } });
     }
@@ -201,11 +197,7 @@ export class OrganizationService {
     ): Promise<void> {
         // FIXME: prevent removal of org owner
         // TODO: allow transfer org ownership
-        this.checkIsOrganizationAdmin(
-            organizationId,
-            reqUser[CognitoAttribute.ORG],
-            reqUser[CognitoAttribute.ORG_USER_ROLE],
-        );
+        this.checkIsOrganizationAdmin(organizationId, reqUser.organization, reqUser.oganizationUserRole);
 
         const userToRemove = await this.prisma.user.findUnique({
             where: { id: userToRemoveId },
@@ -259,7 +251,7 @@ export class OrganizationService {
     }
 
     async listOrganizationInvites(organizationId: string, reqUser: DecodedUserTokenDto): Promise<InviteResponseDto[]> {
-        this.checkIsOrganizationAdmin(organizationId, reqUser.organization, reqUser[CognitoAttribute.ORG_USER_ROLE]);
+        this.checkIsOrganizationAdmin(organizationId, reqUser.organization, reqUser.oganizationUserRole);
 
         return this.prisma.userInvite.findMany({
             where: { organizationId },
@@ -282,9 +274,9 @@ export class OrganizationService {
         } as OrganizationInvite);
     }
 
-    private checkIsOrganizationAdmin(reqOrgId: string, userOrgId: string, role: OganizationUserRole): void {
+    private checkIsOrganizationAdmin(reqOrgId: string, userOrgId: string, role: string): void {
         if (
-            ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role) ||
+            ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role as OganizationUserRole) ||
             reqOrgId !== userOrgId
         ) {
             throw new AccessDeniedError();

@@ -3,15 +3,15 @@ export enum UserType {
     ORGANIZATION_MEMBER = 'ORGANIZATION_MEMBER',
 }
 export interface UserInfo {
-    id: string | null;
-    type: UserType | null;
-    planId?: string | null;
-    organizationId?: string | null;
-    email: string | null;
-    firstName: string | null;
-    lastName: string | null;
-    phoneNumber?: string | null;
-    stripeCustomerId?: string | null;
+    id: string;
+    type: UserType;
+    planId: string | null;
+    organizationId: string | null;
+    email: string;
+    firstName: string;
+    lastName: string;
+    phoneNumber: string | null;
+    stripeCustomerId: string | null;
 }
 
 export interface OrgInfo {

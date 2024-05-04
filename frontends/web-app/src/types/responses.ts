@@ -98,3 +98,20 @@ export interface DataSourceTypesResponse {
     isLiveSyncAvailable: boolean;
     userConnectedDataSourceId?: string;
 }
+
+export interface SearchResult {
+    _id: string;
+    ownerEntityId: string;
+    text: string;
+    createdAt: number; // Unix timestamp
+    url?: string;
+    authorName?: string;
+    annotations: string[];
+    dataSourceType: string;
+}
+
+export interface SearchQueryResponse {
+    numResults: number;
+    nextStartNdx: number;
+    results: SearchResult[];
+}

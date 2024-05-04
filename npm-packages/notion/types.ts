@@ -36,8 +36,14 @@ export interface NotionPageDetailResponse {
         database_id: string;
     };
     properties: {
-        title?: NotionRichTextData[];
+        title?: {
+            id: 'title';
+            type: 'title';
+            title: NotionRichTextData[];
+        };
         Name?: {
+            id: 'title';
+            type: 'title';
             title?: NotionRichTextData[];
         };
     };

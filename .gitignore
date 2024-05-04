@@ -5,6 +5,9 @@
 
 **/*.tmp
 
+test.js
+**/test.js
+
 **/.aws-sam
 
 **/*.zip

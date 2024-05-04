@@ -1,7 +1,7 @@
 import { NotionPageDetailResponse } from './types';
 
 export const getPageTitle = (pageDetail: NotionPageDetailResponse): string => {
-    const title = pageDetail.properties?.title;
+    const title = pageDetail.properties?.title?.title;
     if (title?.length) {
         return title[0].plain_text;
     }

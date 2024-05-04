@@ -7,7 +7,7 @@ import {
     GeminiModels,
 } from './types';
 import axios from 'axios';
-import { IMPORTABLE_ENTITY_TYPES } from './constants';
+import { IMPORTABLE_ENTITY_TYPES, NLP_URL } from './constants';
 
 export class GeminiService {
     private readonly client: GoogleGenerativeAI;
@@ -20,17 +20,18 @@ export class GeminiService {
     }
 
     /**
+     * TODO: Further refine the entity cleaning... we get a decent amount of bullshit at the moment
      * Uses NLP to get relative category/keyword info from text
      */
     public getTextAnnotation = async (
         textInput: string,
-        minCategoryConfidence = 0.7,
-        minEntityConfidence = 0.8,
+        minCategoryConfidence = 0.65,
+        minEntityConfidence = 0.825,
     ): Promise<CleanedAnalyzeTextResponse> => {
         try {
             const resp = await axios({
                 method: 'post',
-                url: `https://language.googleapis.com/v2/documents:annotateText?key=${this.key}`,
+                url: `${NLP_URL}?key=${this.key}`,
                 data: {
                     document: {
                         type: 'PLAIN_TEXT',
