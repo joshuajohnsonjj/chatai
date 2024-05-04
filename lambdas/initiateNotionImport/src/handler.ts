@@ -13,7 +13,10 @@ dotenv.config({ path: __dirname + '/../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 
-export const handler: Handler = async (req) => {
+/**
+ * API Gateway /notion POST handler
+ */
+export const handler: Handler = async (req): Promise<{ success: boolean }> => {
     const data: InitiateImportRequestData = req.body;
     console.log(`Retreiving data source ${data.dataSourceId} Notion pages`, 'DataSource');
 
@@ -64,4 +67,6 @@ export const handler: Handler = async (req) => {
     });
 
     await sendSqsMessageBatches(messageBatchEntries, process.env.NOTION_QUEUE_URL as string);
+
+    return { success: true };
 };

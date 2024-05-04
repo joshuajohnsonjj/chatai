@@ -10,9 +10,3 @@ Resources:
             Runtime: nodejs20.x
             CodeUri: ./dist
             Timeout: 600
-            Events:
-                SyncDataSourceInitiator:
-                    Type: Api
-                    Properties:
-                        Path: /notion
-                        Method: POST

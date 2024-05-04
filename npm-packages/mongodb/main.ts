@@ -13,10 +13,10 @@ import type {
  * ## Wrapper for mongo db client
  *
  * **NOTE:** Need to call the init() method to
- * open connection and the terminate() to close
+ * open connection
  */
 export class MongoDBService {
-    private readonly client: MongoClient;
+    private client: MongoClient;
 
     private readonly dbName: string;
 
@@ -35,12 +35,9 @@ export class MongoDBService {
      * Must call this before using
      */
     public async init() {
-        await this.client.connect();
+        this.client = await this.client.connect();
     }
 
-    /**
-     * Must call this at end of use
-     */
     public async terminate() {
         await this.client.close();
     }

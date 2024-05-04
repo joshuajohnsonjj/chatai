@@ -6,7 +6,7 @@ Resources:
     batchImportNotion:
         Type: 'AWS::Serverless::Function'
         Properties:
-            Handler: handler.handler
+            Handler: batchImportNotion/src/handler.handler
             Runtime: nodejs20.x
             CodeUri: ./dist
             Timeout: 600
@@ -14,4 +14,4 @@ Resources:
                 NotionImportMessage:
                     Type: SQS
                     Properties:
-                        Queue: arn:aws:sqs:us-east-1:353643225333:BatchDataSourceSync.fifo
+                        Queue: arn:aws:sqs:us-east-1:353643225333:NotionBatchImportQueue.fifo

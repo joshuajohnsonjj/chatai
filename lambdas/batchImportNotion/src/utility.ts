@@ -13,10 +13,10 @@ import type {
     NotionWrapper,
 } from '@joshuajohnsonjj38/notion';
 import { JoinableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
-import { GeminiService } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
-import { DataSourceTypeName } from '@prisma/client';
+import { NOTION_DATA_SOURCE_NAME } from './constants';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -130,18 +130,16 @@ export const publishBlockData = async (
     const text = `Page Title: ${pageTitle}, Page Excerpt: ${aggregatedBlockText}`;
     const [embedding, annotations] = await Promise.all([gemini.getTextEmbedding(text), gemini.getTextAnnotation(text)]);
 
-    await mongo.writeDataElements([
-        {
-            _id: parentBlock.id,
-            ownerEntityId: ownerId,
-            text,
-            embedding,
-            createdAt: new Date().getTime(),
-            url: pageUrl,
-            annotations: [...annotations.categories, ...annotations.entities],
-            dataSourceType: DataSourceTypeName.NOTION,
-        },
-    ]);
+    await mongo.writeDataElements({
+        _id: parentBlock.id,
+        ownerEntityId: ownerId,
+        text,
+        embedding,
+        createdAt: new Date().getTime(),
+        url: pageUrl,
+        annotations: annotations.categories,
+        dataSourceType: NOTION_DATA_SOURCE_NAME,
+    });
 };
 
 export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {

@@ -1,6 +1,6 @@
 {
-  "name": "@joshuajohnsonjj38/openai",
-  "version": "1.0.5",
+  "name": "@joshuajohnsonjj38/gemini",
+  "version": "1.0.8",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -18,5 +18,5 @@
   },
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "Wrapper around gemini/google nlp functionality"
 }

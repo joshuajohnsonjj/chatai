@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { GeminiService } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '../../../npm-packages/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import type { ChatThreadResponseDto, GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';

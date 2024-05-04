@@ -12,8 +12,10 @@ import {
 } from './utility';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import * as dotenv from 'dotenv';
-import { sendSqsMessage } from '../../lib/sqs';
-import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
+import axios from 'axios';
+import { COMPLETE_DATA_SOURCE_SYNC_ENDPOINT } from './constants';
+import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
+import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -43,6 +45,7 @@ const processBlockList = async (
 
     for (const parentBlock of blocks) {
         if (parentBlock.in_trash) {
+            // TODO: check if we have this data saved and remove it
             continue;
         } else if (
             (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) &&
@@ -126,13 +129,14 @@ const processPage = async (
  *      secret: string,
  *      isFinal: true,
  */
-export const handler: Handler = async (event: SQSEvent) => {
+export const handler: Handler = async (event: SQSEvent): Promise<void> => {
+    const mongo = await getMongoClientFromCacheOrInitiateConnection(
+        process.env.MONGO_CONN_STRING as string, process.env.MONGO_DB_NAME as string
+    );
+
     // TODO: error handling, dead letter queue?
     const processingPagePromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
-
-    const mongo = new MongoDBService(process.env.MONGO_CONN_STRING as string, process.env.MONGO_DB_NAME as string);
-    await mongo.init();
 
     console.log(`Processing ${event.Records.length} messages`);
 
@@ -164,10 +168,18 @@ export const handler: Handler = async (event: SQSEvent) => {
     }
 
     await Promise.all(processingPagePromises);
-    await mongo.terminate();
 
     if (completedDataSources.length) {
-        console.log('Sync completed ofr data source records:', completedDataSources);
-        sendSqsMessage(completedDataSources, process.env.IMPORT_COMPLETION_QUEUE_URL as string);
+        console.log('Sync completed of data source records:', completedDataSources);
+
+        // TODO: fill in host env once first live deployment happens
+        await axios({
+            method: 'patch',
+            baseURL: process.env.BASE_API_HOST,
+            url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
+            data: {
+                dataSourceIds: completedDataSources,
+            },
+        });
     }
 };
