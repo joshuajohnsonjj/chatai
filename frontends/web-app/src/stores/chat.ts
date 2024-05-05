@@ -23,6 +23,11 @@ export const useChatStore = defineStore('chat', () => {
         isLoading.value = false;
     };
 
+    const unsetChat = () => {
+        selectedChat.value = null;
+        chatHistory.value = [];
+    };
+
     const setChatHistory = async (chatId: string) => {
         const selected = find(chats.value, (chat) => chat.id === chatId);
 
@@ -84,6 +89,7 @@ export const useChatStore = defineStore('chat', () => {
         isLoading,
         replyingInThreadId,
         setChatHistory,
+        unsetChat,
         getChatList,
         sendMessage,
         setReplyMode,

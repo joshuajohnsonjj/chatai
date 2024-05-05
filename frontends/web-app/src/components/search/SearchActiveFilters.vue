@@ -9,16 +9,20 @@
         >
             <v-icon icon="mdi-close" class="filter-cancel-icon"></v-icon>
             <v-icon :icon="SEARCH_FILTER_TYPE_TO_ICON[param.type]" size="x-small"></v-icon>
-            <div class="text-primary text-caption ml-1">{{ maxStrLenToElipse(param.value, 55) }}</div>
+            <div v-if="param.type === SearchQueryParamType.TOPIC" class="text-primary text-caption ml-1">
+                {{ maxStrLenToElipse(prettyPrintTopicValue(param.value), 55) }}
+            </div>
+            <div v-else class="text-primary text-caption ml-1">{{ maxStrLenToElipse(param.value, 55) }}</div>
         </div>
     </v-row>
 </template>
 
 <script lang="ts" setup>
     import { SEARCH_FILTER_TYPE_TO_ICON } from '../../constants';
+    import { SearchQueryParamType } from '../../types/search-store';
     import { useSearchStore } from '../../stores/search';
     import { storeToRefs } from 'pinia';
-    import { maxStrLenToElipse } from '../../utility';
+    import { maxStrLenToElipse, prettyPrintTopicValue } from '../../utility';
 
     const searchStore = useSearchStore();
     const { activeQueryParams } = storeToRefs(searchStore);

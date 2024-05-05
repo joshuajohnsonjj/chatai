@@ -5,9 +5,23 @@
         <div class="w-100 bg-surface header-container bottom-border-primary">
             <div class="d-flex justify-space-between">
                 <p class="text-h4 font-weight-medium text-primary pt-6 pb-4 pl-6">{{ selectedChat?.title }}</p>
-                <div class="pr-6 pt-4">
+                <div class="pr-6 pt-4 d-flex justify-end">
                     <v-btn variant="plain" icon="mdi-star-outline"></v-btn>
-                    <v-btn variant="plain" icon="mdi-dots-horizontal"></v-btn>
+
+                    <div style="position: relative">
+                        <v-btn
+                            variant="plain"
+                            icon="mdi-dots-horizontal"
+                            @click="showTooltipMenu = !showTooltipMenu"
+                        ></v-btn>
+                        <TooltipMenuContainer
+                            v-if="showTooltipMenu"
+                            alignment="right"
+                            :width="150"
+                            :component="TooltipMenuContentComponent.ChatOptions"
+                            @close="showTooltipMenu = false"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
@@ -82,13 +96,14 @@
 <script lang="ts" setup>
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
-    import { onBeforeMount, onMounted, watch } from 'vue';
+    import { onBeforeMount, onMounted, ref, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import last from 'lodash/last';
     import { dateToString } from '../utility';
     import { markdown } from '../utility/markdown';
     import { useGoTo } from 'vuetify';
     import { useToast } from 'vue-toastification';
+    import { TooltipMenuContentComponent } from '../types/ui';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();
@@ -96,6 +111,8 @@
     const toast = useToast();
 
     const { chats, selectedChat, chatHistory, isLoadingThreadResponse, replyingInThreadId } = storeToRefs(chatStore);
+
+    const showTooltipMenu = ref(false);
 
     onBeforeMount(async () => {
         if (!chats.value.length) {
@@ -137,7 +154,7 @@
 
     #chat-scroll {
         padding-top: 75px;
-        max-height: 84vh;
+        max-height: 86vh;
         overflow-y: scroll;
     }
 

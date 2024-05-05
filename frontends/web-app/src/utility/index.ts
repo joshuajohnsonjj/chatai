@@ -28,7 +28,7 @@ export const maxStrLenToElipse = (str: string, maxLen = 170): string =>
 export const autocompleteSearch = (input: string, values: string[]): string[] =>
     values.filter((value) => value.toLowerCase().includes(input.toLowerCase()));
 
-export const pretyPrintTopicValue = (topic: string): string => {
+export const prettyPrintTopicValue = (topic: string): string => {
     const splitStr = reverse(topic.split('/'));
     for (const part of splitStr) {
         if (part !== 'Other') {

@@ -6,7 +6,7 @@
                 <p class="text-h5 text-primary mb-1">ABC Technology's Data Sources</p>
                 <div class="d-flex justify-start">
                     <p class="text-caption text-secondary sub-info-line-height">
-                        <v-icon icon="mdi-cloud-outline" color="secondary"></v-icon>
+                        <HubOutline style="width: 16px; height: 16px; margin-bottom: -3px" class="hub-icon-secondary" />
                         {{ dataSources.length }} Data sources
                     </p>
                     <v-icon icon="mdi-circle-small" color="secondary"></v-icon>

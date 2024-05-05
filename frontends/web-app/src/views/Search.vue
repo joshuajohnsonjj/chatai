@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-surface w-100 h-100 rounded-xl px-6">
+    <div class="bg-surface w-100 h-100 rounded-xl px-6 mt-3">
         <v-row>
             <v-col :cols="isSearchStarted ? '1' : '12'" class="d-flex justify-center">
                 <img

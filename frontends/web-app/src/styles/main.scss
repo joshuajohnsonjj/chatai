@@ -38,3 +38,10 @@
     -moz-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
     box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
 }
+
+.hub-icon-pink {
+    fill: rgb(var(--v-theme-pink));
+}
+.hub-icon-secondary {
+    fill: rgb(var(--v-theme-secondary));
+}

@@ -5,7 +5,7 @@
             <p class="text-body-1 text-primary">Update your profile</p>
         </div>
 
-        <div style="max-height: 80.4vh; overflow-y: scroll">
+        <div style="max-height: 82.5vh; overflow-y: scroll">
             <v-row class="border-primary rounded pa-6 ma-8">
                 <v-col cols="3">
                     <div class="text-h6 font-weight-medium text-primary">Profile photo</div>

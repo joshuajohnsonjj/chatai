@@ -70,7 +70,7 @@
                     <v-icon icon="mdi-pound" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
                 </div>
                 <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
-                    {{ pretyPrintTopicValue(topic.value) }}
+                    {{ prettyPrintTopicValue(topic.value) }}
                 </div>
                 <v-icon v-if="perdictionSelectorCurrentIndex === topic.ndx" icon="mdi-keyboard-return"></v-icon>
             </div>
@@ -137,7 +137,7 @@
     import { storeToRefs } from 'pinia';
     import { SearchQueryParamType } from '../../types/search-store';
     import { useDataSourceStore } from '../../stores/dataSource';
-    import { pretyPrintTopicValue } from '../../utility';
+    import { prettyPrintTopicValue } from '../../utility';
     import startCase from 'lodash/startCase';
 
     defineProps<{

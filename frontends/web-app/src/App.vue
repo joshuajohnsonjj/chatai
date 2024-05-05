@@ -3,15 +3,15 @@
         <v-main v-if="!$route.meta?.sideNavEnabled">
             <router-view />
         </v-main>
-        <v-main class="pt-6 px-4" v-else>
-            <v-row class="h-100">
-                <v-col cols="3">
+        <v-main class="pa-4" v-else>
+            <div class="h-100 d-flex justify-start">
+                <div class="mr-4">
                     <SideNav />
-                </v-col>
-                <v-col cols="9" style="margin-bottom: 0">
+                </div>
+                <div class="w-100">
                     <router-view />
-                </v-col>
-            </v-row>
+                </div>
+            </div>
         </v-main>
     </v-app>
 </template>
