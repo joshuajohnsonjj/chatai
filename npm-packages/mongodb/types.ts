@@ -52,3 +52,8 @@ export interface DataElementQueryInput {
 }
 
 export type DataElementVectorInput = { vectorizedQuery: number[] } & DataElementQueryInput;
+
+export enum IndexName {
+    VECTOR = 'vector_index',
+    TOPIC_SEARCH = 'label_search',
+}

@@ -1,12 +1,13 @@
 import { MongoClient } from 'mongodb';
-import type {
-    DataElementQueryInput,
-    DataElementVectorInput,
-    MongoAnnotationLabelCollectionDoc,
-    MongoAuthorCollectionDoc,
-    MongoDataElementCollectionDoc,
-    QueryFilter,
-    VectorQueryFilter,
+import {
+    IndexName,
+    type DataElementQueryInput,
+    type DataElementVectorInput,
+    type MongoAnnotationLabelCollectionDoc,
+    type MongoAuthorCollectionDoc,
+    type MongoDataElementCollectionDoc,
+    type QueryFilter,
+    type VectorQueryFilter,
 } from './types';
 
 /**
@@ -166,7 +167,7 @@ export class MongoDBService {
         const pipeline = [
             {
                 $vectorSearch: {
-                    index: 'vector_index',
+                    index: IndexName.VECTOR,
                     path: 'embedding',
                     filter,
                     queryVector: query.vectorizedQuery,
@@ -263,11 +264,15 @@ export class MongoDBService {
         );
     }
 
-    // TODO: fix this bad query
-    public async searchLabelOptions(text: string, entityId: string): Promise<{ label: string }[]> {
+    /**
+     * Uses autocomplete index to return search topic 
+     * suggestions based on partial text entry
+     */
+    public async searchLabelOptions(text: string, entityId: string, limit = 5): Promise<{ label: string }[]> {
         const pipeline = [
             {
                 $search: {
+                    index: IndexName.TOPIC_SEARCH,
                     compound: {
                         must: [
                             {
@@ -279,15 +284,20 @@ export class MongoDBService {
                         ],
                         should: [
                             {
-                                text: {
+                                autocomplete: {
                                     query: text,
                                     path: 'label',
+                                    fuzzy: {
+                                        maxEdits: 1,
+                                        prefixLength: 1,
+                                    },
                                 },
                             },
                         ],
                     },
                 },
             },
+            { $limit: limit },
             {
                 $project: {
                     label: 1,
@@ -295,6 +305,7 @@ export class MongoDBService {
                 },
             },
         ];
+
         const cursor = this.labelCollConnection.aggregate(pipeline);
         return (await cursor.toArray()) as { label: string }[];
     }
