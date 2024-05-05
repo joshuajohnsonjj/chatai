@@ -5,7 +5,7 @@
             class="rounded"
             variant="tonal"
             style="width: 40px; height: 40px"
-            @click="$router.go(-1)"
+            @click="$router.push({ name: RouteName.SEARCH })"
         ></v-btn>
 
         <div class="bg-background w-100 pa-6 rounded mb-6 mt-4 d-flex justify-space-between">
@@ -14,16 +14,16 @@
                 <div class="ml-4">
                     <p class="text-h5 text-primary font-weight-medium mb-1">
                         {{
-                            selectedSearchResult.text.substring(
+                            selectedSearchResult?.text?.substring(
                                 12,
-                                selectedSearchResult.text.indexOf(', Page Excerpt:'),
+                                selectedSearchResult?.text?.indexOf(', Page Excerpt:'),
                             )
                         }}
                     </p>
                     <div class="d-flex justify-start">
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-calendar-outline" color="secondary"></v-icon>
-                            Linked since: {{ moment(selectedSearchResult.createdAt).format('M/D/YYYY H:MM A') }}
+                            Linked since: {{ moment(selectedSearchResult?.createdAt).format('M/D/YYYY H:MM A') }}
                         </p>
                     </div>
                     <div class="d-flex justify-start">
@@ -62,8 +62,8 @@
                     class="pa-6 text-body-1 text-primary"
                     v-html="
                         markdown(
-                            selectedSearchResult.text.substring(
-                                selectedSearchResult.text.indexOf('Page Excerpt: ') + 14,
+                            selectedSearchResult?.text?.substring(
+                                selectedSearchResult?.text?.indexOf('Page Excerpt: ') + 14,
                             ),
                         )
                     "
@@ -80,11 +80,26 @@
     import { useSearchStore } from '../stores/search';
     import { storeToRefs } from 'pinia';
     import { markdown } from '../utility/markdown';
+    import { onBeforeMount } from 'vue';
+    import { useRoute, useRouter } from 'vue-router';
+    import { RouteName } from '../types/router';
 
     const searchStore = useSearchStore();
     const { selectedSearchResult } = storeToRefs(searchStore);
 
     const toast = useToast();
+    const route = useRoute();
+    const router = useRouter();
+
+    onBeforeMount(async () => {
+        if (!selectedSearchResult.value) {
+            await searchStore.loadSearchResult(route.params.resultId as string);
+        }
+
+        if (!selectedSearchResult.value) {
+            router.push({ name: RouteName.SEARCH });
+        }
+    });
 
     function openSource() {
         // TODO: handle null url

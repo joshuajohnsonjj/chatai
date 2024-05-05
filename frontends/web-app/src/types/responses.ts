@@ -1,3 +1,5 @@
+import type { SearchQueryParamType } from './search-store';
+
 export interface LoginUserResponse {
     accessToken: string;
     refreshToken: string;
@@ -114,4 +116,8 @@ export interface SearchQueryResponse {
     numResults: number;
     nextStartNdx: number;
     results: SearchResult[];
+}
+
+export interface SearchSuggestionsResponse {
+    results: { type: SearchQueryParamType; value: string }[];
 }

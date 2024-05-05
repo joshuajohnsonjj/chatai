@@ -7,6 +7,11 @@ export enum SearchQueryParamType {
     DATE_UPPER = 'DATE_UPPER',
 }
 
+export type CurrentSearchSuggestions = {
+    type: SearchQueryParamType;
+    value: string;
+}[];
+
 export interface SearchQueryParams {
     queryText?: string;
     topics?: string[];

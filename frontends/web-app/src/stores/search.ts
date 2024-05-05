@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import remove from 'lodash/remove';
-import { executeQuery } from '../requests/search';
+import { executeQuery, getSearchResultById, getTopicSuggestions } from '../requests/search';
 import { SearchQueryParamType } from '../types/search-store';
-import type { QueryParam, SearchQueryParams } from '../types/search-store';
-import type { SearchResult } from '../types/responses';
+import type { CurrentSearchSuggestions, QueryParam, SearchQueryParams } from '../types/search-store';
+import type { DataSourceTypesResponse, SearchResult } from '../types/responses';
+import { autocompleteSearch } from '../utility';
 
 export const useSearchStore = defineStore('search', () => {
     const activeQueryParams = ref<QueryParam[]>([]);
@@ -13,8 +14,9 @@ export const useSearchStore = defineStore('search', () => {
     const hasMoreResults = ref(false);
     const totalResultCount = ref(0);
     const paginationStartIndex = ref<number | null>(null);
+    const searchSuggestions = ref<CurrentSearchSuggestions>([]);
 
-    const executeSearchQuery = async (entityId: string): Promise<void> => {
+    const executeSearchQuery = async (entityId: string) => {
         const searchParams: SearchQueryParams = {};
         activeQueryParams.value.forEach(({ type, value }) => {
             switch (type) {
@@ -47,15 +49,42 @@ export const useSearchStore = defineStore('search', () => {
         searchResults.value = res.results;
     };
 
-    const selectSearchResult = (id: string): void => {
+    const clearSearchSuggestions = () => {
+        searchSuggestions.value = [];
+    };
+
+    const getSearchSuggestions = async (
+        input: string,
+        entityId: string,
+        dataSourceOptions: DataSourceTypesResponse[],
+    ) => {
+        const topicRes = await getTopicSuggestions(input, entityId);
+        // TODO: ONLY FOR ORGS ===> const suthorRes = await getAuthorSuggestions(input, entityId);
+        const sourcesRes = autocompleteSearch(
+            input,
+            dataSourceOptions.map((opt) => opt.name),
+        );
+
+        searchSuggestions.value = [
+            ...topicRes.results,
+            ...sourcesRes.map((source) => ({ type: SearchQueryParamType.SOURCE, value: source })),
+        ];
+    };
+
+    const selectSearchResult = (id: string) => {
         selectedSearchResult.value = searchResults.value.find((result) => result._id === id) ?? null;
     };
 
-    const addQueryParam = (type: SearchQueryParamType, value: string | number): void => {
+    const loadSearchResult = async (resultId: string) => {
+        selectedSearchResult.value = await getSearchResultById(resultId);
+        console.log(selectedSearchResult.value);
+    };
+
+    const addQueryParam = (type: SearchQueryParamType, value: string | number) => {
         activeQueryParams.value.push({ type, value });
     };
 
-    const removeQueryParam = (value: string | number): void => {
+    const removeQueryParam = (value: string | number) => {
         remove(activeQueryParams.value, (param) => param.value === value);
     };
 
@@ -66,9 +95,13 @@ export const useSearchStore = defineStore('search', () => {
         hasMoreResults,
         paginationStartIndex,
         totalResultCount,
+        searchSuggestions,
         selectSearchResult,
         addQueryParam,
         removeQueryParam,
         executeSearchQuery,
+        getSearchSuggestions,
+        clearSearchSuggestions,
+        loadSearchResult,
     };
 });

@@ -44,30 +44,11 @@ export class MongoDBService {
     }
 
     /**
-     * getter for adhoc interactions with data element collection
+     * Retrieves data element by element id. Verified owner entity id always required for
+     * any query for security.
      */
-    public get elementCollConnection() {
-        return this.client.db(this.dbName).collection<MongoDataElementCollectionDoc>(MongoDBService.elementCollection);
-    }
-
-    /**
-     * getter for adhoc interactions with authors collection
-     */
-    public get authorCollConnection() {
-        return this.client.db(this.dbName).collection<MongoAuthorCollectionDoc>(MongoDBService.authorCollection);
-    }
-
-    /**
-     * getter for adhoc interactions with labels collection
-     */
-    public get labelCollConnection() {
-        return this.client
-            .db(this.dbName)
-            .collection<MongoAnnotationLabelCollectionDoc>(MongoDBService.labelCollection);
-    }
-
-    public async getDataElementById(id: string): Promise<MongoDataElementCollectionDoc | null> {
-        return await this.elementCollConnection.findOne({ _id: id });
+    public async getDataElementById(id: string, ownerEntityId: string): Promise<MongoDataElementCollectionDoc | null> {
+        return await this.elementCollConnection.findOne({ _id: id, ownerEntityId });
     }
 
     public async queryDataElements(
@@ -90,7 +71,7 @@ export class MongoDBService {
             filters.dataSourceType = { $in: query.sourceTypeFilters };
         }
         if (query.topics && query.topics.length) {
-            filters.annotations = { $all: query.sourceTypeFilters };
+            filters.annotations = { $all: query.topics };
         }
         if (query.dateRangeLower || query.dateRangeUpper) {
             filters.createdAt = {};
@@ -265,10 +246,14 @@ export class MongoDBService {
     }
 
     /**
-     * Uses autocomplete index to return search topic 
+     * Uses autocomplete index to return search topic
      * suggestions based on partial text entry
      */
-    public async searchLabelOptions(text: string, entityId: string, limit = 5): Promise<{ label: string }[]> {
+    public async searchLabelOptions(
+        text: string,
+        entityId: string,
+        limit = 5,
+    ): Promise<(Pick<MongoAnnotationLabelCollectionDoc, '_id' | 'label'> & { score: number })[]> {
         const pipeline = [
             {
                 $search: {
@@ -307,6 +292,22 @@ export class MongoDBService {
         ];
 
         const cursor = this.labelCollConnection.aggregate(pipeline);
-        return (await cursor.toArray()) as { label: string }[];
+        return (await cursor.toArray()) as (Pick<MongoAnnotationLabelCollectionDoc, '_id' | 'label'> & {
+            score: number;
+        })[];
+    }
+
+    private get elementCollConnection() {
+        return this.client.db(this.dbName).collection<MongoDataElementCollectionDoc>(MongoDBService.elementCollection);
+    }
+
+    private get authorCollConnection() {
+        return this.client.db(this.dbName).collection<MongoAuthorCollectionDoc>(MongoDBService.authorCollection);
+    }
+
+    private get labelCollConnection() {
+        return this.client
+            .db(this.dbName)
+            .collection<MongoAnnotationLabelCollectionDoc>(MongoDBService.labelCollection);
     }
 }

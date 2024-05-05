@@ -54,12 +54,21 @@
 </template>
 
 <script lang="ts" setup>
-    import { computed, ref } from 'vue';
+    import { computed, onBeforeMount, ref } from 'vue';
     import { useSearchStore } from '../stores/search';
+    import { useDataSourceStore } from '../stores/dataSource';
     import { storeToRefs } from 'pinia';
 
     const searchStore = useSearchStore();
     const { activeQueryParams, searchResults, totalResultCount } = storeToRefs(searchStore);
+    const dataSourceStore = useDataSourceStore();
+    const { dataSourceOptions } = storeToRefs(dataSourceStore);
+
+    onBeforeMount(async () => {
+        if (!dataSourceOptions.value.length) {
+            await dataSourceStore.retreiveDataSourceOptions();
+        }
+    });
 
     const searchIsFocused = ref(false);
 

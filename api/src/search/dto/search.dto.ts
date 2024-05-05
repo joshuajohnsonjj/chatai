@@ -32,17 +32,19 @@ export class SearchQueryRequestDto {
     dateRangeUpper?: number; // Unix timestamp
 }
 
+export class SearchResultResponseDto {
+    _id: string;
+    ownerEntityId: string;
+    text: string;
+    createdAt: number; // Unix timestamp
+    url?: string;
+    authorName?: string;
+    annotations: string[];
+    dataSourceType: string;
+}
+
 export class SearchQueryResponseDto {
     numResults: number;
     nextStartNdx: number;
-    results: {
-        _id: string;
-        ownerEntityId: string;
-        text: string;
-        createdAt: number; // Unix timestamp
-        url?: string;
-        authorName?: string;
-        annotations: string[];
-        dataSourceType: string;
-    }[];
+    results: SearchResultResponseDto[];
 }

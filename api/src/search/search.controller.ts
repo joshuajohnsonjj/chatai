@@ -1,7 +1,7 @@
-import { Controller, Get, Body, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Post, Query, Req, UseGuards, Param } from '@nestjs/common';
 import { SearchService } from './search.service';
 import { AuthGuard } from '@nestjs/passport';
-import { SearchQueryRequestDto, SearchQueryResponseDto } from './dto/search.dto';
+import { SearchQueryRequestDto, SearchQueryResponseDto, SearchResultResponseDto } from './dto/search.dto';
 import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { SuggestionsQueryDto, SuggestionsResponseDto } from './dto/suggestions.dto';
@@ -14,6 +14,14 @@ export class SearchController {
     @Post()
     async executeQuery(@Body() params: SearchQueryRequestDto, @Req() req: Request): Promise<SearchQueryResponseDto> {
         return await this.service.executeQuery(params, req.user as DecodedUserTokenDto);
+    }
+
+    @Get('/:resultId/data')
+    async getDataItemById(
+        @Param() { resultId }: { resultId: string },
+        @Req() req: Request,
+    ): Promise<SearchResultResponseDto | null> {
+        return await this.service.getDataItemById(resultId, req.user as DecodedUserTokenDto);
     }
 
     @Get('/suggestions/people')

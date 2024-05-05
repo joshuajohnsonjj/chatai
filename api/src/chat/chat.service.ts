@@ -146,7 +146,7 @@ export class ChatService {
     }
 
     async listChats(page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
-        const associatedEntityId = user.organization ?? user.idUser;
+        const associatedEntityId = user.organization || user.idUser;
 
         const pageSize = 20;
         const chatsQuery = await this.prisma.chat.findMany({

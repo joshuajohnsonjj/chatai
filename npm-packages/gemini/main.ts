@@ -22,6 +22,8 @@ export class GeminiService {
     /**
      * TODO: Further refine the entity cleaning... we get a decent amount of bullshit at the moment
      * Uses NLP to get relative category/keyword info from text
+     *
+     * probably lets go to like 90+ confidence and/or remove the OTHER importable type
      */
     public getTextAnnotation = async (
         textInput: string,

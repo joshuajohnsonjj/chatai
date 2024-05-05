@@ -3,10 +3,10 @@ import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { ConfigService } from '@nestjs/config';
-import { SearchQueryRequestDto, SearchQueryResponseDto } from './dto/search.dto';
+import { SearchQueryRequestDto, SearchQueryResponseDto, SearchResultResponseDto } from './dto/search.dto';
 import { AccessDeniedError } from 'src/exceptions';
 import { omit } from 'lodash';
-import { SuggestionsQueryDto, SuggestionsResponseDto } from './dto/suggestions.dto';
+import { SearchQueryParamType, SuggestionsQueryDto, SuggestionsResponseDto } from './dto/suggestions.dto';
 
 @Injectable()
 export class SearchService {
@@ -45,23 +45,38 @@ export class SearchService {
         }
     }
 
+    async getDataItemById(resultId: string, user: DecodedUserTokenDto): Promise<SearchResultResponseDto | null> {
+        const entityId = user.organization || user.idUser;
+        this.logger.log(`Retrieving result ${resultId} for entity ${entityId}`);
+        return await this.mongo.getDataElementById(resultId, entityId);
+    }
+
     async getPeopleSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {
         this.validateUserAccess(query.entityId, user.idUser, user.organization);
 
         const results = await this.mongo.searchAuthorOptions(query.text, query.entityId);
 
         return {
-            results: results.map((result) => result.name),
+            results: results.map((result) => ({
+                value: result.name,
+                type: SearchQueryParamType.AUTHOR,
+            })),
         };
     }
 
     async getTopicSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {
         this.validateUserAccess(query.entityId, user.idUser, user.organization);
 
+        const minConfidence = query.minConfidenceScore ?? 1;
         const results = await this.mongo.searchLabelOptions(query.text, query.entityId);
 
         return {
-            results: results.map((result) => result.label),
+            results: results
+                .filter((result) => result.score >= minConfidence)
+                .map((result) => ({
+                    value: result.label,
+                    type: SearchQueryParamType.TOPIC,
+                })),
         };
     }
 
