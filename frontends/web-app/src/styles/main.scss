@@ -1,5 +1,13 @@
 @import 'base/typography.scss';
 
+.relative {
+    position: relative;
+}
+
+.absolute {
+    position: absolute;
+}
+
 .button-hover:hover {
     font-weight: bold;
     filter: brightness(120%);

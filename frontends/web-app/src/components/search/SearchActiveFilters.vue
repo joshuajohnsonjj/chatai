@@ -3,8 +3,7 @@
         <div
             v-for="param in activeQueryParams"
             :key="param.value"
-            class="d-flex justify-start rounded bg-background py-2 pl-2 pr-5 grow-hover ml-2"
-            style="position: relative"
+            class="d-flex justify-start rounded bg-background py-2 pl-2 pr-5 grow-hover ml-2 relative"
             @click="searchStore.removeQueryParam(param.value)"
         >
             <v-icon icon="mdi-close" class="filter-cancel-icon"></v-icon>

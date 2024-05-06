@@ -62,9 +62,8 @@
             <div
                 v-for="option in dataSourceOptions"
                 :key="option.id"
-                class="ma-2 pa-6 border rounded grow-hover"
+                class="ma-2 pa-6 border rounded grow-hover relative"
                 :class="{ 'pr-12': !!option.userConnectedDataSourceId }"
-                style="position: relative"
                 @click="toDataSourceConfiguration(option)"
             >
                 <div v-if="!!option.userConnectedDataSourceId" class="data-source-connected-badge">

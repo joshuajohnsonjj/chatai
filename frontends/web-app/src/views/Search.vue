@@ -16,7 +16,7 @@
                 <SearchBarWithPredictions
                     placeholder="Search something..."
                     width="600px"
-                    @focus-change="(isFocused) => (searchIsFocused = isFocused)"
+                    @focus-change="(isFocused: boolean) => (searchIsFocused = isFocused)"
                 />
             </v-col>
             <v-col

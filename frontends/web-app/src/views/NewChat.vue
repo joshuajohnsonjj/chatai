@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-surface w-100 h-100 rounded-xl px-6" style="position: relative">
+    <div class="bg-surface w-100 h-100 rounded-xl px-6 relative">
         <p class="text-h4 font-weight-medium w-100 text-center text-primary pt-14">Start Conversation</p>
         <p class="text-caption w-100 text-secondary text-center">
             Gain valuable insights related to your data. Ask me anything.

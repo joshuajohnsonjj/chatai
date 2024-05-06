@@ -31,8 +31,7 @@
         <div
             v-if="isFocused && !!searchText"
             id="searchPredictionContainer"
-            class="bg-surface rounded w-100 mt-2 pa-4 shadow"
-            style="position: absolute"
+            class="bg-surface rounded w-100 mt-2 pa-4 shadow absolute"
         >
             <div class="text-secondary text-caption">CONTENT QUERY</div>
             <div

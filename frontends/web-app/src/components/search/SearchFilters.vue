@@ -1,13 +1,23 @@
 <template>
     <div class="d-flex justify-start">
-        <v-btn
-            prepend-icon="mdi-cloud-outline"
-            variant="outlined"
-            color="secondary"
-            class="border-primary text-caption ml-2"
-        >
-            Source
-        </v-btn>
+        <div class="relative">
+            <v-btn
+                prepend-icon="mdi-cloud-outline"
+                variant="outlined"
+                color="secondary"
+                class="border-primary text-caption ml-2"
+                @click="activeFilterMenu = 'Source'"
+            >
+                Source
+            </v-btn>
+            <TooltipMenuContainer
+                v-if="activeFilterMenu === 'Source'"
+                alignment="right"
+                :width="150"
+                :component="TooltipMenuContentComponent.SourceFilter"
+                @close="activeFilterMenu = null"
+            />
+        </div>
         <v-btn
             prepend-icon="mdi-shape-outline"
             variant="outlined"
@@ -37,3 +47,12 @@
         </v-btn>
     </div>
 </template>
+
+<script lang="ts" setup>
+import { TooltipMenuContentComponent } from '../../types/ui';
+import { ref } from 'vue';
+
+
+const activeFilterMenu = ref<string | null>(null);
+
+</script>

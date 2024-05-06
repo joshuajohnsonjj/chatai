@@ -28,22 +28,22 @@
             >
                 <div
                     v-if="dataSource.isLiveSync"
-                    class="rounded live-sync text-warning text-caption px-2"
-                    style="position: absolute; right: 12px; top: 12px"
+                    class="rounded live-sync text-warning text-caption px-2 absolute"
+                    style="right: 12px; top: 12px"
                 >
                     Live sync
                 </div>
                 <div
                     v-else-if="dataSource.isSyncing"
-                    class="rounded syncing text-caption text-info px-2"
-                    style="position: absolute; right: 12px; top: 12px"
+                    class="rounded syncing text-caption text-info px-2 absolute"
+                    style="right: 12px; top: 12px"
                 >
                     Syncing
                 </div>
                 <div
                     v-else
-                    class="rounded sync-now text-caption text-success px-2 button-hover"
-                    style="position: absolute; right: 12px; top: 12px"
+                    class="rounded sync-now text-caption text-success px-2 absolute button-hover"
+                    style="right: 12px; top: 12px"
                 >
                     Sync now
                 </div>

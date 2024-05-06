@@ -1,14 +1,14 @@
 <template>
     <FullScreenBackgroundBlur v-if="!!replyingInThreadId" @click="chatStore.setReplyMode(null)" />
 
-    <div class="bg-surface w-100 h-100 rounded-xl px-6" style="position: relative">
+    <div class="bg-surface w-100 h-100 rounded-xl px-6 relative">
         <div class="w-100 bg-surface header-container bottom-border-primary">
             <div class="d-flex justify-space-between">
                 <p class="text-h4 font-weight-medium text-primary pt-6 pb-4 pl-6">{{ selectedChat?.title }}</p>
                 <div class="pr-6 pt-4 d-flex justify-end">
-                    <v-btn variant="plain" icon="mdi-star-outline"></v-btn>
+                    <v-btn variant="plain" icon="mdi-star-outline" color="secondary"></v-btn>
 
-                    <div style="position: relative">
+                    <!-- <div class="relative">
                         <v-btn
                             variant="plain"
                             icon="mdi-dots-horizontal"
@@ -21,7 +21,14 @@
                             :component="TooltipMenuContentComponent.ChatOptions"
                             @close="showTooltipMenu = false"
                         />
-                    </div>
+                    </div> -->
+                    <VDropdown :distance="-12" class="mt-4">
+                        <button><v-icon icon="mdi-dots-horizontal" color="secondary"></v-icon></button>
+
+                        <template #popper>
+                            <ChatTooltipMenuOptions />
+                        </template>
+                    </VDropdown>
                 </div>
             </div>
         </div>
