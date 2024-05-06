@@ -6,10 +6,10 @@
 
 // Plugins
 import { registerPlugins } from './plugins';
-import FloatingVue from 'floating-vue'
+import FloatingVue from 'floating-vue';
 import Toast, { POSITION } from 'vue-toastification';
 import 'vue-toastification/dist/index.css';
-import 'floating-vue/dist/style.css'
+import 'floating-vue/dist/style.css';
 import './styles/main.scss';
 
 // Components
@@ -17,8 +17,6 @@ import App from './App.vue';
 
 // Composables
 import { createApp } from 'vue';
-
-
 
 const app = createApp(App);
 
