@@ -1,0 +1,40 @@
+.v-popper--theme-dropdown .v-popper__inner {
+    background: rgb(var(--v-theme-surface-bright));
+    color: rgb(var(--v-theme-primary));
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgb(var(--v-theme-border-color));
+    -webkit-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
+    -moz-box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
+    box-shadow: 1px 7px 10px 6px rgba(0, 0, 0, 0.22);
+}
+
+.v-popper__arrow-inner {
+    visibility: visible;
+    opacity: 0;
+    border-color: rgb(var(--v-theme-border-color)) !important;
+}
+
+.v-popper__arrow-outer {
+    border-color: rgb(var(--v-theme-border-color)) !important;
+}
+
+/* Transition */
+
+.v-popper__popper--hidden {
+    visibility: hidden;
+    opacity: 0;
+    transition:
+        opacity 0.15s,
+        visibility 0.15s;
+}
+
+.v-popper__popper--shown {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.15s;
+}
+
+.v-popper__popper--skip-transition {
+    transition: none !important;
+}

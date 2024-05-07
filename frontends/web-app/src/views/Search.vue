@@ -79,5 +79,3 @@
         return '12';
     });
 </script>
-
-<style scoped></style>

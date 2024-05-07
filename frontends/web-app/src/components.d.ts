@@ -11,8 +11,10 @@ declare module 'vue' {
         3: (typeof import('./components/search/filterMenus/SourceFilterMenuOptions copy 3.vue'))['default'];
         BaseModal: (typeof import('./components/common/modal/BaseModal.vue'))['default'];
         BaseModalContainer: (typeof import('./components/common/modal/BaseModalContainer.vue'))['default'];
+        CalendarRangeFilter: (typeof import('./components/search/filterMenus/CalendarRangeFilter.vue'))['default'];
         ChatSettingsSideBar: (typeof import('./components/chat/ChatSettingsSideBar.vue'))['default'];
         ChatTooltipMenuOptions: (typeof import('./components/chat/ChatTooltipMenuOptions.vue'))['default'];
+        CheckboxsWithSearchFilter: (typeof import('./components/search/filterMenus/CheckboxsWithSearchFilter.vue'))['default'];
         Configure: (typeof import('./components/dataSource/Configure.vue'))['default'];
         copy: (typeof import('./components/search/filterMenus/SourceFilterMenuOptions copy.vue'))['default'];
         DialogModal: (typeof import('./components/common/DialogModal.vue'))['default'];
@@ -34,7 +36,7 @@ declare module 'vue' {
         SideNav: (typeof import('./components/sideNav/SideNav.vue'))['default'];
         SideNavChatOptions: (typeof import('./components/sideNav/SideNavChatOptions.vue'))['default'];
         SideNavSettingsOptions: (typeof import('./components/sideNav/SideNavSettingsOptions.vue'))['default'];
-        SourceFilterMenuOptions: (typeof import('./components/search/FilterMenus/SourceFilterMenuOptions.vue'))['default'];
+        SourceFilterMenuOptions: (typeof import('./components/search/filterMenus/SourceFilterMenuOptions.vue'))['default'];
         TooltipMenu: (typeof import('./components/common/TooltipMenu.vue'))['default'];
         TooltipMenuContainer: (typeof import('./components/common/TooltipMenuContainer.vue'))['default'];
         TooltipMenue: (typeof import('./components/common/TooltipMenue.vue'))['default'];
