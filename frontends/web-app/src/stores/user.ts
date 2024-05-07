@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { getUserInfo, loginUser } from '../requests';
 import { OrgInfo, UserInfo, UserType } from '../types/user-store';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { omit } from 'lodash';
 import { TOKEN_STORAGE_KEY } from '../constants';
 
@@ -15,6 +15,18 @@ export const useUserStore = defineStore('user', () => {
         name: null,
         planId: null,
         isAccountActive: null,
+    });
+
+    const userEntityId = computed((): string => {
+        if (!userData.value) {
+            return '';
+        }
+
+        if (userData.value?.type === UserType.ORGANIZATION_MEMBER && userData.value.organizationId) {
+            return userData.value.organizationId;
+        }
+
+        return userData.value.id;
     });
 
     const login = async (email: string, password: string): Promise<boolean> => {
@@ -63,6 +75,7 @@ export const useUserStore = defineStore('user', () => {
         userData,
         userOrgData,
         isLoading,
+        userEntityId,
         login,
         setCurrentUser,
     };

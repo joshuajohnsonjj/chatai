@@ -11,7 +11,12 @@
             </v-btn>
 
             <template #popper>
-                <CheckboxsWithSearchFilter />
+                <CheckboxsWithSearchFilter
+                    search-placeholder="Search sources..."
+                    :is-local-search="true"
+                    :options="dataSourceOptions.map((source: DataSourceTypesResponse) => source.name)"
+                    :type="SearchQueryParamType.SOURCE"
+                />
             </template>
         </VDropdown>
 
@@ -26,7 +31,12 @@
             </v-btn>
 
             <template #popper>
-                <CheckboxsWithSearchFilter />
+                <CheckboxsWithSearchFilter
+                    search-placeholder="Search categories..."
+                    :is-local-search="true"
+                    :options="Object.keys(dataSourceCategoryToOptionsMap)"
+                    :type="SearchQueryParamType.CATEGORY"
+                />
             </template>
         </VDropdown>
 
@@ -41,7 +51,12 @@
             </v-btn>
 
             <template #popper>
-                <CheckboxsWithSearchFilter />
+                <CheckboxsWithSearchFilter
+                    search-placeholder="Search people..."
+                    :is-local-search="false"
+                    :options="[]"
+                    :type="SearchQueryParamType.AUTHOR"
+                />
             </template>
         </VDropdown>
 
@@ -56,7 +71,12 @@
             </v-btn>
 
             <template #popper>
-                <CheckboxsWithSearchFilter />
+                <CheckboxsWithSearchFilter
+                    search-placeholder="Search topics..."
+                    :is-local-search="false"
+                    :options="topicFilterOptions"
+                    :type="SearchQueryParamType.TOPIC"
+                />
             </template>
         </VDropdown>
 
@@ -78,7 +98,24 @@
 </template>
 
 <script lang="ts" setup>
-    import { ref } from 'vue';
+    import { useDataSourceStore } from '../../stores/dataSource';
+    import { storeToRefs } from 'pinia';
+    import { DataSourceTypesResponse } from '../../types/responses';
+    import { SearchQueryParamType } from '../../types/search-store';
+    import { onBeforeMount } from 'vue';
+    import { useSearchStore } from '../../stores/search';
+    import { useUserStore } from '../../stores/user';
 
-    const activeFilterMenu = ref<string | null>(null);
+    const dataSourceStore = useDataSourceStore();
+    const { dataSourceOptions, dataSourceCategoryToOptionsMap } = storeToRefs(dataSourceStore);
+    const searchStore = useSearchStore();
+    const { topicFilterOptions } = storeToRefs(searchStore);
+    const userStore = useUserStore();
+    const { userEntityId } = storeToRefs(userStore);
+
+    onBeforeMount(async () => {
+        if (!topicFilterOptions.value.length) {
+            await searchStore.getFilterTopicOptions(userEntityId.value);
+        }
+    });
 </script>

@@ -54,7 +54,7 @@ export class SearchService {
     async getPeopleSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {
         this.validateUserAccess(query.entityId, user.idUser, user.organization);
 
-        const results = await this.mongo.searchAuthorOptions(query.text, query.entityId);
+        const results = await this.mongo.searchAuthorOptions(query.text ?? '', query.entityId);
 
         return {
             results: results.map((result) => ({
@@ -68,16 +68,32 @@ export class SearchService {
         this.validateUserAccess(query.entityId, user.idUser, user.organization);
 
         const minConfidence = query.minConfidenceScore ?? 1;
-        const results = await this.mongo.searchLabelOptions(query.text, query.entityId);
 
-        return {
-            results: results
-                .filter((result) => result.score >= minConfidence)
-                .map((result) => ({
+        if (query.text && query.text.length) {
+            const results = await this.mongo.searchLabelOptions(query.text, query.entityId);
+
+            return {
+                results: results
+                    .filter((result) => result.score >= minConfidence)
+                    .map((result) => ({
+                        value: result.label,
+                        type: SearchQueryParamType.TOPIC,
+                    })),
+            };
+        } else {
+            const results = await this.mongo.labelCollConnection
+                .find({
+                    entityId: query.entityId,
+                })
+                .limit(25)
+                .toArray();
+            return {
+                results: results.map((result) => ({
                     value: result.label,
                     type: SearchQueryParamType.TOPIC,
                 })),
-        };
+            };
+        }
     }
 
     private validateUserAccess(requestedEntityId: string, authUserId: string, authOrgId?: string) {

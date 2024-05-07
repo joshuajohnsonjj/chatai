@@ -9,12 +9,15 @@ import { autocompleteSearch } from '../utility';
 
 export const useSearchStore = defineStore('search', () => {
     const activeQueryParams = ref<QueryParam[]>([]);
+    const searchSuggestions = ref<CurrentSearchSuggestions>([]);
+    const topicFilterOptions = ref<string[]>([]);
+    const authorFilterOptions = ref<string[]>([]);
+
     const selectedSearchResult = ref<SearchResult | null>(null);
     const searchResults = ref<SearchResult[]>([]);
     const hasMoreResults = ref(false);
     const totalResultCount = ref(0);
     const paginationStartIndex = ref<number | null>(null);
-    const searchSuggestions = ref<CurrentSearchSuggestions>([]);
 
     const executeSearchQuery = async (entityId: string) => {
         const searchParams: SearchQueryParams = {};
@@ -53,12 +56,19 @@ export const useSearchStore = defineStore('search', () => {
         searchSuggestions.value = [];
     };
 
+    const getFilterTopicOptions = async (entityId: string, input?: string) => {
+        const topicRes = await getTopicSuggestions(entityId, input);
+        topicFilterOptions.value = topicRes.results.map((result) => result.value);
+    };
+
+    const getFilterAuthorOptions = async () => {};
+
     const getSearchSuggestions = async (
         input: string,
         entityId: string,
         dataSourceOptions: DataSourceTypesResponse[],
     ) => {
-        const topicRes = await getTopicSuggestions(input, entityId);
+        const topicRes = await getTopicSuggestions(entityId, input);
         // TODO: ONLY FOR ORGS ===> const suthorRes = await getAuthorSuggestions(input, entityId);
         const sourcesRes = autocompleteSearch(
             input,
@@ -96,6 +106,8 @@ export const useSearchStore = defineStore('search', () => {
         paginationStartIndex,
         totalResultCount,
         searchSuggestions,
+        topicFilterOptions,
+        authorFilterOptions,
         selectSearchResult,
         addQueryParam,
         removeQueryParam,
@@ -103,5 +115,7 @@ export const useSearchStore = defineStore('search', () => {
         getSearchSuggestions,
         clearSearchSuggestions,
         loadSearchResult,
+        getFilterTopicOptions,
+        getFilterAuthorOptions,
     };
 });

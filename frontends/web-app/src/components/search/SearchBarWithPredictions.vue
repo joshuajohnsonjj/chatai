@@ -121,7 +121,7 @@
                     <v-icon icon="mdi-cloud-outline" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
                 </div>
                 <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
-                    {{ startCase(source.value.toLowerCase()) }}
+                    {{ formatStringStartCase(source.value) }}
                 </div>
                 <v-icon v-if="perdictionSelectorCurrentIndex === source.ndx" icon="mdi-keyboard-return"></v-icon>
             </div>
@@ -136,8 +136,7 @@
     import { storeToRefs } from 'pinia';
     import { SearchQueryParamType } from '../../types/search-store';
     import { useDataSourceStore } from '../../stores/dataSource';
-    import { prettyPrintTopicValue } from '../../utility';
-    import startCase from 'lodash/startCase';
+    import { prettyPrintTopicValue, formatStringStartCase } from '../../utility';
 
     defineProps<{
         placeholder: string;
@@ -149,7 +148,7 @@
     const searchStore = useSearchStore();
     const { activeQueryParams, searchSuggestions } = storeToRefs(searchStore);
     const userStore = useUserStore();
-    const { userData } = storeToRefs(userStore);
+    const { userEntityId } = storeToRefs(userStore);
     const dataSourceStore = useDataSourceStore();
     const { dataSourceOptions } = storeToRefs(dataSourceStore);
 
@@ -177,11 +176,7 @@
         if (inputText.length < 2) {
             return;
         }
-        searchStore.getSearchSuggestions(
-            inputText,
-            userData.value!.organizationId ?? userData.value!.id,
-            dataSourceOptions.value,
-        );
+        searchStore.getSearchSuggestions(inputText, userEntityId.value, dataSourceOptions.value);
     }, 400);
 
     function debounce(fn, delay) {
@@ -232,7 +227,7 @@
             searchStore.addQueryParam(selected.type, selected.value);
         }
 
-        searchStore.executeSearchQuery(userData.value!.organizationId ?? userData.value!.id);
+        searchStore.executeSearchQuery(userEntityId.value);
         searchText.value = '';
     }
 </script>

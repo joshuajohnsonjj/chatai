@@ -3,6 +3,7 @@ export enum SearchQueryParamType {
     TOPIC = 'TOPIC',
     AUTHOR = 'AUTHOR',
     SOURCE = 'SOURCE',
+    CATEGORY = 'CATEGORY',
     DATE_LOWER = 'DATE_LOWER',
     DATE_UPPER = 'DATE_UPPER',
 }

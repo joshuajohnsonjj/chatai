@@ -19,8 +19,8 @@ export const executeQuery = async (searchParams: SearchQueryParams, entityId: st
     return resp as SearchQueryResponse;
 };
 
-export const getTopicSuggestions = async (text: string, entityId: string): Promise<SearchSuggestionsResponse> => {
-    const query = new URLSearchParams({ text, entityId }).toString();
+export const getTopicSuggestions = async (entityId: string, text?: string): Promise<SearchSuggestionsResponse> => {
+    const query = new URLSearchParams({ text: text ?? '', entityId }).toString();
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
         headers: {

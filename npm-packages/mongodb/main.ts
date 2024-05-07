@@ -297,15 +297,15 @@ export class MongoDBService {
         })[];
     }
 
-    private get elementCollConnection() {
+    public get elementCollConnection() {
         return this.client.db(this.dbName).collection<MongoDataElementCollectionDoc>(MongoDBService.elementCollection);
     }
 
-    private get authorCollConnection() {
+    public get authorCollConnection() {
         return this.client.db(this.dbName).collection<MongoAuthorCollectionDoc>(MongoDBService.authorCollection);
     }
 
-    private get labelCollConnection() {
+    public get labelCollConnection() {
         return this.client
             .db(this.dbName)
             .collection<MongoAnnotationLabelCollectionDoc>(MongoDBService.labelCollection);

@@ -3,7 +3,8 @@ import { IsNumberString, IsOptional, IsString } from 'class-validator';
 
 export class SuggestionsQueryDto {
     @IsString()
-    text: string;
+    @IsOptional()
+    text?: string;
 
     @IsString()
     entityId: string;
