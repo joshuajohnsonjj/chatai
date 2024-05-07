@@ -47,10 +47,15 @@
                     </p>
 
                     <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">Update API Key</p>
-                    <v-text-field type="password" placeholder="****************" variant="outlined"></v-text-field>
+                    <v-text-field
+                        type="password"
+                        placeholder="****************"
+                        variant="outlined"
+                        v-model="apiKeyInput"
+                    ></v-text-field>
 
                     <div class="d-flex justify-end mt-4">
-                        <v-btn variant="plain">Test connection</v-btn>
+                        <v-btn variant="plain" @click="onTestConnection">Test connection</v-btn>
                         <v-btn color="blue" variant="tonal">Update keys</v-btn>
                     </div>
                 </v-sheet>
@@ -68,23 +73,30 @@
 </template>
 
 <script lang="ts" setup>
-    import { computed, onBeforeMount } from 'vue';
+    import { computed, onBeforeMount, ref } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useDataSourceStore } from '../../stores/dataSource';
+    import { useUserStore } from '../../stores/user';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../../constants';
     import { formatStringStartCase } from '../../utility';
     import find from 'lodash/find';
     import { useRoute } from 'vue-router';
     import moment from 'moment';
+    import { useToast } from 'vue-toastification';
 
     const props = defineProps<{
         isAddNew: boolean;
     }>();
 
     const route = useRoute();
+    const toast = useToast();
 
     const dataSourceStore = useDataSourceStore();
     const { connections, dataSourceOptions } = storeToRefs(dataSourceStore);
+    const userStore = useUserStore();
+    const { userData, userEntityId } = storeToRefs(userStore);
+
+    const apiKeyInput = ref<string>('');
 
     onBeforeMount(async () => {
         if (!props.isAddNew && !connections.value.length) {
@@ -99,13 +111,30 @@
             const sourceType = find(dataSourceOptions.value, (option) => option.id === route.params.dataSourceTypeId);
             return {
                 name: sourceType?.name,
+                dataSourceTypeId: route.params.dataSourceTypeId,
             };
         } else {
             const source = find(connections.value, (option) => option.id === route.params.dataSourceId);
             return {
                 name: source?.dataSourceName,
                 createdAt: source?.createdAt,
+                dataSourceTypeId: source?.dataSourceTypeId,
             };
         }
     });
+
+    const onTestConnection = async () => {
+        const result = await dataSourceStore.testDataSourceCredential(
+            sourceData.value.dataSourceTypeId as string,
+            userEntityId.value,
+            userData.value!.type,
+            apiKeyInput.value,
+        );
+
+        if (result.isValid) {
+            toast.success('Credential valid!');
+        } else {
+            toast.error(result.message);
+        }
+    };
 </script>

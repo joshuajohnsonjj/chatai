@@ -101,6 +101,11 @@ export interface DataSourceTypesResponse {
     userConnectedDataSourceId?: string;
 }
 
+export interface TestDataSourceConnectionResponse {
+    isValid: boolean;
+    message: string;
+}
+
 export interface SearchResult {
     _id: string;
     ownerEntityId: string;

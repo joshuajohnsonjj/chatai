@@ -1,5 +1,5 @@
 <template>
-    <div class="bg-surface rounded pa-4 mt-2">
+    <div class="rounded pa-4 mt-2" :class="{ 'bg-surface': !miniMode }">
         <div class="d-flex justify-space-between">
             <div class="d-flex justify-start" :class="miniMode ? 'mx-auto' : 'mb-4'">
                 <v-avatar image="@/assets/avatar.jpg" size="49"></v-avatar>

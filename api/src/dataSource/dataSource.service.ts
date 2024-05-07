@@ -8,7 +8,7 @@ import type {
     ListDataSourceTypesResponseDto,
 } from './dto/dataSource.dto';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
-import { DataSourceTypeName, EntityType } from '@prisma/client';
+import { DataSourceTypeName, EntityType, UserType } from '@prisma/client';
 import { NotionWrapper } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
 import {
@@ -41,7 +41,7 @@ export class DataSourceService {
     ): Promise<CreateDataSourceResponseDto> {
         this.logger.log('Creating new data source', 'DataSource');
 
-        if (params.ownerEntityType === EntityType.ORGANIZATION) {
+        if (params.userType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
@@ -75,7 +75,10 @@ export class DataSourceService {
                 data: {
                     dataSourceTypeId: params.dataSourceTypeId,
                     ownerEntityId: params.ownerEntityId,
-                    ownerEntityType: params.ownerEntityType,
+                    ownerEntityType:
+                        params.userType === UserType.ORGANIZATION_MEMBER
+                            ? EntityType.ORGANIZATION
+                            : EntityType.INDIVIDUAL,
                     secret: params.secret,
                     isSyncing: false,
                     externalId: params.externalId,
@@ -107,7 +110,7 @@ export class DataSourceService {
     ): Promise<TestDataSourceResponseDto> {
         this.logger.log('Testing data source credential', 'DataSource');
 
-        if (params.ownerEntityType === EntityType.ORGANIZATION) {
+        if (params.userType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');

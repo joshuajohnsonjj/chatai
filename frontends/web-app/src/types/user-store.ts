@@ -2,6 +2,12 @@ export enum UserType {
     INDIVIDUAL = 'INDIVIDUAL',
     ORGANIZATION_MEMBER = 'ORGANIZATION_MEMBER',
 }
+
+export enum EntityType {
+    INDIVIDUAL = 'INDIVIDUAL',
+    ORGANIZATION = 'ORGANIZATION',
+}
+
 export interface UserInfo {
     id: string;
     type: UserType;

@@ -1,4 +1,4 @@
-import { DataSourceCategory, DataSourceTypeName, EntityType } from '@prisma/client';
+import { DataSourceCategory, DataSourceTypeName, EntityType, UserType } from '@prisma/client';
 import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
@@ -9,7 +9,7 @@ export class CreateDataSourceQueryDto {
     ownerEntityId: string;
 
     @IsString()
-    ownerEntityType: EntityType;
+    userType: UserType;
 
     @IsString()
     secret: string;
