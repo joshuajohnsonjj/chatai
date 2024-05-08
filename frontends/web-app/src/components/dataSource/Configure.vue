@@ -13,16 +13,20 @@
                 <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${sourceData.name}.png`" size="80"></v-avatar>
                 <div class="ml-4">
                     <p v-if="!isAddNew" class="text-h5 text-primary mb-1 font-weight-medium">
-                        {{ formatStringStartCase(sourceData.name) }} Integration Settings
+                        {{ formatStringStartCase(sourceData.name) }} Integration Details
                     </p>
                     <p v-else class="text-h5 text-primary mb-1 font-weight-medium">
                         Configure {{ formatStringStartCase(sourceData.name) }} Integration
                     </p>
 
-                    <div v-if="!isAddNew" class="d-flex justify-start">
+                    <div v-if="!isAddNew">
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-calendar-blank" color="secondary"></v-icon>
                             Linked since {{ moment(sourceData.createdAt).format('M/D/YYYY') }}
+                        </p>
+                        <p class="text-caption text-secondary sub-info-line-height">
+                            <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
+                            4 GB used
                         </p>
                     </div>
                 </div>
@@ -61,7 +65,25 @@
                 </v-sheet>
             </v-col>
             <v-col cols="6">
-                <v-sheet class="border-primary rounded pa-6"> Configurations </v-sheet>
+                <v-sheet class="border-primary rounded pa-6">
+                    <p class="text-h6 text-primary font-weight-medium">Indexing configuration</p>
+                    <p class="text-caption text-secondary" style="max-width: 250px">
+                        Configure the interval with which your content is indexed
+                    </p>
+
+                    <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">Update API Key</p>
+                    <v-text-field
+                        type="password"
+                        placeholder="****************"
+                        variant="outlined"
+                        v-model="apiKeyInput"
+                    ></v-text-field>
+
+                    <div class="d-flex justify-end mt-4">
+                        <v-btn variant="plain" @click="onTestConnection">Test connection</v-btn>
+                        <v-btn color="blue" variant="tonal">Update keys</v-btn>
+                    </div>
+                </v-sheet>
             </v-col>
         </v-row>
         <v-row>

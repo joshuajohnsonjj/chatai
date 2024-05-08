@@ -4,7 +4,6 @@ export enum RouteName {
     SEARCH = 'search',
     SEARCH_RESULT = 'search-result-detail',
     SUPPORT = 'support',
-    SETTINGS = 'settings',
     DATA_SOURCES = 'data-sources',
     DATA_SOURCE_CONFIG = 'data-source-configure',
     DATA_SOURCE_ADD = 'data-source-add',
@@ -12,6 +11,10 @@ export enum RouteName {
     LOGIN = 'login',
     SIGNUP = 'signup',
     PLAN_SELECT = 'plan-selection',
+    SETTINGS_PROFILE = 'settings-profile',
+    SETTINGS_SUBSCRIPTION = 'settings-subscription',
+    SETTINGS_COMMUNICATION = 'settings-communication',
+    SETTINGS_CHAT = 'settings-chat',
 }
 
 export enum RouteType {

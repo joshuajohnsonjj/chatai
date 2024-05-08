@@ -9,7 +9,10 @@ import DataSources from '../views/DataSources.vue';
 import Search from '../views/Search.vue';
 import SearchResultDetail from '../views/SearchResultDetail.vue';
 import Support from '../views/Support.vue';
-import Settings from '../views/Settings.vue';
+import ProfileSettings from '../views/Settings/ProfileSettings.vue';
+import ChatSettings from '../views/Settings/ChatSettings.vue';
+import SubscriptionSettings from '../views/Settings/SubscriptionSettings.vue';
+import CommunicationSettings from '../views/Settings/CommunicationSettings.vue';
 import BrowseDataSources from '../views/BrowseDataSources.vue';
 import DataSourceConfigure from '../views/DataSourceConfigure.vue';
 import DataSourceAdd from '../views/DataSourceAdd.vue';
@@ -96,14 +99,48 @@ const router = createRouter({
             component: Support,
             beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
         },
+
+        /**
+         * settings routes
+         */
         {
-            path: '/settings',
-            name: RouteName.SETTINGS,
+            path: '/settings/profile',
+            name: RouteName.SETTINGS_PROFILE,
             meta: {
                 type: RouteType.SETTINGS,
                 sideNavEnabled: true,
             },
-            component: Settings,
+            component: ProfileSettings,
+            beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
+        },
+        {
+            path: '/settings/chat',
+            name: RouteName.SETTINGS_CHAT,
+            meta: {
+                type: RouteType.SETTINGS,
+                sideNavEnabled: true,
+            },
+            component: ChatSettings,
+            beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
+        },
+        {
+            path: '/settings/communication',
+            name: RouteName.SETTINGS_COMMUNICATION,
+            meta: {
+                type: RouteType.SETTINGS,
+                sideNavEnabled: true,
+            },
+            component: CommunicationSettings,
+            beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
+        },
+        {
+            path: '/settings/subscription',
+            name: RouteName.SETTINGS_SUBSCRIPTION,
+            meta: {
+                type: RouteType.SETTINGS,
+                sideNavEnabled: true,
+            },
+            component: SubscriptionSettings,
             beforeEnter: (to, from, next) => onBeforeEnter(to, from, next),
         },
 

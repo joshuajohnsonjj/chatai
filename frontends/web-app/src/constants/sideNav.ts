@@ -34,6 +34,6 @@ export const menuOptions = [
         icon: 'mdi-cog-outline',
         color: 'info',
         metaType: RouteType.SETTINGS,
-        routeName: RouteName.SETTINGS,
+        routeName: RouteName.SETTINGS_PROFILE,
     },
 ];

@@ -12,7 +12,7 @@
                     <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
                     <p class="text-caption text-secondary sub-info-line-height">
                         <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
-                        37 GB used
+                        4 GB used
                     </p>
                 </div>
             </div>

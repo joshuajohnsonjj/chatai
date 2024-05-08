@@ -40,6 +40,7 @@
             <HorizontalLine v-if="[RouteType.CHAT, RouteType.SETTINGS].includes($route.meta.type)" />
 
             <SideNavChatOptions :mini-mode="!isMenuExpanded" />
+            <SideNavSettingsOptions :mini-mode="!isMenuExpanded" />
         </div>
 
         <UserAvatar :mini-mode="!isMenuExpanded" />
