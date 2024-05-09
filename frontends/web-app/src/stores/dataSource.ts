@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type {
     DataSourceConnectionsResponse,
     DataSourceTypesResponse,

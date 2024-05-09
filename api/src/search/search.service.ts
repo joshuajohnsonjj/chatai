@@ -41,7 +41,7 @@ export class SearchService {
                 nextStartNdx: 21,
             };
         } else {
-            return await this.mongo.queryDataElements(params);
+            return await this.mongo.queryDataElements(params, params.skip, params.take);
         }
     }
 

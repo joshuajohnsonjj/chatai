@@ -9,7 +9,7 @@ export const listChats = async (): Promise<ListChatsResponse> => {
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: 'http://localhost:3001',
+        baseURL: import.meta.env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHATS_LIST}?${new URLSearchParams({ page: '0' })}`,
     });
     return resp as ListChatsResponse;
@@ -21,7 +21,7 @@ export const getChatHistory = async (chatId: string): Promise<ListChatHistoryRes
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: 'http://localhost:3001',
+        baseURL: import.meta.env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHATS_HISTORY.replace(':chatId', chatId)}?${new URLSearchParams({ page: '0' })}`,
     });
     return resp as ListChatHistoryResponse;
@@ -41,7 +41,7 @@ export const sendChatMessage = async (
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: 'http://localhost:3001',
+        baseURL: import.meta.env.VITE_API_BASE_URL,
         url: APIEndpoints.SEND_CHAT.replace(':chatId', chatId),
     });
     return resp as ChatMessageResponse;

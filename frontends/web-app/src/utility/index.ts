@@ -35,7 +35,5 @@ export const prettyPrintTopicValue = (topic: string): string => {
             return part;
         }
     }
-
-    // fallback, but never should hit this...
     return topic;
 };

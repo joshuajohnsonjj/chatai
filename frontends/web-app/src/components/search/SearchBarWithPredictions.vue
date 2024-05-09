@@ -137,6 +137,7 @@
     import { SearchQueryParamType } from '../../types/search-store';
     import { useDataSourceStore } from '../../stores/dataSource';
     import { prettyPrintTopicValue, formatStringStartCase } from '../../utility';
+    import debounce from 'lodash/debounce';
 
     defineProps<{
         placeholder: string;
@@ -147,8 +148,10 @@
 
     const searchStore = useSearchStore();
     const { activeQueryParams, searchSuggestions } = storeToRefs(searchStore);
+
     const userStore = useUserStore();
     const { userEntityId } = storeToRefs(userStore);
+
     const dataSourceStore = useDataSourceStore();
     const { dataSourceOptions } = storeToRefs(dataSourceStore);
 
@@ -178,20 +181,6 @@
         }
         searchStore.getSearchSuggestions(inputText, userEntityId.value, dataSourceOptions.value);
     }, 400);
-
-    function debounce(fn, delay) {
-        let timeoutId: NodeJS.Timeout | null = null;
-
-        return function (...args) {
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-            timeoutId = setTimeout(() => {
-                fn(...args);
-                timeoutId = null;
-            }, delay);
-        };
-    }
 
     document.onkeydown = (e) => {
         if (!isFocused.value || !searchText.value) {

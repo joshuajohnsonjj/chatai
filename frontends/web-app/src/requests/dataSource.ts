@@ -13,7 +13,7 @@ export const listDataSourceConnections = async (): Promise<DataSourceConnections
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: 'http://localhost:3001',
+        baseURL: import.meta.env.VITE_API_BASE_URL,
         url: APIEndpoints.DATA_SOURCE_CONNECTION,
     });
     return resp as DataSourceConnectionsResponse[];
@@ -25,7 +25,7 @@ export const listDataSourceOptions = async (): Promise<DataSourceTypesResponse[]
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: 'http://localhost:3001',
+        baseURL: import.meta.env.VITE_API_BASE_URL,
         url: APIEndpoints.DATA_SOURCE,
     });
     return resp as DataSourceTypesResponse[];
@@ -42,7 +42,7 @@ export const testConnection = async (
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: 'http://localhost:3001',
+        baseURL: import.meta.env.VITE_API_BASE_URL,
         url: APIEndpoints.TEST_DATA_SOURCE,
         data: {
             dataSourceTypeId,

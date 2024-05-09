@@ -13,10 +13,10 @@
                 <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${sourceData.name}.png`" size="80"></v-avatar>
                 <div class="ml-4">
                     <p v-if="!isAddNew" class="text-h5 text-primary mb-1 font-weight-medium">
-                        {{ formatStringStartCase(sourceData.name) }} Integration Details
+                        {{ formatStringStartCase(sourceData.name ?? '') }} Integration Details
                     </p>
                     <p v-else class="text-h5 text-primary mb-1 font-weight-medium">
-                        Configure {{ formatStringStartCase(sourceData.name) }} Integration
+                        Configure {{ formatStringStartCase(sourceData.name ?? '') }} Integration
                     </p>
 
                     <div v-if="!isAddNew">

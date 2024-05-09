@@ -108,7 +108,7 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<TestDataSourceResponseDto> {
-        this.logger.log('Testing data source credential', 'DataSource');
+        this.logger.log(`Testing data source credential for entity ${params.ownerEntityId}`, 'DataSource');
 
         if (params.userType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);

@@ -2,7 +2,7 @@
     <v-row class="py-4">
         <v-col cols="3">
             <div class="d-flex justify-start">
-                <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${sourceType}.png`" size="90"></v-avatar>
+                <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${sourceType}.png`" size="80"></v-avatar>
                 <div class="ml-4 mt-5">
                     <div class="text-primary text-h5 font-weight-medium">{{ formatStringStartCase(sourceType) }}</div>
                     <div class="text-secondary font-weight-light text-body-1">Note taking</div>
@@ -41,7 +41,7 @@
     import { useSearchStore } from '../../stores/search';
     import { RouteName } from '../../types/router';
     import moment from 'moment';
-    import { maxStrLenToElipse } from '../../utility';
+    import { maxStrLenToElipse, formatStringStartCase } from '../../utility';
 
     const searchStore = useSearchStore();
     const router = useRouter();

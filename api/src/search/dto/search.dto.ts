@@ -30,6 +30,14 @@ export class SearchQueryRequestDto {
     @IsNumber()
     @IsOptional()
     dateRangeUpper?: number; // Unix timestamp
+
+    @IsNumber()
+    @IsOptional()
+    take?: number;
+
+    @IsNumber()
+    @IsOptional()
+    skip?: number;
 }
 
 export class SearchResultResponseDto {

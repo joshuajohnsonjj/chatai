@@ -23,7 +23,7 @@
     defineProps<{
         miniMode: boolean;
     }>();
-    
+
     const settingsPages = [
         {
             title: 'Profile',
@@ -45,7 +45,7 @@
             metaType: RouteType.SETTINGS,
             routeName: RouteName.SETTINGS_COMMUNICATION,
         },
-    ]
+    ];
 </script>
 
 <style scoped>
