@@ -50,15 +50,16 @@ model DataSourceType {
 }
 
 model Organization {
-  id                  String       @id @default(uuid())
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @default(now())
+  id                  String          @id @default(uuid())
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @default(now())
   planId              String
-  isAccountActive     Boolean      @default(false)
+  isAccountActive     Boolean         @default(false)
   name                String
-  plan                AccountPlan  @relation(fields: [planId], references: [id])
+  plan                AccountPlan     @relation(fields: [planId], references: [id])
   organizationMembers User[]
   pendingInvites      UserInvite[]
+  settings            EntitySettings?
 }
 
 model UserInvite {
@@ -75,9 +76,9 @@ model UserInvite {
 }
 
 model User {
-  id               String        @id
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @default(now())
+  id               String          @id
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @default(now())
   type             UserType
   planId           String?
   organizationId   String?
@@ -87,8 +88,25 @@ model User {
   phoneNumber      String?
   stripeCustomerId String?
   chats            Chat[]
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  plan             AccountPlan?  @relation(fields: [planId], references: [id])
+  settings         EntitySettings?
+  organization     Organization?   @relation(fields: [organizationId], references: [id])
+  plan             AccountPlan?    @relation(fields: [planId], references: [id])
+}
+
+model EntitySettings {
+  id                       String        @id @default(uuid())
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @default(now())
+  newsletterNotification   Boolean       @default(true)
+  usageNotification        Boolean       @default(true)
+  chatCreativity           Int           @default(4)
+  chatMinConfidence        Int           @default(8)
+  chatTone                 ChatTone      @default(DEFAULT)
+  baseInstructions         String?
+  associatedUserId         String?       @unique
+  associatedUser           User?         @relation(fields: [associatedUserId], references: [id])
+  associatedOrganizationId String?       @unique
+  associatedOrganization   Organization? @relation(fields: [associatedOrganizationId], references: [id])
 }
 
 model AccountPlan {
@@ -112,6 +130,11 @@ model Chat {
   updatedAt          DateTime      @default(now())
   userId             String
   title              String
+  chatCreativity     Int?
+  chatMinConfidence  Int?
+  chatTone           ChatTone?
+  baseInstructions   String?
+  isArchived         Boolean       @default(false)
   chatType           ChatType
   associatedEntityId String
   user               User          @relation(fields: [userId], references: [id])
@@ -132,6 +155,12 @@ model ChatMessage {
 enum EntityType {
   INDIVIDUAL
   ORGANIZATION
+}
+
+enum ChatTone {
+  CASUAL
+  DEFAULT
+  PROFESSIONAL
 }
 
 enum DataSourceTypeName {

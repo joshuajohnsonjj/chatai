@@ -108,7 +108,7 @@ export class MongoDBService {
     public async queryDataElementsByVector(
         query: DataElementVectorInput,
         limit = 3,
-    ): Promise<MongoDataElementCollectionDoc[]> {
+    ): Promise<(MongoDataElementCollectionDoc & { score: number })[]> {
         const filter: VectorQueryFilter = {
             $and: [
                 {
@@ -173,14 +173,14 @@ export class MongoDBService {
         const result = await this.elementCollConnection.aggregate(pipeline).toArray();
 
         if (!query.topics) {
-            return result as MongoDataElementCollectionDoc[];
+            return result as (MongoDataElementCollectionDoc & { score: number })[];
         }
 
         // Since Mongo doesn't support partial array query in filter w/ vector search
         // do this here. Perhaps eventually they'll add native support for this.
         return result.filter((element) =>
             element.annotations.some((annotation: string) => query.topics!.includes(annotation)),
-        ) as MongoDataElementCollectionDoc[];
+        ) as (MongoDataElementCollectionDoc & { score: number })[];
     }
 
     /**

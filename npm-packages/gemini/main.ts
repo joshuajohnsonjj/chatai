@@ -1,10 +1,12 @@
-import { type GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+import { type GenerativeModel, GoogleGenerativeAI, GenerateContentStreamResult } from '@google/generative-ai';
 import {
-    AnalyizeTextReqPayload,
-    AnalyizeTextResponse,
-    ChatHistory,
-    CleanedAnalyzeTextResponse,
+    type AnalyizeTextReqPayload,
+    type AnalyizeTextResponse,
+    type ChatHistory,
+    type ChatSettings,
+    type CleanedAnalyzeTextResponse,
     GeminiModels,
+    ChatTone,
 } from './types';
 import axios from 'axios';
 import { IMPORTABLE_ENTITY_TYPES, NLP_URL } from './constants';
@@ -19,12 +21,6 @@ export class GeminiService {
         this.key = secretKey;
     }
 
-    /**
-     * TODO: Further refine the entity cleaning... we get a decent amount of bullshit at the moment
-     * Uses NLP to get relative category/keyword info from text
-     *
-     * probably lets go to like 90+ confidence and/or remove the OTHER importable type
-     */
     public getTextAnnotation = async (
         textInput: string,
         minCategoryConfidence = 0.65,
@@ -76,10 +72,19 @@ export class GeminiService {
     public getGptReponseFromSourceData = async (
         userPrompt: string,
         sourceData: string[],
+        settings: ChatSettings,
         history?: ChatHistory[],
-    ): Promise<string> => {
-        const prompt = this.buildPromptWithSourceData(userPrompt, sourceData);
-        const model = this.client.getGenerativeModel({ model: GeminiModels.TEXT });
+    ): Promise<GenerateContentStreamResult> => {
+        const prompt = this.buildPromptWithSourceData(
+            userPrompt,
+            sourceData,
+            settings.toneSetting,
+            settings.baseInstructions,
+        );
+        const model = this.client.getGenerativeModel({
+            model: GeminiModels.TEXT,
+            generationConfig: { temperature: this.normalizeTemperature(settings.creativitySetting) },
+        });
 
         if (history) {
             return this.getChatContinuationResponse(model, prompt, history);
@@ -92,7 +97,7 @@ export class GeminiService {
         model: GenerativeModel,
         prompt: string,
         history: ChatHistory[],
-    ): Promise<string> {
+    ): Promise<GenerateContentStreamResult> {
         const chat = model.startChat({
             history,
             generationConfig: {
@@ -100,25 +105,27 @@ export class GeminiService {
             },
         });
 
-        const result = await chat.sendMessage(prompt);
-        return result.response.text();
+        return chat.sendMessageStream(prompt);
     }
 
-    private async getOneOffResponse(model: GenerativeModel, prompt: string): Promise<string> {
-        const result = await model.generateContent(prompt);
-        return result.response.text();
+    private async getOneOffResponse(model: GenerativeModel, prompt: string): Promise<GenerateContentStreamResult> {
+        return model.generateContentStream(prompt);
     }
 
-    private buildPromptWithSourceData(userPrompt: string, sourceData: string[], basePrompt?: string): string {
-        const defaultInstructions =
-            'Use the provided context to help inform your response to the prompt. Respond as if you were speaking in a professional setting.';
+    private buildPromptWithSourceData(
+        userPrompt: string,
+        sourceData: string[],
+        tone: ChatTone,
+        basePrompt?: string | null,
+    ): string {
+        const defaultInstructions = `Use the provided context to help inform your response to the prompt. ${this.buildTonePrompt(tone)}.`;
         const instructions = basePrompt ?? defaultInstructions;
 
         return `
             Instructions: ${instructions}
-            ---------------------------------------------------------------------------------------------
+            --------------------------------
             Prompt: ${userPrompt}
-            ---------------------------------------------------------------------------------------------
+            --------------------------------
             Context: ${sourceData.join('. ')}
         `;
     }
@@ -137,4 +144,27 @@ export class GeminiService {
             .map((entity) => entity.name),
         categories: raw.categories.filter((cat) => cat.confidence >= minCategoryConfidence).map((cat) => cat.name),
     });
+
+    private normalizeTemperature(value: number): number {
+        const temperatureMax = 1;
+        const temperatureMin = 0;
+        const settingsMax = 9;
+        const settingsMin = 1;
+
+        const normalizedValue = (value - settingsMin) / (settingsMax - settingsMin);
+        const normalized = normalizedValue * (temperatureMax - temperatureMin) + temperatureMin;
+
+        return normalized;
+    }
+
+    private buildTonePrompt(tone: ChatTone): string {
+        switch (tone) {
+            case ChatTone.CASUAL:
+                return 'Respond in a very casual tone';
+            case ChatTone.PROFESSIONAL:
+                return 'Respond in a very professional tone';
+            default:
+                return '';
+        }
+    }
 }

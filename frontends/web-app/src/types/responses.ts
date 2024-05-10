@@ -1,3 +1,4 @@
+import { ChatResponseTone } from './chat-store';
 import type { SearchQueryParamType } from './search-store';
 
 export interface LoginUserResponse {
@@ -17,7 +18,13 @@ export interface ListChatsResponse {
 export interface ChatResponse {
     id: string;
     title: string;
-    lastMessage: {
+    chatType: string;
+    chatCreativity: number | null;
+    chatMinConfidence: number | null;
+    chatTone: ChatResponseTone | null;
+    baseInstructions: string | null;
+    isArchived: boolean;
+    lastMessage?: {
         timestamp: Date;
         text: string;
         isSystemMessage: boolean;
@@ -77,6 +84,14 @@ export interface UserInfoResponse {
         maxDataSources: number;
         stripeProductId: string;
     } | null;
+    settings: {
+        newsletterNotification: boolean;
+        usageNotification: boolean;
+        chatCreativity: number;
+        chatMinConfidence: number;
+        chatTone: ChatResponseTone;
+        baseInstructions: string | null;
+    };
 }
 
 export interface DataSourceConnectionsResponse {

@@ -8,7 +8,7 @@
         <div class="d-flex justify-start mt-8">
             <div class="text-primary text-body-1 font-weight-medium">Creativity</div>
 
-            <v-tooltip text="How much it sticks to the data" location="top" max-width="300">
+            <v-tooltip :text="ChatConfigurationTooltips.creativity" location="top" max-width="300">
                 <template v-slot:activator="{ props }">
                     <sup v-bind="props">
                         <v-icon icon="mdi-information-outline" size="x-small" color="primary"></v-icon>
@@ -23,7 +23,7 @@
         <div class="d-flex justify-start mt-4">
             <div class="text-primary text-body-1 font-weight-medium">Min Confidence</div>
 
-            <v-tooltip text="How much it sticks to the data" location="top" max-width="300">
+            <v-tooltip :text="ChatConfigurationTooltips.confidence" location="top" max-width="300">
                 <template v-slot:activator="{ props }">
                     <sup v-bind="props">
                         <v-icon icon="mdi-information-outline" size="x-small" color="primary"></v-icon>
@@ -36,24 +36,26 @@
         <v-slider color="info" min="1" max="9" step="1" v-model="confidence"></v-slider>
 
         <div class="d-flex justify-start mt-4">
-            <div class="text-primary text-body-1 font-weight-medium">Verbosity</div>
+            <div class="text-primary text-body-1 font-weight-medium">Tone</div>
 
-            <v-tooltip text="How much it sticks to the data" location="top" max-width="300">
+            <v-tooltip :text="ChatConfigurationTooltips.tone" location="top" max-width="300">
                 <template v-slot:activator="{ props }">
                     <sup v-bind="props">
                         <v-icon icon="mdi-information-outline" size="x-small" color="primary"></v-icon>
                     </sup>
                 </template>
             </v-tooltip>
-
-            <div class="ml-auto mr-4 text-primary text-body-1 font-weight-medium">{{ verbosity }}</div>
         </div>
-        <v-slider color="info" min="1" max="9" step="1" v-model="verbosity"></v-slider>
+        <v-select
+            :items="[ChatResponseTone.CASUAL, ChatResponseTone.DEFAULT, ChatResponseTone.PROFESSIONAL]"
+            density="compact"
+            v-model="tone"
+        ></v-select>
 
-        <div class="d-flex justify-start mt-4">
+        <div class="d-flex justify-start mt-5">
             <div class="text-primary text-body-1 font-weight-medium">Base Instructions</div>
 
-            <v-tooltip text="How much it sticks to the data" location="top" max-width="300">
+            <v-tooltip :text="ChatConfigurationTooltips.basePrompt" location="top" max-width="300">
                 <template v-slot:activator="{ props }">
                     <sup v-bind="props">
                         <v-icon icon="mdi-information-outline" size="x-small" color="primary"></v-icon>
@@ -74,18 +76,57 @@
         </v-textarea>
         <div class="text-primary text-caption text-right">{{ instructions.length }}/240</div>
 
-        <v-btn variant="text" color="success" class="w-100 mt-8" :disabled="true">Apply changes</v-btn>
-        <v-btn variant="text" color="warning" class="w-100 mt-4">Archive chat</v-btn>
+        <v-btn variant="text" color="success" class="w-100 mt-8" @click="onApply" :loading="isLoading.chatUpdate"
+            >Apply changes</v-btn
+        >
+        <v-btn variant="text" color="secondary" class="w-100 mt-4" @click="$router.push($route.path)">cancel</v-btn>
     </div>
 </template>
 
 <script lang="ts" setup>
-    import { ref } from 'vue';
+    import { onBeforeMount, ref } from 'vue';
+    import { ChatConfigurationTooltips } from '../../constants/chatConfigurationTooltips';
+    import { ChatResponseTone } from '../../types/chat-store';
+    import { storeToRefs } from 'pinia';
+    import { useChatStore } from '../../stores/chat';
+    import { useRoute, useRouter } from 'vue-router';
+    import { useUserStore } from '../../stores/user';
 
-    const creativity = ref<number>(3);
-    const confidence = ref<number>(8);
-    const verbosity = ref<number>(6);
-    const instructions = ref<string>('Responses should be in formed like blah blah blah...');
+    const chatStore = useChatStore();
+    const { selectedChat, isLoading } = storeToRefs(chatStore);
+    const userStore = useUserStore();
+    const { userData } = storeToRefs(userStore);
+
+    const router = useRouter();
+    const route = useRoute();
+
+    const creativity = ref<number | null>(
+        selectedChat.value?.chatCreativity ?? userData.value?.settings.chatCreativity ?? null,
+    );
+    const confidence = ref<number | null>(
+        selectedChat.value?.chatMinConfidence ?? userData.value?.settings.chatMinConfidence ?? null,
+    );
+    const tone = ref<ChatResponseTone | null>(
+        selectedChat.value?.chatTone ?? userData.value?.settings.chatTone ?? null,
+    );
+    const instructions = ref<string>(
+        selectedChat.value?.baseInstructions ?? userData.value?.settings.baseInstructions ?? '',
+    );
+
+    onBeforeMount(async () => {
+        if (!selectedChat.value) {
+            router.push(route.path);
+        }
+    });
+
+    const onApply = async () => {
+        await chatStore.updateChat(selectedChat.value!.id, {
+            chatCreativity: creativity.value as number,
+            chatMinConfidence: confidence.value as number,
+            chatTone: tone.value as ChatResponseTone,
+            baseInstructions: instructions.value,
+        });
+    };
 </script>
 
 <style scoped>

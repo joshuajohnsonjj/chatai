@@ -15,8 +15,46 @@ export class UserService {
     ) {}
 
     async getUserInfo(options: GetUserInfoRequestDto, user: DecodedUserTokenDto): Promise<GetUserInfoResponseDto> {
-        const includeOrg = options.includeOrg ?? true;
-        const includeAccountPlan = options.includeAccountPlan ?? true;
+        const organizationSelect =
+            options.includeOrg ?? true
+                ? {
+                      select: {
+                          id: true,
+                          planId: true,
+                          isAccountActive: true,
+                          name: true,
+                      },
+                  }
+                : false;
+
+        const accountPlanSelect =
+            options.includeAccountPlan ?? true
+                ? {
+                      select: {
+                          isActive: true,
+                          adHocUploadsEnabled: true,
+                          dailyMessageQuota: true,
+                          dataSyncInterval: true,
+                          integrationsEnabled: true,
+                          maxDataSources: true,
+                          stripeProductId: true,
+                      },
+                  }
+                : false;
+
+        const settingsSelect =
+            options.includeSettings ?? true
+                ? {
+                      select: {
+                          newsletterNotification: true,
+                          usageNotification: true,
+                          chatCreativity: true,
+                          chatMinConfidence: true,
+                          chatTone: true,
+                          baseInstructions: true,
+                      },
+                  }
+                : false;
 
         const userData = this.prisma.user.findUniqueOrThrow({
             where: {
@@ -34,8 +72,9 @@ export class UserService {
                 lastName: true,
                 phoneNumber: true,
                 stripeCustomerId: true,
-                organization: includeOrg,
-                plan: includeAccountPlan,
+                organization: organizationSelect,
+                plan: accountPlanSelect,
+                settings: settingsSelect,
             },
         });
 

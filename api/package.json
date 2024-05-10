@@ -19,7 +19,7 @@
         "test:cov": "jest --coverage",
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
-        "generate:schema": "npx prisma generate"
+        "generate": "npx prisma generate"
     },
     "prisma": {
         "seed": "ts-node prisma/seed/index.ts"
@@ -27,7 +27,7 @@
     "dependencies": {
         "@aws-sdk/client-cloudwatch-logs": "^3.556.0",
         "@aws-sdk/client-sqs": "^3.556.0",
-        "@joshuajohnsonjj38/gemini": "^1.0.9",
+        "@joshuajohnsonjj38/gemini": "^1.0.10",
         "@joshuajohnsonjj38/google-drive": "^1.0.6",
         "@joshuajohnsonjj38/mailer": "^1.0.1",
         "@joshuajohnsonjj38/mongodb": "^1.0.5",

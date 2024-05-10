@@ -7,8 +7,6 @@ export {}
 
 declare module 'vue' {
     export interface GlobalComponents {
-        2: (typeof import('./components/search/filterMenus/SourceFilterMenuOptions copy 2.vue'))['default'];
-        3: (typeof import('./components/search/filterMenus/SourceFilterMenuOptions copy 3.vue'))['default'];
         BaseModal: (typeof import('./components/common/modal/BaseModal.vue'))['default'];
         BaseModalContainer: (typeof import('./components/common/modal/BaseModalContainer.vue'))['default'];
         CalendarRangeFilter: (typeof import('./components/search/filterMenus/CalendarRangeFilter.vue'))['default'];
@@ -16,7 +14,10 @@ declare module 'vue' {
         ChatTooltipMenuOptions: (typeof import('./components/chat/ChatTooltipMenuOptions.vue'))['default'];
         CheckboxsWithSearchFilter: (typeof import('./components/search/filterMenus/CheckboxsWithSearchFilter.vue'))['default'];
         Configure: (typeof import('./components/dataSource/Configure.vue'))['default'];
-        copy: (typeof import('./components/search/filterMenus/SourceFilterMenuOptions copy.vue'))['default'];
+        ConfirmDialog: (typeof import('./components/common/ConfirmDialog.vue'))['default'];
+        ConfirmDmodal: (typeof import('./components/common/ConfirmDmodal.vue'))['default'];
+        ConfirmModal: (typeof import('./components/common/ConfirmModal.vue'))['default'];
+        copy: (typeof import('./components/common/DialogModal copy.vue'))['default'];
         DialogModal: (typeof import('./components/common/DialogModal.vue'))['default'];
         DialogModeal: (typeof import('./components/common/DialogModeal.vue'))['default'];
         FullScreenBackgroundBlur: (typeof import('./components/common/FullScreenBackgroundBlur.vue'))['default'];

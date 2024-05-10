@@ -1,15 +1,26 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { GeminiService } from '@joshuajohnsonjj38/gemini';
+import { type GeminiContentStream, GeminiService, type ChatHistory, type ChatTone } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
-import type { ChatThreadResponseDto, GetChatResponseResponseDto, ListChatMessagesResponseDto } from './dto/message.dto';
-import type { StartNewChatQueryDto, StartNewChatResponseDto, ListChatResponseDto } from './dto/chat.dto';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
-import { AccessDeniedError, ResourceNotFoundError } from 'src/exceptions';
+import type {
+    ChatThreadResponseDto,
+    GetChatResponseQueryDto,
+    GetChatResponseResponseDto,
+    ListChatMessagesResponseDto,
+} from './dto/message.dto';
+import type {
+    StartNewChatQueryDto,
+    ListChatResponseDto,
+    UpdateChatDetailRequestDto,
+    ChatResponseDto,
+} from './dto/chat.dto';
+import { type DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { AccessDeniedError, InternalError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { v4 } from 'uuid';
-import { last } from 'lodash';
+import { last, omit } from 'lodash';
 import * as moment from 'moment';
+import { PrismaError } from 'src/types';
 
 @Injectable()
 export class ChatService {
@@ -25,41 +36,78 @@ export class ChatService {
     ) {}
 
     async generateResponse(
-        id: string,
         chatId: string,
-        userPrompt: string,
+        params: GetChatResponseQueryDto,
         user: DecodedUserTokenDto,
-        replyThreadId?: string,
-    ): Promise<GetChatResponseResponseDto> {
+    ): Promise<GeminiContentStream> {
+        this.logger.log(`Start generate response for chat ${chatId}`, 'Chat');
+
         const chat = await this.prisma.chat.findUniqueOrThrow({
             where: { id: chatId },
             select: { associatedEntityId: true },
         });
 
         if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
-            this.logger.warn(`Blocked user ${user.idUser} from interacting with chat ${chatId}`);
+            this.logger.error(`Blocked user ${user.idUser} from interacting with chat ${chatId}`, undefined, 'Chat');
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
-        this.logger.log(`Generating gpt response for chat ${chatId}`);
+        this.logger.log(`Embedding prompt: ${params.userPromptText}`, 'Chat');
+        const userPromptEmbedding = await this.ai.getTextEmbedding(params.userPromptText);
+        const matchedDataResult = await this.mongo.queryDataElementsByVector(
+            {
+                vectorizedQuery: userPromptEmbedding,
+                entityId: chat.associatedEntityId,
+            },
+            4,
+        );
 
+        // convert confidence from 1-9 to 0-1
+        const normalizedMinConfidence = (params.confidenceSetting - 1) / 8;
+        const matchedDataText = matchedDataResult
+            .filter((data) => data.score >= normalizedMinConfidence)
+            .map((data) => data.text ?? '');
+
+        let chatHistory: ChatHistory[] | undefined;
+        if (params.replyThreadId) {
+            const queryRes = await this.prisma.chatMessage.findMany({
+                where: { chatId, threadId: params.replyThreadId },
+                orderBy: { createdAt: 'asc' },
+            });
+
+            chatHistory = queryRes.map((message) => ({
+                role: message.isSystemMessage ? 'model' : 'user',
+                parts: [{ text: message.text }],
+            }));
+        }
+
+        this.logger.log(`Start chat response for chat ${chatId}`, 'Chat');
+        return this.ai.getGptReponseFromSourceData(
+            params.userPromptText,
+            matchedDataText,
+            {
+                creativitySetting: params.creativitySetting,
+                baseInstructions: params.baseInstructions,
+                toneSetting: params.toneSetting as ChatTone,
+            },
+            chatHistory,
+        );
+    }
+
+    async handleChatResponseCompletion(
+        userPromptMessageId: string,
+        userPrompt: string,
+        generatedResponse: string,
+        chatId: string,
+        replyThreadId?: string,
+    ): Promise<GetChatResponseResponseDto> {
         const threadId = replyThreadId ?? v4();
-
-        const userPromptEmbedding = await this.ai.getTextEmbedding(userPrompt);
-        const matchedDataResult = await this.mongo.queryDataElementsByVector({
-            vectorizedQuery: userPromptEmbedding,
-            entityId: chat.associatedEntityId,
-        });
-
-        const matchedDataText = matchedDataResult.map((data) => data.text ?? '');
-        const generatedResponse = await this.ai.getGptReponseFromSourceData(userPrompt, matchedDataText);
-
-        // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
+        // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
 
         const [, savedResponse] = await Promise.all([
             this.prisma.chatMessage.create({
                 data: {
-                    id,
+                    id: userPromptMessageId,
                     text: userPrompt,
                     isSystemMessage: false,
                     chatId,
@@ -85,7 +133,8 @@ export class ChatService {
         return savedResponse;
     }
 
-    async startNewChat(params: StartNewChatQueryDto): Promise<StartNewChatResponseDto> {
+    async startNewChat(params: StartNewChatQueryDto): Promise<ChatResponseDto> {
+        // TODO: need to validate associatedEntityId here
         return await this.prisma.chat.create({
             data: {
                 userId: params.userId,
@@ -94,6 +143,29 @@ export class ChatService {
                 associatedEntityId: params.associatedEntityId,
             },
         });
+    }
+
+    async updateChatDetail(
+        chatId: string,
+        updates: UpdateChatDetailRequestDto,
+        user: DecodedUserTokenDto,
+    ): Promise<ChatResponseDto> {
+        this.logger.log(`Patching updates ${JSON.stringify(updates)} to chat ${chatId}`);
+
+        try {
+            return await this.prisma.chat.update({
+                where: {
+                    id: chatId,
+                    userId: user.idUser,
+                },
+                data: updates,
+            });
+        } catch (e) {
+            if (e.code === PrismaError.RECORD_DOES_NOT_EXIST) {
+                throw new AccessDeniedError('User does not have access to this chat');
+            }
+            throw new InternalError();
+        }
     }
 
     async listChatMessages(
@@ -107,10 +179,12 @@ export class ChatService {
         });
 
         if (!chat) {
+            this.logger.error(`Chat ${chatId} does not exist`, undefined, 'Chat');
             throw new ResourceNotFoundError(chatId, 'Chat');
         }
 
         if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
+            this.logger.error(`Blocked user ${user.idUser} from interacting with chat ${chatId}`, undefined, 'Chat');
             throw new AccessDeniedError('User unauthorized to read this data');
         }
 
@@ -162,7 +236,13 @@ export class ChatService {
             select: {
                 id: true,
                 title: true,
+                chatCreativity: true,
+                chatMinConfidence: true,
+                chatTone: true,
+                baseInstructions: true,
+                isArchived: true,
                 updatedAt: true,
+                chatType: true,
                 gptMessages: {
                     select: {
                         text: true,
@@ -178,8 +258,7 @@ export class ChatService {
         });
 
         const chats = chatsQuery.map((chat) => ({
-            id: chat.id,
-            title: chat.title,
+            ...omit(chat, ['updatedAt', 'gptMessages']),
             lastMessage: {
                 timestamp: chat.gptMessages[0]?.createdAt ?? chat.updatedAt,
                 text: chat.gptMessages[0]?.text ?? '',

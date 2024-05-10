@@ -1,5 +1,16 @@
-import { IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
-import { ChatType } from '@prisma/client';
+import {
+    IsBoolean,
+    IsEnum,
+    IsInt,
+    IsOptional,
+    IsString,
+    IsUUID,
+    Max,
+    MaxLength,
+    Min,
+    MinLength,
+} from 'class-validator';
+import { ChatTone, ChatType } from '@prisma/client';
 
 export class StartNewChatQueryDto {
     @IsUUID()
@@ -17,12 +28,37 @@ export class StartNewChatQueryDto {
     chatType: ChatType;
 }
 
-export class StartNewChatResponseDto {
-    id: string;
-    title: string;
-    chatType: ChatType;
-    createdAt: Date;
-    updatedAt: Date;
+export class UpdateChatDetailRequestDto {
+    @IsBoolean()
+    @IsOptional()
+    isArchived?: boolean;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(40)
+    @MinLength(1)
+    title?: string;
+
+    @IsInt()
+    @Min(1)
+    @Max(9)
+    @IsOptional()
+    chatCreativity?: number;
+
+    @IsInt()
+    @Min(1)
+    @Max(9)
+    @IsOptional()
+    chatMinConfidence?: number;
+
+    @IsEnum(ChatTone)
+    @IsOptional()
+    chatTone?: ChatTone;
+
+    @IsString()
+    @MaxLength(240)
+    @IsOptional()
+    baseInstructions?: string;
 }
 
 export class ListChatResponseDto {
@@ -34,7 +70,13 @@ export class ListChatResponseDto {
 export class ChatResponseDto {
     id: string;
     title: string;
-    lastMessage: {
+    chatType: ChatType;
+    chatCreativity: number | null;
+    chatMinConfidence: number | null;
+    chatTone: ChatTone | null;
+    baseInstructions: string | null;
+    isArchived: boolean;
+    lastMessage?: {
         timestamp: Date;
         text: string;
         isSystemMessage: boolean;

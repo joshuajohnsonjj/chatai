@@ -1,3 +1,7 @@
+import { GenerateContentStreamResult } from '@google/generative-ai';
+
+export type GeminiContentStream = GenerateContentStreamResult;
+
 export enum GeminiModels {
     EMBEDDINGS = 'embedding-001',
     TEXT = 'gemini-pro',
@@ -8,6 +12,18 @@ export interface ChatHistory {
     parts: {
         text: string;
     }[];
+}
+
+export enum ChatTone {
+    CASUAL = 'CASUAL',
+    DEFAULT = 'DEFAULT',
+    PROFESSIONAL = 'PROFESSIONAL',
+}
+
+export interface ChatSettings {
+    creativitySetting: number;
+    toneSetting: ChatTone;
+    baseInstructions?: string | null;
 }
 
 export interface AnalyizeTextReqPayload {

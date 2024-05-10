@@ -1,16 +1,36 @@
-import { IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsEnum, IsInt, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { ChatTone } from '@prisma/client';
 
 export class GetChatResponseQueryDto {
     @IsUUID()
-    promptId: string;
+    userPromptMessageId: string;
 
     @IsString()
-    text: string;
+    userPromptText: string;
 
     @IsUUID()
     @IsOptional()
     replyThreadId?: string;
+
+    @IsInt()
+    creativitySetting: number;
+
+    @IsInt()
+    confidenceSetting: number;
+
+    @IsEnum(ChatTone)
+    toneSetting: ChatTone;
+
+    @IsString()
+    @IsOptional()
+    baseInstructions: string;
+}
+
+export class ListChatMessagesQueryDto {
+    @IsNumberString()
+    @Transform(({ value }) => parseInt(value as string, 10))
+    page: number;
 }
 
 export class GetChatResponseResponseDto {
@@ -21,12 +41,6 @@ export class GetChatResponseResponseDto {
     threadId: string;
     createdAt: Date;
     updatedAt: Date;
-}
-
-export class ListChatMessagesQueryDto {
-    @IsNumberString()
-    @Transform(({ value }) => parseInt(value as string, 10))
-    page: number;
 }
 
 export class ChatThreadResponseDto {

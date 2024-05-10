@@ -1,3 +1,5 @@
+import { ChatResponseTone } from './chat-store';
+
 export enum UserType {
     INDIVIDUAL = 'INDIVIDUAL',
     ORGANIZATION_MEMBER = 'ORGANIZATION_MEMBER',
@@ -18,6 +20,14 @@ export interface UserInfo {
     lastName: string;
     phoneNumber: string | null;
     stripeCustomerId: string | null;
+    settings: {
+        newsletterNotification: boolean;
+        usageNotification: boolean;
+        chatCreativity: number;
+        chatMinConfidence: number;
+        chatTone: ChatResponseTone;
+        baseInstructions: string | null;
+    };
 }
 
 export interface OrgInfo {

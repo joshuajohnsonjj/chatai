@@ -16,7 +16,7 @@ export const dateToString = (date: Date): string => {
     } else if (daysPassed <= 6) {
         return momentDate.fromNow();
     } else {
-        return momentDate.format('M/D/YYYY');
+        return momentDate.format('M/D/YYYY h:MM A');
     }
 };
 

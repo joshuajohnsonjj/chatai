@@ -11,6 +11,7 @@ export enum CognitoAttribute {
 
 export enum PrismaError {
     FAILED_UNIQUE_CONSTRAINT = 'P2002',
+    RECORD_DOES_NOT_EXIST = 'P2025',
 }
 
 export interface CognitoIdUserPayload {
