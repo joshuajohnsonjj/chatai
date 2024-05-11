@@ -7,6 +7,7 @@ import {
     PrismaClient,
     UserType,
 } from '@prisma/client';
+import { seedMessages, seedThreads } from './messagesSeedData';
 
 const prisma = new PrismaClient();
 async function main() {
@@ -82,6 +83,24 @@ async function main() {
         ],
     });
 
+    await prisma.entitySettings.createMany({
+        data: [
+            {
+                id: '74283398-0021-7023-fc9b-67a1bg1e0a11',
+                createdAt: '2024-05-10T00:43:32.621Z',
+                updatedAt: '2024-05-10T00:43:32.621Z',
+                newsletterNotification: true,
+                usageNotification: true,
+                chatCreativity: 7,
+                chatMinConfidence: 7,
+                chatTone: 'DEFAULT',
+                baseInstructions: null,
+                associatedUserId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
+                associatedOrganizationId: null,
+            },
+        ],
+    });
+
     await prisma.chat.createMany({
         data: [
             {
@@ -93,6 +112,10 @@ async function main() {
             },
         ],
     });
+
+    await prisma.chatMessageThread.createMany({ data: seedThreads });
+
+    await prisma.chatMessage.createMany({ data: seedMessages });
 }
 
 main()

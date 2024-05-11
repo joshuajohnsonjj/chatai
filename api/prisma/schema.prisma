@@ -125,31 +125,42 @@ model AccountPlan {
 }
 
 model Chat {
-  id                 String        @id @default(uuid())
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @default(now())
+  id                 String              @id @default(uuid())
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @default(now())
   userId             String
   title              String
   chatCreativity     Int?
   chatMinConfidence  Int?
   chatTone           ChatTone?
   baseInstructions   String?
-  isArchived         Boolean       @default(false)
+  isArchived         Boolean             @default(false)
   chatType           ChatType
   associatedEntityId String
-  user               User          @relation(fields: [userId], references: [id])
-  gptMessages        ChatMessage[]
+  user               User                @relation(fields: [userId], references: [id])
+  messages           ChatMessage[]
+  threads            ChatMessageThread[]
+}
+
+model ChatMessageThread {
+  id        String        @id @default(uuid())
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now())
+  messages  ChatMessage[]
+  chatId    String
+  chat      Chat          @relation(fields: [chatId], references: [id])
 }
 
 model ChatMessage {
-  id              String   @id @default(uuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
+  id              String            @id @default(uuid())
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @default(now())
   text            String
   isSystemMessage Boolean
   threadId        String
+  thread          ChatMessageThread @relation(fields: [threadId], references: [id])
   chatId          String
-  chat            Chat     @relation(fields: [chatId], references: [id])
+  chat            Chat              @relation(fields: [chatId], references: [id])
 }
 
 enum EntityType {

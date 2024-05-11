@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { type GeminiContentStream, GeminiService, type ChatHistory, type ChatTone } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import type {
-    ChatThreadResponseDto,
     GetChatResponseQueryDto,
     GetChatResponseResponseDto,
     ListChatMessagesResponseDto,
@@ -17,10 +16,10 @@ import type {
 import { type DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, InternalError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
-import { v4 } from 'uuid';
-import { last, omit, reverse } from 'lodash';
+import { omit } from 'lodash';
 import * as moment from 'moment';
 import { PrismaError } from 'src/types';
+import { ChatMessage } from '@prisma/client';
 
 @Injectable()
 export class ChatService {
@@ -70,6 +69,8 @@ export class ChatService {
 
         let chatHistory: ChatHistory[] | undefined;
         if (params.isReplyMessage) {
+            this.logger.log(`Retrieving thread ${params.threadId} history for response continuation`, 'Chat');
+
             const queryRes = await this.prisma.chatMessage.findMany({
                 where: { chatId, threadId: params.threadId },
                 orderBy: { createdAt: 'asc' },
@@ -99,10 +100,15 @@ export class ChatService {
         userPrompt: string,
         generatedResponse: string,
         chatId: string,
-        replyThreadId: string,
+        threadId: string,
         systemResponseMessageId: string,
     ): Promise<GetChatResponseResponseDto> {
-        const threadId = replyThreadId ?? v4();
+        await this.prisma.chatMessageThread.create({
+            data: {
+                chatId,
+                id: threadId,
+            },
+        });
         // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
 
         const [, savedResponse] = await Promise.all([
@@ -181,9 +187,34 @@ export class ChatService {
         page: number,
         user: DecodedUserTokenDto,
     ): Promise<ListChatMessagesResponseDto> {
+        const pageSize = 20;
+
+        // Retrieves 20 threads with oldest 2 messages per thread as well
+        // as message count per thread. If message count is greater than 2,
+        // we'll later grab the last 2 messages to include in the thread
+        // messages array
         const chat = await this.prisma.chat.findUnique({
             where: { id: chatId },
-            select: { associatedEntityId: true },
+            include: {
+                threads: {
+                    take: pageSize,
+                    skip: page * pageSize,
+                    orderBy: {
+                        createdAt: 'desc',
+                    },
+                    include: {
+                        messages: {
+                            orderBy: {
+                                createdAt: 'asc',
+                            },
+                            take: 2,
+                        },
+                        _count: {
+                            select: { messages: true },
+                        },
+                    },
+                },
+            },
         });
 
         if (!chat) {
@@ -196,34 +227,34 @@ export class ChatService {
             throw new AccessDeniedError('User unauthorized to read this data');
         }
 
-        const pageSize = 20;
-        const messages = await this.prisma.chatMessage.findMany({
-            where: {
-                chatId,
-            },
-            orderBy: {
-                createdAt: 'desc',
-            },
-            take: pageSize,
-            skip: page * pageSize,
-        });
+        const extraThreadMessages: { [threadId: string]: ChatMessage[] } = Object.fromEntries(
+            await Promise.all(
+                chat.threads.map(async (thread) => {
+                    if (thread._count.messages > 2) {
+                        const messages = await this.prisma.chatMessage.findMany({
+                            where: { threadId: thread.id },
+                            orderBy: { createdAt: 'desc' },
+                            take: 2,
+                        });
+                        return [thread.id, messages];
+                    }
+                    return [thread.id, []];
+                }),
+            ),
+        );
 
-        const threads: ChatThreadResponseDto[] = [];
-        messages.forEach((message) => {
-            if (last(threads)?.threadId !== message.threadId) {
-                threads.push({
-                    threadId: message.threadId,
-                    messages: [message],
-                });
-            } else {
-                last(threads)!.messages.unshift(message);
-            }
-        });
+        const threads = chat.threads.map((thread) => ({
+            threadId: thread.id,
+            totalMessageCount: thread._count.messages,
+            timestamp: thread.createdAt,
+            messages: [...thread.messages, ...extraThreadMessages[thread.id]],
+        }));
 
         return {
             page,
-            size: messages.length,
-            threads: reverse(threads),
+            pageSize,
+            responseSize: threads.length,
+            threads: threads,
         };
     }
 
@@ -251,7 +282,7 @@ export class ChatService {
                 isArchived: true,
                 updatedAt: true,
                 chatType: true,
-                gptMessages: {
+                messages: {
                     select: {
                         text: true,
                         isSystemMessage: true,
@@ -266,11 +297,11 @@ export class ChatService {
         });
 
         const chats = chatsQuery.map((chat) => ({
-            ...omit(chat, ['updatedAt', 'gptMessages']),
+            ...omit(chat, ['updatedAt', 'messages']),
             lastMessage: {
-                timestamp: chat.gptMessages[0]?.createdAt ?? chat.updatedAt,
-                text: chat.gptMessages[0]?.text ?? '',
-                isSystemMessage: !!chat.gptMessages[0]?.isSystemMessage,
+                timestamp: chat.messages[0]?.createdAt ?? chat.updatedAt,
+                text: chat.messages[0]?.text ?? '',
+                isSystemMessage: !!chat.messages[0]?.isSystemMessage,
             },
         }));
 

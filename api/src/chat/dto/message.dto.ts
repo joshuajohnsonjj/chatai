@@ -50,11 +50,14 @@ export class GetChatResponseResponseDto {
 
 export class ChatThreadResponseDto {
     threadId: string;
+    totalMessageCount: number;
+    timestamp: Date;
     messages: GetChatResponseResponseDto[];
 }
 
 export class ListChatMessagesResponseDto {
     page: number;
-    size: number;
+    pageSize: number;
+    responseSize: number;
     threads: ChatThreadResponseDto[];
 }

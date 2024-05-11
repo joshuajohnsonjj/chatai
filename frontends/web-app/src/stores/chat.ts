@@ -73,7 +73,7 @@ export const useChatStore = defineStore('chat', () => {
         const chatHistoryData = await getChatHistory(selected.id, nextChatHistoryPageNdx.value);
         chatHistory.value = [...chatHistoryData.threads, ...chatHistory.value];
         nextChatHistoryPageNdx.value += 1;
-        hasMoreChatHistoryResults.value = chatHistoryData.size > 0;
+        hasMoreChatHistoryResults.value = chatHistoryData.responseSize === chatHistoryData.pageSize;
 
         isLoading.value.chatHistory = false;
     };
@@ -82,14 +82,14 @@ export const useChatStore = defineStore('chat', () => {
         replyingInThreadId.value = threadId;
     };
 
-    const sendMessage = async (text: string, replyThreadId?: string) => {
+    const sendMessage = async (text: string) => {
         if (!selectedChat.value) {
             return;
         }
 
         let thread: ChatThreadResponse;
-        const threadId = replyThreadId ?? v4();
-        const systemRsponseId = v4();
+        const threadId = replyingInThreadId.value ?? v4();
+
         const promptMessage: ChatMessageResponse = {
             id: v4(),
             text,
@@ -100,32 +100,37 @@ export const useChatStore = defineStore('chat', () => {
             updatedAt: new Date(),
         };
 
-        if (replyThreadId) {
+        if (replyingInThreadId.value) {
             thread = find(chatHistory.value, (thread) => thread.threadId === threadId) as ChatThreadResponse;
-            thread!.messages.push(promptMessage);
+            thread.messages.push(promptMessage);
+            thread.totalMessageCount += 1;
         } else {
             thread = {
                 threadId,
+                totalMessageCount: 1,
+                timestamp: new Date(),
                 messages: [promptMessage],
             };
             chatHistory.value.push(thread);
         }
 
         pendingThreadResponseId.value = threadId;
+
+        const systemRsponseId = v4();
+        // TODO: use settings values
         const aiResponseStream = await sendChatMessage(selectedChat.value.id, {
-            userPromptMessageId: promptMessage.id as string,
+            userPromptMessageId: promptMessage.id,
             userPromptText: promptMessage.text,
-            replyThreadId: thread!.threadId,
+            threadId: thread.threadId,
             systemResponseMessageId: systemRsponseId,
-            isReplyMessage: false,
+            isReplyMessage: !!replyingInThreadId.value,
             creativitySetting: 8,
             confidenceSetting: 7,
             toneSetting: ChatResponseTone.DEFAULT,
             baseInstructions: null,
         });
 
-        const threadNdx = chatHistory.value.findIndex((opt) => opt.threadId === thread.threadId);
-        chatHistory.value[threadNdx].messages.push({
+        thread.messages.push({
             id: systemRsponseId,
             text: '',
             isSystemMessage: true,
@@ -143,7 +148,7 @@ export const useChatStore = defineStore('chat', () => {
                 break;
             }
             pendingThreadResponseId.value = null;
-            last(chatHistory.value[threadNdx].messages)!.text += String.fromCharCode.apply(null, value);
+            last(thread.messages)!.text += String.fromCharCode.apply(null, value);
         }
 
         // TODO: retrieve response data from db to get extra info

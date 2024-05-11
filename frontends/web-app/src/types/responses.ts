@@ -33,17 +33,20 @@ export interface ChatResponse {
 
 export interface ListChatHistoryResponse {
     page: number;
-    size: number;
+    pageSize: number;
+    responseSize: number;
     threads: ChatThreadResponse[];
 }
 
 export interface ChatThreadResponse {
     threadId: string;
+    totalMessageCount: number;
+    timestamp: Date;
     messages: ChatMessageResponse[];
 }
 
 export interface ChatMessageResponse {
-    id?: string;
+    id: string;
     text: string;
     isSystemMessage: boolean;
     chatId: string;

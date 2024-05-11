@@ -17,7 +17,7 @@ export interface SendMessageParams {
     userPromptMessageId: string;
     userPromptText: string;
     isReplyMessage: boolean;
-    replyThreadId: string;
+    threadId: string;
     systemResponseMessageId: string;
     creativitySetting: number;
     confidenceSetting: number;
