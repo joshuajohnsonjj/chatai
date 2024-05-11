@@ -18,7 +18,7 @@ import { type DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, InternalError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { v4 } from 'uuid';
-import { last, omit } from 'lodash';
+import { last, omit, reverse } from 'lodash';
 import * as moment from 'moment';
 import { PrismaError } from 'src/types';
 
@@ -63,15 +63,15 @@ export class ChatService {
         );
 
         // convert confidence from 1-9 to 0-1
-        const normalizedMinConfidence = (params.confidenceSetting - 1) / 8;
-        const matchedDataText = matchedDataResult
-            .filter((data) => data.score >= normalizedMinConfidence)
-            .map((data) => data.text ?? '');
+        // const normalizedMinConfidence = (params.confidenceSetting - 1) / 8;
+        // console.log(matchedDataResult)
+        const matchedDataText = matchedDataResult.map((data) => data.text ?? '');
+        // .filter((data) => data.score >= normalizedMinConfidence)
 
         let chatHistory: ChatHistory[] | undefined;
-        if (params.replyThreadId) {
+        if (params.isReplyMessage) {
             const queryRes = await this.prisma.chatMessage.findMany({
-                where: { chatId, threadId: params.replyThreadId },
+                where: { chatId, threadId: params.threadId },
                 orderBy: { createdAt: 'asc' },
             });
 
@@ -84,7 +84,7 @@ export class ChatService {
         this.logger.log(`Start chat response for chat ${chatId}`, 'Chat');
         return this.ai.getGptReponseFromSourceData(
             params.userPromptText,
-            matchedDataText,
+            matchedDataText.join('. '),
             {
                 creativitySetting: params.creativitySetting,
                 baseInstructions: params.baseInstructions,
@@ -99,7 +99,7 @@ export class ChatService {
         userPrompt: string,
         generatedResponse: string,
         chatId: string,
-        replyThreadId?: string,
+        replyThreadId: string,
     ): Promise<GetChatResponseResponseDto> {
         const threadId = replyThreadId ?? v4();
         // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
@@ -158,7 +158,10 @@ export class ChatService {
                     id: chatId,
                     userId: user.idUser,
                 },
-                data: updates,
+                data: {
+                    ...updates,
+                    updatedAt: new Date(),
+                },
             });
         } catch (e) {
             if (e.code === PrismaError.RECORD_DOES_NOT_EXIST) {
@@ -194,7 +197,7 @@ export class ChatService {
                 chatId,
             },
             orderBy: {
-                createdAt: 'asc',
+                createdAt: 'desc',
             },
             take: pageSize,
             skip: page * pageSize,
@@ -208,14 +211,14 @@ export class ChatService {
                     messages: [message],
                 });
             } else {
-                last(threads)!.messages.push(message);
+                last(threads)!.messages.unshift(message);
             }
         });
 
         return {
             page,
             size: messages.length,
-            threads,
+            threads: reverse(threads),
         };
     }
 

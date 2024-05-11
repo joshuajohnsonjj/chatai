@@ -13,9 +13,11 @@
         <div class="d-flex justify-space-between">
             <v-text-field
                 clearable
+                clear-icon="mdi-close"
                 prepend-inner-icon="mdi-magnify"
                 variant="outlined"
                 placeholder="Search integrations..."
+                v-model="searchText"
             ></v-text-field>
             <div class="w-50 border-primary rounded ml-4 px-4 py-2 d-flex justify-space-between">
                 <div class="button-hover" :class="{ 'filter-selected': selected === 'All' }" @click="selected = 'All'">
@@ -60,7 +62,7 @@
 
         <div class="d-flex flex-wrap mt-6">
             <div
-                v-for="option in dataSourceOptions"
+                v-for="option in filteredDataSourceOptions"
                 :key="option.id"
                 class="ma-2 pa-6 border rounded grow-hover relative"
                 :class="{ 'pr-12': !!option.userConnectedDataSourceId }"
@@ -78,14 +80,37 @@
                 </div>
             </div>
         </div>
-        <div class="ml-2 mt-2 link button-hover text-secondary text-caption" @click="isModalOpen = true">
+        <div
+            v-if="filteredDataSourceOptions.length"
+            class="ml-2 mt-2 link button-hover text-secondary text-caption"
+            @click="isModalOpen = true"
+        >
             Don't see what you're looking for?
+        </div>
+        <div v-else class="mt-6">
+            <div class="d-flex justify-center">
+                <v-icon icon="mdi-alert-circle-outline" color="secondary" style="font-size: 10rem"></v-icon>
+            </div>
+            <div class="d-flex justify-center">
+                <div class="text-secondary text-h6 font-weight-medium text-center" style="max-width: 450px">
+                    Oops... Looks like we don't have what you're looking for yet.
+                </div>
+            </div>
+            <div class="d-flex justify-center">
+                <div
+                    class="link button-hover text-secondary text-body-1 text-center"
+                    style="max-width: 450px"
+                    @click="isModalOpen = true"
+                >
+                    Click here to request it
+                </div>
+            </div>
         </div>
     </div>
 </template>
 
 <script lang="ts" setup>
-    import { ref } from 'vue';
+    import { computed, ref } from 'vue';
     import { onBeforeMount } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useDataSourceStore } from '../stores/dataSource';
@@ -97,6 +122,7 @@
 
     const selected = ref('All');
     const isModalOpen = ref(false);
+    const searchText = ref<string>('');
 
     const dataSourceStore = useDataSourceStore();
     const { dataSourceOptions } = storeToRefs(dataSourceStore);
@@ -109,7 +135,16 @@
         }
     });
 
-    function toDataSourceConfiguration(option: DataSourceTypesResponse) {
+    const filteredDataSourceOptions = computed(() => {
+        if (!searchText.value?.length) {
+            return dataSourceOptions.value;
+        }
+        return dataSourceOptions.value.filter((value) =>
+            value.name.replace('_', ' ').toLowerCase().includes(searchText.value.toLowerCase()),
+        );
+    });
+
+    const toDataSourceConfiguration = (option: DataSourceTypesResponse) => {
         if (!option.userConnectedDataSourceId) {
             router.push({ name: RouteName.DATA_SOURCE_ADD, params: { dataSourceTypeId: option.id } });
         } else {
@@ -118,7 +153,7 @@
                 params: { dataSourceId: option.userConnectedDataSourceId },
             });
         }
-    }
+    };
 </script>
 
 <style scoped>

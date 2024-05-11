@@ -16,7 +16,7 @@
                         {{ formatStringStartCase(sourceData.name ?? '') }} Integration Details
                     </p>
                     <p v-else class="text-h5 text-primary mb-1 font-weight-medium">
-                        Configure {{ formatStringStartCase(sourceData.name ?? '') }} Integration
+                        Add {{ formatStringStartCase(sourceData.name ?? '') }} Integration
                     </p>
 
                     <div v-if="!isAddNew">

@@ -2,10 +2,11 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { ChatMessageResponse, ChatResponse, ChatThreadResponse } from '../types/responses';
 import { getChatHistory, listChats, sendChatMessage, updateChatDetail } from '../requests/chat';
-import { find } from 'lodash';
+import find from 'lodash/find';
+import last from 'lodash/last';
 import { useToast } from 'vue-toastification';
 import { v4 } from 'uuid';
-import { UpdateChatParams } from '../types/chat-store';
+import { ChatResponseTone, UpdateChatParams } from '../types/chat-store';
 
 const toast = useToast();
 
@@ -13,13 +14,15 @@ export const useChatStore = defineStore('chat', () => {
     const chats = ref<ChatResponse[]>([]);
     const selectedChat = ref<ChatResponse | null>(null);
     const chatHistory = ref<ChatThreadResponse[]>([]);
+    const nextChatHistoryPageNdx = ref<number>(0);
+    const hasMoreChatHistoryResults = ref<boolean>(false);
     const replyingInThreadId = ref<string | null>(null);
     const isLoading = ref({
         chatList: false,
         chatHistory: false,
         chatUpdate: false,
     });
-    const isLoadingThreadResponse = ref<string | null>(null);
+    const pendingThreadResponseId = ref<string | null>(null);
 
     const getChatList = async () => {
         isLoading.value.chatList = true;
@@ -65,9 +68,13 @@ export const useChatStore = defineStore('chat', () => {
         }
 
         isLoading.value.chatHistory = true;
+
         selectedChat.value = selected;
-        const chatHistoryData = await getChatHistory(selected.id);
-        chatHistory.value = chatHistoryData.threads;
+        const chatHistoryData = await getChatHistory(selected.id, nextChatHistoryPageNdx.value);
+        chatHistory.value = [...chatHistoryData.threads, ...chatHistory.value];
+        nextChatHistoryPageNdx.value += 1;
+        hasMoreChatHistoryResults.value = chatHistoryData.size > 0;
+
         isLoading.value.chatHistory = false;
     };
 
@@ -103,17 +110,48 @@ export const useChatStore = defineStore('chat', () => {
             chatHistory.value.push(thread);
         }
 
-        isLoadingThreadResponse.value = threadId;
-        const aiResponse = await sendChatMessage(selectedChat.value.id, text, thread!.threadId);
-        find(chatHistory.value, (opt) => opt.threadId === thread.threadId)!.messages.push(aiResponse);
-        isLoadingThreadResponse.value = null;
+        pendingThreadResponseId.value = threadId;
+        const aiResponseStream = await sendChatMessage(selectedChat.value.id, {
+            userPromptMessageId: promptMessage.id as string,
+            userPromptText: promptMessage.text,
+            replyThreadId: thread!.threadId,
+            isReplyMessage: false,
+            creativitySetting: 8,
+            confidenceSetting: 7,
+            toneSetting: ChatResponseTone.DEFAULT,
+            baseInstructions: null,
+        });
+
+        const threadNdx = chatHistory.value.findIndex((opt) => opt.threadId === thread.threadId);
+        chatHistory.value[threadNdx].messages.push({
+            text: '',
+            isSystemMessage: true,
+            chatId: selectedChat.value.id,
+            threadId: thread.threadId,
+            createdAt: new Date(),
+        });
+
+        const reader = aiResponseStream.getReader();
+        let done = false,
+            value;
+        while (!done) {
+            ({ value, done } = await reader.read());
+            if (done) {
+                break;
+            }
+            pendingThreadResponseId.value = null;
+            last(chatHistory.value[threadNdx].messages)!.text += String.fromCharCode.apply(null, value);
+        }
+
+        // TODO: retrieve response data from db to get extra info
     };
 
     return {
         chats,
         selectedChat,
         chatHistory,
-        isLoadingThreadResponse,
+        hasMoreChatHistoryResults,
+        pendingThreadResponseId,
         isLoading,
         replyingInThreadId,
         setChatHistory,

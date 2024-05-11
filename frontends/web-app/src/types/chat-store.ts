@@ -12,3 +12,14 @@ export interface UpdateChatParams {
     chatTone?: ChatResponseTone;
     baseInstructions?: string;
 }
+
+export interface SendMessageParams {
+    userPromptMessageId: string;
+    userPromptText: string;
+    isReplyMessage: boolean;
+    replyThreadId: string;
+    creativitySetting: number;
+    confidenceSetting: number;
+    toneSetting: ChatResponseTone;
+    baseInstructions: string | null;
+}

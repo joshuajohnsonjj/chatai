@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNumberString, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ChatTone } from '@prisma/client';
 
@@ -10,8 +10,10 @@ export class GetChatResponseQueryDto {
     userPromptText: string;
 
     @IsUUID()
-    @IsOptional()
-    replyThreadId?: string;
+    threadId: string;
+
+    @IsBoolean()
+    isReplyMessage: boolean;
 
     @IsInt()
     creativitySetting: number;

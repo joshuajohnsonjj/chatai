@@ -67,7 +67,7 @@
 
         <div class="d-flex justify-space-between">
             <div style="max-width: 800px" class="mx-auto">
-                <div id="chat-scroll" class="d-flex flex-column mb-6">
+                <div id="chat-scroll" ref="chatScrollContainer" class="d-flex flex-column mb-6">
                     <v-sheet
                         v-for="thread in chatHistory"
                         :key="thread.threadId"
@@ -118,12 +118,7 @@
                                 </div>
                             </div>
 
-                            <div v-if="isLoadingThreadResponse === thread.threadId" class="mt-2">
-                                <v-skeleton-loader
-                                    type="paragraph"
-                                    color="background"
-                                    :elevation="1"
-                                ></v-skeleton-loader>
+                            <div v-if="pendingThreadResponseId === thread.threadId" class="mt-2">
                                 <v-skeleton-loader
                                     type="sentences"
                                     color="background"
@@ -158,40 +153,52 @@
 <script lang="ts" setup>
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
-    import { computed, onBeforeMount, onMounted, ref, watch } from 'vue';
+    import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { useRoute } from 'vue-router';
     import last from 'lodash/last';
     import { dateToString } from '../utility';
     import { markdown } from '../utility/markdown';
     import { useGoTo } from 'vuetify';
     import { useToast } from 'vue-toastification';
+    import debounce from 'lodash/debounce';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();
     const route = useRoute();
     const toast = useToast();
 
-    const { chats, selectedChat, chatHistory, isLoadingThreadResponse, replyingInThreadId, isLoading } =
-        storeToRefs(chatStore);
+    const {
+        chats,
+        selectedChat,
+        chatHistory,
+        pendingThreadResponseId,
+        replyingInThreadId,
+        isLoading,
+        hasMoreChatHistoryResults,
+    } = storeToRefs(chatStore);
 
     const editTitle = ref<boolean>(false);
     const editTitleStarted = ref<boolean>(false);
     const titleEditField = ref<string>('');
     const isConfirmArchive = ref<boolean>(false);
+    const chatScrollContainer = ref<HTMLElement | null>(null);
 
     const isChatSettingsOpen = computed(() => route.query.settings === 'true');
 
-    onBeforeMount(async () => {
+    onMounted(async () => {
         if (!chats.value.length) {
             await chatStore.getChatList();
         }
         if (!chatHistory.value.length) {
             await chatStore.setChatHistory(route.params.chatId as string);
         }
+        scrollToBottom();
+
+        chatScrollContainer.value!.addEventListener('scroll', debounce(onScroll, 100));
     });
 
-    onMounted(() => {
-        scrollToBottom();
+    onBeforeUnmount(() => {
+        chatScrollContainer.value!.removeEventListener('scroll', debounce(onScroll, 100));
     });
 
     watch(selectedChat, async () => {
@@ -224,6 +231,19 @@
     const onArchiveConfirmed = async () => {
         await chatStore.updateChat(selectedChat.value!.id, { isArchived: true });
     };
+
+    /**
+     * Scroll based pagination handler
+     */
+    const onScroll = () => {
+        if (
+            (chatScrollContainer.value?.scrollTop ?? 1750) < 1750 &&
+            hasMoreChatHistoryResults.value &&
+            !isLoading.value.chatHistory
+        ) {
+            chatStore.setChatHistory(route.params.chatId as string);
+        }
+    };
 </script>
 
 <style scoped>
@@ -238,6 +258,15 @@
         padding-top: 75px;
         max-height: 86vh;
         overflow-y: scroll;
+    }
+
+    #chat-scroll::-webkit-scrollbar {
+        display: none;
+    }
+
+    #chat-scroll {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 
     .reply-view {

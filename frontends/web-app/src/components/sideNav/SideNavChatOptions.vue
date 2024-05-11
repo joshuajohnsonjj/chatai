@@ -48,6 +48,7 @@
     const chatStore = useChatStore();
     const { chats: chatOptions, selectedChat } = storeToRefs(chatStore);
 
+    // TODO: implement chats list pagination
     async function onChatSelected(chatId: string) {
         await chatStore.setChatHistory(chatId);
         router.push({ name: RouteName.MESSAGES, params: { chatId } });

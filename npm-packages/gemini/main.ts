@@ -71,7 +71,7 @@ export class GeminiService {
 
     public getGptReponseFromSourceData = async (
         userPrompt: string,
-        sourceData: string[],
+        sourceData: string,
         settings: ChatSettings,
         history?: ChatHistory[],
     ): Promise<GenerateContentStreamResult> => {
@@ -81,6 +81,7 @@ export class GeminiService {
             settings.toneSetting,
             settings.baseInstructions,
         );
+
         const model = this.client.getGenerativeModel({
             model: GeminiModels.TEXT,
             generationConfig: { temperature: this.normalizeTemperature(settings.creativitySetting) },
@@ -114,19 +115,19 @@ export class GeminiService {
 
     private buildPromptWithSourceData(
         userPrompt: string,
-        sourceData: string[],
+        sourceData: string,
         tone: ChatTone,
         basePrompt?: string | null,
     ): string {
-        const defaultInstructions = `Use the provided context to help inform your response to the prompt. ${this.buildTonePrompt(tone)}.`;
+        const defaultInstructions = `Use the provided context to help inform your response to the prompt. If the prompt is inadequate, acknowlage this and do your best to answer.${this.buildTonePrompt(tone)}`;
         const instructions = basePrompt ?? defaultInstructions;
 
         return `
-            Instructions: ${instructions}
+            ${instructions}
             --------------------------------
             Prompt: ${userPrompt}
             --------------------------------
-            Context: ${sourceData.join('. ')}
+            Context: ${sourceData}
         `;
     }
 
@@ -160,9 +161,9 @@ export class GeminiService {
     private buildTonePrompt(tone: ChatTone): string {
         switch (tone) {
             case ChatTone.CASUAL:
-                return 'Respond in a very casual tone';
+                return ' Respond in a very casual tone';
             case ChatTone.PROFESSIONAL:
-                return 'Respond in a very professional tone';
+                return ' Respond in a very professional tone';
             default:
                 return '';
         }

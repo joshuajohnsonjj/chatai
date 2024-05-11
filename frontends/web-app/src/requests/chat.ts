@@ -1,7 +1,8 @@
-import type { UpdateChatParams } from '../types/chat-store';
+import type { SendMessageParams, UpdateChatParams } from '../types/chat-store';
 import { APIEndpoints, APIMethods } from '../types/requests';
-import type { ChatMessageResponse, ChatResponse, ListChatHistoryResponse, ListChatsResponse } from '../types/responses';
+import type { ChatResponse, ListChatHistoryResponse, ListChatsResponse } from '../types/responses';
 import { sendAPIRequest } from './service';
+import { TOKEN_STORAGE_KEY } from '../constants';
 
 // TODO: implement pagination
 export const listChats = async (): Promise<ListChatsResponse> => {
@@ -29,34 +30,31 @@ export const updateChatDetail = async (chatId: string, chatUpdates: UpdateChatPa
     return resp as ChatResponse;
 };
 
-export const getChatHistory = async (chatId: string): Promise<ListChatHistoryResponse> => {
+export const getChatHistory = async (chatId: string, page: number): Promise<ListChatHistoryResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
         headers: {
             'Content-Type': 'application/json',
         },
         baseURL: import.meta.env.VITE_API_BASE_URL,
-        url: `${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}?${new URLSearchParams({ page: '0' })}`,
+        url: `${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}?${new URLSearchParams({ page: page.toString() })}`,
     });
     return resp as ListChatHistoryResponse;
 };
 
-export const sendChatMessage = async (
-    chatId: string,
-    text: string,
-    threadId?: string,
-): Promise<ChatMessageResponse> => {
-    const resp = await sendAPIRequest({
-        method: APIMethods.POST,
-        data: {
-            threadId,
-            text,
+export const sendChatMessage = async (chatId: string, params: SendMessageParams): Promise<any> => {
+    const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
+    const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}`,
+        {
+            headers: {
+                Authorization: `Bearer ${tokenData.accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            method: APIMethods.POST,
+            body: JSON.stringify(params),
         },
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
-        url: APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId),
-    });
-    return resp as ChatMessageResponse;
+    );
+
+    return response.body;
 };

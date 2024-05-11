@@ -43,13 +43,13 @@ export interface ChatThreadResponse {
 }
 
 export interface ChatMessageResponse {
-    id: string;
+    id?: string;
     text: string;
     isSystemMessage: boolean;
     chatId: string;
     threadId: string;
     createdAt: Date;
-    updatedAt: Date;
+    updatedAt?: Date;
 }
 
 export interface UserInfoResponse {

@@ -32,7 +32,6 @@ export class ChatController {
         @Body() params: UpdateChatDetailRequestDto,
         @Req() req: Request,
     ): Promise<ChatResponseDto> {
-        // TODO: figure out how to spead up responses.. http streaming?
         return await this.service.updateChatDetail(chatId, params, req.user as DecodedUserTokenDto);
     }
 
@@ -54,13 +53,14 @@ export class ChatController {
             res.write(chunkText);
         }
 
-        await this.service.handleChatResponseCompletion(
-            params.userPromptMessageId,
-            params.userPromptText,
-            generatedResponse,
-            chatId,
-            params.replyThreadId,
-        );
+        console.log(generatedResponse);
+        // await this.service.handleChatResponseCompletion(
+        //     params.userPromptMessageId,
+        //     params.userPromptText,
+        //     generatedResponse,
+        //     chatId,
+        //     params.threadId,
+        // );
 
         res.end();
     }
