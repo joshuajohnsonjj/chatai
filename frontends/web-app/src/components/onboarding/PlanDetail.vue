@@ -16,7 +16,9 @@
                 <div class="text-h4 text-primary font-weight-bold py-6">
                     {{ price === 0 ? 'FREE' : `$${price}` }}
                 </div>
-                <div class="text-body-1 text-primary font-weight-bold py-6 mt-4" v-if="price > 0">/mo</div>
+                <div class="text-body-1 text-primary font-weight-bold py-6 mt-4" v-if="price > 0">
+                    /{{ priceLabel }}
+                </div>
             </div>
             <div v-for="feature in features" :key="feature.text" class="d-flex justify-start px-6">
                 <v-icon v-if="feature.enabled" icon="mdi-check-bold" color="success"></v-icon>
@@ -30,12 +32,13 @@
 </template>
 
 <script lang="ts" setup>
-    import { ref } from 'vue';
+    import { computed, ref } from 'vue';
 
-    defineProps<{
+    const props = defineProps<{
         name: string;
         description: string;
         price: number;
+        isAnnual: boolean;
         features: {
             text: string;
             enabled: boolean;
@@ -45,6 +48,8 @@
     defineEmits(['selected']);
 
     const selectedPlan = ref<string | null>(null);
+
+    const priceLabel = computed(() => (props.isAnnual ? 'yr' : 'mo'));
 </script>
 
 <style scoped>

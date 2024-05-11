@@ -89,6 +89,7 @@ export const useChatStore = defineStore('chat', () => {
 
         let thread: ChatThreadResponse;
         const threadId = replyThreadId ?? v4();
+        const systemRsponseId = v4();
         const promptMessage: ChatMessageResponse = {
             id: v4(),
             text,
@@ -115,6 +116,7 @@ export const useChatStore = defineStore('chat', () => {
             userPromptMessageId: promptMessage.id as string,
             userPromptText: promptMessage.text,
             replyThreadId: thread!.threadId,
+            systemResponseMessageId: systemRsponseId,
             isReplyMessage: false,
             creativitySetting: 8,
             confidenceSetting: 7,
@@ -124,6 +126,7 @@ export const useChatStore = defineStore('chat', () => {
 
         const threadNdx = chatHistory.value.findIndex((opt) => opt.threadId === thread.threadId);
         chatHistory.value[threadNdx].messages.push({
+            id: systemRsponseId,
             text: '',
             isSystemMessage: true,
             chatId: selectedChat.value.id,

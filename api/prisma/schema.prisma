@@ -86,7 +86,7 @@ model User {
   firstName        String
   lastName         String
   phoneNumber      String?
-  stripeCustomerId String?
+  stripeCustomerId String
   chats            Chat[]
   settings         EntitySettings?
   organization     Organization?   @relation(fields: [organizationId], references: [id])

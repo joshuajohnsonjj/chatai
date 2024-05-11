@@ -27,6 +27,7 @@ declare module 'vue' {
         NavOpenClose: (typeof import('./components/customIcons/NavOpenClose.vue'))['default'];
         NewChatInfoBlock: (typeof import('./components/chat/NewChatInfoBlock.vue'))['default'];
         PlanDetail: (typeof import('./components/onboarding/PlanDetail.vue'))['default'];
+        RequestIntegrationModal: (typeof import('./components/common/RequestIntegrationModal.vue'))['default'];
         RouterLink: (typeof import('vue-router'))['RouterLink'];
         RouterView: (typeof import('vue-router'))['RouterView'];
         SearchActiveFilter: (typeof import('./components/search/SearchActiveFilter.vue'))['default'];

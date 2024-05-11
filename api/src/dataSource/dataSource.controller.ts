@@ -85,8 +85,6 @@ export class DataSourceController {
 
     @Patch('/completedImports')
     async completedImports(@Body() body: { dataSourceIds: string[] }, @Req() req: Request): Promise<void> {
-        console.log(req.headers);
-        // TODO: check api key in request header
-        await this.service.completedImports(body.dataSourceIds);
+        await this.service.completedImports(body.dataSourceIds, req.headers['api-key'] as string);
     }
 }

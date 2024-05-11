@@ -18,6 +18,7 @@ export interface SendMessageParams {
     userPromptText: string;
     isReplyMessage: boolean;
     replyThreadId: string;
+    systemResponseMessageId: string;
     creativitySetting: number;
     confidenceSetting: number;
     toneSetting: ChatResponseTone;

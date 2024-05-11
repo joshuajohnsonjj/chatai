@@ -17,8 +17,8 @@ export class ChatController {
     constructor(private readonly service: ChatService) {}
 
     @Post()
-    async startNewChat(@Body() params: StartNewChatQueryDto): Promise<ChatResponseDto> {
-        return await this.service.startNewChat(params);
+    async startNewChat(@Body() params: StartNewChatQueryDto, @Req() req: Request): Promise<ChatResponseDto> {
+        return await this.service.startNewChat(params, req.user as DecodedUserTokenDto);
     }
 
     @Get()
@@ -53,14 +53,14 @@ export class ChatController {
             res.write(chunkText);
         }
 
-        console.log(generatedResponse);
-        // await this.service.handleChatResponseCompletion(
-        //     params.userPromptMessageId,
-        //     params.userPromptText,
-        //     generatedResponse,
-        //     chatId,
-        //     params.threadId,
-        // );
+        await this.service.handleChatResponseCompletion(
+            params.userPromptMessageId,
+            params.userPromptText,
+            generatedResponse,
+            chatId,
+            params.threadId,
+            params.systemResponseMessageId,
+        );
 
         res.end();
     }

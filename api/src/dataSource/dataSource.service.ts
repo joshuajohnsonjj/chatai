@@ -303,7 +303,11 @@ export class DataSourceService {
         });
     }
 
-    async completedImports(dataSourceIds: string[]) {
+    async completedImports(dataSourceIds: string[], apiKey?: string) {
+        if (apiKey !== this.configService.get<string>('INTERNAL_API_ACCESS_KEY')!) {
+            throw new AccessDeniedError('Valid API key not provided');
+        }
+
         this.logger.log(`Updating data source ${dataSourceIds}`, 'DataSource');
 
         await this.prisma.dataSource.updateMany({

@@ -41,10 +41,12 @@
                     color="blue"
                     prepend-icon="mdi-open-in-new"
                     variant="tonal"
+                    :disabled="!selectedSearchResult?.url"
                     @click="openSource"
                 >
-                    View in notion
+                    View in {{ selectedSearchResult?.dataSourceType }}
                 </v-btn>
+                <!-- TODO: handle content deletion -->
                 <v-btn class="w-100" color="warning" prepend-icon="mdi-trash-can" variant="tonal">
                     Remove content
                 </v-btn>
@@ -102,7 +104,6 @@
     });
 
     function openSource() {
-        // TODO: handle null url
         window.open(selectedSearchResult.value?.url, '_blank')!.focus();
     }
 

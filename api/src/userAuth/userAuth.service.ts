@@ -34,7 +34,7 @@ export class UserAuthService {
             ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
         });
     }
-    // TODO: resend confirmation code endpoint
+
     // TODO: encrypt password for transit
     async register(authRegisterRequest: RegisterRequestDto) {
         const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
@@ -203,6 +203,24 @@ export class UserAuthService {
                 }
             });
         });
+    }
+
+    // TODO: upgrade to v3 sdk
+    async resendConfirmEmail(email: string) {
+        const user = new CognitoUser({
+            Username: email,
+            Pool: this.userPool,
+        });
+        // return await new Promise((resolve, reject) => {
+        //     user.resendConfirmationCode({
+        //         onSuccess: () => {
+        //             resolve({ success: true });
+        //         },
+        //         onFailure: (err) => {
+        //             reject(err);
+        //         },
+        //     });
+        // });
     }
 
     async forget(forgetPasswordRequest: ForgetRequestDto) {

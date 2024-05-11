@@ -100,6 +100,7 @@ export class ChatService {
         generatedResponse: string,
         chatId: string,
         replyThreadId: string,
+        systemResponseMessageId: string,
     ): Promise<GetChatResponseResponseDto> {
         const threadId = replyThreadId ?? v4();
         // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
@@ -118,6 +119,7 @@ export class ChatService {
             }),
             this.prisma.chatMessage.create({
                 data: {
+                    id: systemResponseMessageId,
                     text: generatedResponse,
                     chatId,
                     isSystemMessage: true,
@@ -133,8 +135,11 @@ export class ChatService {
         return savedResponse;
     }
 
-    async startNewChat(params: StartNewChatQueryDto): Promise<ChatResponseDto> {
-        // TODO: need to validate associatedEntityId here
+    async startNewChat(params: StartNewChatQueryDto, user: DecodedUserTokenDto): Promise<ChatResponseDto> {
+        if (user.idUser !== params.associatedEntityId && user.organization !== params.associatedEntityId) {
+            throw new AccessDeniedError('User does not have access to perform this action');
+        }
+
         return await this.prisma.chat.create({
             data: {
                 userId: params.userId,

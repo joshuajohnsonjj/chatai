@@ -18,7 +18,7 @@ const redisClient = createClient({
     url: process.env.REDIS_URL,
 });
 
-// TODO: check best way to keep connection open
+// TODO: erase redis??
 /**
  *
  * Receives HTTP events for slack message postings

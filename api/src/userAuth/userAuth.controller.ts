@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserAuthService } from './userAuth.service';
 import { AuthenticateRequestDto } from './dto/authenticate.request.dto';
 import { ConfirmUserRequestDto } from './dto/confirm.request.dto';
@@ -8,7 +8,6 @@ import { RegisterRequestDto } from './dto/register.request.dto';
 import { ResetRequestDto } from './dto/reset.request.dto';
 import { BadRequestError } from 'src/exceptions';
 
-// TODO: make stripe cust id required in db
 @Controller('v1/userAuth')
 export class UserAuthController {
     constructor(private readonly authService: UserAuthService) {}
@@ -63,6 +62,15 @@ export class UserAuthController {
     async confirm(@Body() confirmUserRequest: ConfirmUserRequestDto) {
         try {
             return await this.authService.confirmUser(confirmUserRequest);
+        } catch (e) {
+            throw new BadRequestError(e.message);
+        }
+    }
+
+    @Get('confirm')
+    async resendConfirmEmail(@Body() params: ForgetRequestDto) {
+        try {
+            return await this.authService.resendConfirmEmail(params.email);
         } catch (e) {
             throw new BadRequestError(e.message);
         }

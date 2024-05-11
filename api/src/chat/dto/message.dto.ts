@@ -15,6 +15,9 @@ export class GetChatResponseQueryDto {
     @IsBoolean()
     isReplyMessage: boolean;
 
+    @IsUUID()
+    systemResponseMessageId: string;
+
     @IsInt()
     creativitySetting: number;
 
