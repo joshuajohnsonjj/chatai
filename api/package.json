@@ -27,10 +27,10 @@
     "dependencies": {
         "@aws-sdk/client-cloudwatch-logs": "^3.556.0",
         "@aws-sdk/client-sqs": "^3.556.0",
-        "@joshuajohnsonjj38/gemini": "^1.1.0",
+        "@joshuajohnsonjj38/gemini": "^1.1.2",
         "@joshuajohnsonjj38/google-drive": "^1.0.6",
         "@joshuajohnsonjj38/mailer": "^1.0.1",
-        "@joshuajohnsonjj38/mongodb": "^1.0.5",
+        "@joshuajohnsonjj38/mongodb": "^1.0.6",
         "@joshuajohnsonjj38/notion": "^1.0.7",
         "@joshuajohnsonjj38/secret-mananger": "^1.0.3",
         "@joshuajohnsonjj38/slack": "^1.0.2",

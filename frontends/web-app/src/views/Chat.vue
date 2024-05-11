@@ -133,7 +133,7 @@
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
                 </div>
 
-                <MessageInput style="max-width: 800px" />
+                <MessageInput />
             </div>
 
             <ChatSettingsSideBar v-if="isChatSettingsOpen" />

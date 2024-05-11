@@ -16,7 +16,7 @@ import type {
 import { type DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, InternalError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
-import { omit } from 'lodash';
+import { omit, reverse } from 'lodash';
 import * as moment from 'moment';
 import { PrismaError } from 'src/types';
 import { ChatMessage } from '@prisma/client';
@@ -64,7 +64,7 @@ export class ChatService {
         // convert confidence from 1-9 to 0-1
         // const normalizedMinConfidence = (params.confidenceSetting - 1) / 8;
         // console.log(matchedDataResult)
-        const matchedDataText = matchedDataResult.map((data) => data.text ?? '');
+        const matchedDataText = matchedDataResult.map((data) => data.text ?? '').join('. ');
         // .filter((data) => data.score >= normalizedMinConfidence)
 
         let chatHistory: ChatHistory[] | undefined;
@@ -85,7 +85,7 @@ export class ChatService {
         this.logger.log(`Start chat response for chat ${chatId}`, 'Chat');
         return this.ai.getGptReponseFromSourceData(
             params.userPromptText,
-            matchedDataText.join('. '),
+            matchedDataText,
             {
                 creativitySetting: params.creativitySetting,
                 baseInstructions: params.baseInstructions,
@@ -101,16 +101,21 @@ export class ChatService {
         generatedResponse: string,
         chatId: string,
         threadId: string,
+        isReply: boolean,
         systemResponseMessageId: string,
     ): Promise<GetChatResponseResponseDto> {
-        await this.prisma.chatMessageThread.create({
-            data: {
-                chatId,
-                id: threadId,
-            },
-        });
-        // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
+        this.logger.log(`Chat generation complete. Writing thread ${threadId} data to db.`, 'Chat');
 
+        if (!isReply) {
+            await this.prisma.chatMessageThread.create({
+                data: {
+                    chatId,
+                    id: threadId,
+                },
+            });
+        }
+
+        // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
         const [, savedResponse] = await Promise.all([
             this.prisma.chatMessage.create({
                 data: {
@@ -233,8 +238,8 @@ export class ChatService {
                     if (thread._count.messages > 2) {
                         const messages = await this.prisma.chatMessage.findMany({
                             where: { threadId: thread.id },
-                            orderBy: { createdAt: 'desc' },
-                            take: 2,
+                            orderBy: { createdAt: 'asc' },
+                            take: -2,
                         });
                         return [thread.id, messages];
                     }
@@ -254,7 +259,7 @@ export class ChatService {
             page,
             pageSize,
             responseSize: threads.length,
-            threads: threads,
+            threads: reverse(threads),
         };
     }
 

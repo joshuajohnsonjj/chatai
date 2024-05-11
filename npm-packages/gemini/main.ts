@@ -81,6 +81,8 @@ export class GeminiService {
             settings.toneSetting,
             settings.baseInstructions,
         );
+        // TODO: remove this when confident in results
+        console.log(prompt);
 
         const model = this.client.getGenerativeModel({
             model: GeminiModels.TEXT,
@@ -117,18 +119,18 @@ export class GeminiService {
         userPrompt: string,
         sourceData: string,
         tone: ChatTone,
-        basePrompt?: string | null,
+        baseInstructions?: string | null,
     ): string {
-        const defaultInstructions = `Use the provided context to help inform your response to the prompt. If the prompt is inadequate, acknowlage this and do your best to answer.${this.buildTonePrompt(tone)}`;
-        const instructions = basePrompt ?? defaultInstructions;
+        let instructions =
+            'Use the data that followes as a basis to help inform your response, if possible, or do your best if the data is inadequate.';
+        if (tone !== ChatTone.DEFAULT) {
+            instructions += this.buildTonePrompt(tone);
+        }
+        if (baseInstructions) {
+            instructions += baseInstructions;
+        }
 
-        return `
-            ${instructions}
-            --------------------------------
-            Prompt: ${userPrompt}
-            --------------------------------
-            Context: ${sourceData}
-        `;
+        return `${userPrompt}.\nInstructions: ${instructions}\nData:\n${sourceData}`;
     }
 
     private cleanTextAnnotation = (
@@ -161,9 +163,9 @@ export class GeminiService {
     private buildTonePrompt(tone: ChatTone): string {
         switch (tone) {
             case ChatTone.CASUAL:
-                return ' Respond in a very casual tone';
+                return ' Respond in a very casual tone. ';
             case ChatTone.PROFESSIONAL:
-                return ' Respond in a very professional tone';
+                return ' Respond in a very professional tone. ';
             default:
                 return '';
         }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Body, Post, Query, Req, UseGuards, Patch, Res } from '@nestjs/common';
+import { Controller, Get, Param, Body, Post, Query, Req, UseGuards, Patch, Res, Logger } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import type { GetChatResponseQueryDto, ListChatMessagesQueryDto, ListChatMessagesResponseDto } from './dto/message.dto';
 import type {
@@ -14,7 +14,10 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('v1/chat')
 @UseGuards(AuthGuard('jwt'))
 export class ChatController {
-    constructor(private readonly service: ChatService) {}
+    constructor(
+        private readonly service: ChatService,
+        private readonly logger: Logger,
+    ) {}
 
     @Post()
     async startNewChat(@Body() params: StartNewChatQueryDto, @Req() req: Request): Promise<ChatResponseDto> {
@@ -44,25 +47,32 @@ export class ChatController {
     ): Promise<void> {
         res.setHeader('Content-Type', 'text/plain');
 
-        const contentStream = await this.service.generateResponse(chatId, params, req.user as DecodedUserTokenDto);
+        try {
+            const contentStream = await this.service.generateResponse(chatId, params, req.user as DecodedUserTokenDto);
 
-        let generatedResponse = '';
-        for await (const chunk of contentStream.stream) {
-            const chunkText = chunk.text();
-            generatedResponse += chunkText;
-            res.write(chunkText);
+            this.logger.log('Chunking response content', 'Chat');
+            let generatedResponse = '';
+            for await (const chunk of contentStream.stream) {
+                const chunkText = chunk.text();
+                generatedResponse += chunkText;
+                res.write(chunkText);
+            }
+            this.logger.log('Chunking response content finished', 'Chat');
+
+            await this.service.handleChatResponseCompletion(
+                params.userPromptMessageId,
+                params.userPromptText,
+                generatedResponse,
+                chatId,
+                params.threadId,
+                params.isReplyMessage,
+                params.systemResponseMessageId,
+            );
+        } catch (e) {
+            this.logger.error(e.message, e.stack, 'Chat');
+        } finally {
+            res.end();
         }
-
-        await this.service.handleChatResponseCompletion(
-            params.userPromptMessageId,
-            params.userPromptText,
-            generatedResponse,
-            chatId,
-            params.threadId,
-            params.systemResponseMessageId,
-        );
-
-        res.end();
     }
 
     @Get(':chatId/message')

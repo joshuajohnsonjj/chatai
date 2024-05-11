@@ -1,13 +1,17 @@
 <template>
-    <v-text-field
-        rows="1"
-        placeholder="Ask me something..."
-        variant="outlined"
-        class="message-input"
-        v-model="textField"
-    >
-        <v-btn class="bg-blue rounded send-btn" variant="tonal" icon="mdi-arrow-up" @click="sendMessage"></v-btn>
-    </v-text-field>
+    <div style="max-width: 800px">
+        <div id="gradientTopper"></div>
+        <v-text-field
+            style="max-width: 800px"
+            rows="1"
+            placeholder="Ask me something..."
+            variant="outlined"
+            class="message-input"
+            v-model="textField"
+        >
+            <v-btn class="bg-blue rounded send-btn" variant="tonal" icon="mdi-arrow-up" @click="sendMessage"></v-btn>
+        </v-text-field>
+    </div>
 </template>
 
 <script lang="ts" setup>
@@ -47,6 +51,15 @@
 </script>
 
 <style scoped>
+    #gradientTopper {
+        max-width: 800px;
+        height: 50px;
+        top: -70px;
+        position: relative;
+        background: none;
+        background: linear-gradient(0deg, rgba(var(--v-theme-surface), 1) 0%, rgba(var(--v-theme-surface), 0) 100%);
+    }
+
     .message-input {
         position: absolute;
         bottom: 20px;

@@ -152,7 +152,7 @@ export class MongoDBService {
                     path: 'embedding',
                     filter,
                     queryVector: query.vectorizedQuery,
-                    numCandidates: limit * 15,
+                    numCandidates: limit * 20,
                     limit,
                 },
             },

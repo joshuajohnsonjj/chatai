@@ -3,7 +3,6 @@ import { ref } from 'vue';
 import type { ChatMessageResponse, ChatResponse, ChatThreadResponse } from '../types/responses';
 import { getChatHistory, listChats, sendChatMessage, updateChatDetail } from '../requests/chat';
 import find from 'lodash/find';
-import last from 'lodash/last';
 import { useToast } from 'vue-toastification';
 import { v4 } from 'uuid';
 import { ChatResponseTone, UpdateChatParams } from '../types/chat-store';
@@ -87,7 +86,7 @@ export const useChatStore = defineStore('chat', () => {
             return;
         }
 
-        let thread: ChatThreadResponse;
+        let newOrFoundThread: ChatThreadResponse;
         const threadId = replyingInThreadId.value ?? v4();
 
         const promptMessage: ChatMessageResponse = {
@@ -101,17 +100,17 @@ export const useChatStore = defineStore('chat', () => {
         };
 
         if (replyingInThreadId.value) {
-            thread = find(chatHistory.value, (thread) => thread.threadId === threadId) as ChatThreadResponse;
-            thread.messages.push(promptMessage);
-            thread.totalMessageCount += 1;
+            newOrFoundThread = find(chatHistory.value, (thread) => thread.threadId === threadId) as ChatThreadResponse;
+            newOrFoundThread.messages.push(promptMessage);
+            newOrFoundThread.totalMessageCount += 1;
         } else {
-            thread = {
+            newOrFoundThread = {
                 threadId,
                 totalMessageCount: 1,
                 timestamp: new Date(),
                 messages: [promptMessage],
             };
-            chatHistory.value.push(thread);
+            chatHistory.value.push(newOrFoundThread);
         }
 
         pendingThreadResponseId.value = threadId;
@@ -121,7 +120,7 @@ export const useChatStore = defineStore('chat', () => {
         const aiResponseStream = await sendChatMessage(selectedChat.value.id, {
             userPromptMessageId: promptMessage.id,
             userPromptText: promptMessage.text,
-            threadId: thread.threadId,
+            threadId: newOrFoundThread.threadId,
             systemResponseMessageId: systemRsponseId,
             isReplyMessage: !!replyingInThreadId.value,
             creativitySetting: 8,
@@ -130,12 +129,16 @@ export const useChatStore = defineStore('chat', () => {
             baseInstructions: null,
         });
 
-        thread.messages.push({
+        const threadNdx = chatHistory.value.findIndex(
+            (histThread) => histThread.threadId === newOrFoundThread.threadId,
+        );
+
+        const len = newOrFoundThread.messages.push({
             id: systemRsponseId,
             text: '',
             isSystemMessage: true,
             chatId: selectedChat.value.id,
-            threadId: thread.threadId,
+            threadId: newOrFoundThread.threadId,
             createdAt: new Date(),
         });
 
@@ -148,7 +151,7 @@ export const useChatStore = defineStore('chat', () => {
                 break;
             }
             pendingThreadResponseId.value = null;
-            last(thread.messages)!.text += String.fromCharCode.apply(null, value);
+            chatHistory.value[threadNdx].messages[len - 1].text += String.fromCharCode.apply(null, value);
         }
 
         // TODO: retrieve response data from db to get extra info
