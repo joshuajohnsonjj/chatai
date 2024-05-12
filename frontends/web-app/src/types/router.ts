@@ -3,7 +3,6 @@ export enum RouteName {
     MESSAGES = 'chat-messages',
     SEARCH = 'search',
     SEARCH_RESULT = 'search-result-detail',
-    SUPPORT = 'support',
     DATA_SOURCES = 'data-sources',
     DATA_SOURCE_CONFIG = 'data-source-configure',
     DATA_SOURCE_ADD = 'data-source-add',
@@ -13,7 +12,6 @@ export enum RouteName {
     PLAN_SELECT = 'plan-selection',
     SETTINGS_PROFILE = 'settings-profile',
     SETTINGS_SUBSCRIPTION = 'settings-subscription',
-    SETTINGS_COMMUNICATION = 'settings-communication',
     SETTINGS_CHAT = 'settings-chat',
 }
 

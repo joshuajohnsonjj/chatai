@@ -40,11 +40,6 @@
             metaType: RouteType.SETTINGS,
             routeName: RouteName.SETTINGS_CHAT,
         },
-        {
-            title: 'Communication',
-            metaType: RouteType.SETTINGS,
-            routeName: RouteName.SETTINGS_COMMUNICATION,
-        },
     ];
 </script>
 

@@ -91,6 +91,65 @@
                                 type="password"
                             ></v-text-field>
                         </div>
+                    </div>
+                </v-col>
+            </v-row>
+
+            <v-row class="border-primary rounded pa-6 ma-8">
+                <v-col cols="3">
+                    <div class="text-h6 font-weight-medium text-primary">Communication</div>
+                    <div class="text-body-2 text-secondary">Manage how and when we contact you.</div>
+                </v-col>
+                <v-col cols="9">
+                    <div class="border-primary rounded pa-6 bg-surface-bright">
+                        <div class="w-100 mt-4 d-flex justify-start">
+                            <div class="text-body-1 text-primary">Usage info</div>
+                            <div class="text-body-2 text-primary">Disabled</div>
+                            <v-switch></v-switch>
+                            <div class="text-body-2 text-primary">Enabled</div>
+                        </div>
+
+                        <div class="w-100 mt-4">
+                            <div class="text-body-2 text-primary">New password</div>
+                            <v-text-field
+                                prepend-inner-icon="mdi-lock"
+                                density="compact"
+                                variant="outlined"
+                                type="password"
+                            ></v-text-field>
+                        </div>
+
+                        <div class="mt-5">MFA Enabled/Disabled</div>
+                    </div>
+                </v-col>
+            </v-row>
+
+            <v-row class="border-primary rounded pa-6 ma-8">
+                <v-col cols="3">
+                    <div class="text-h6 font-weight-medium text-primary">Display</div>
+                    <div class="text-body-2 text-secondary">Update aesthetic preferences.</div>
+                </v-col>
+                <v-col cols="9">
+                    <div class="border-primary rounded pa-6 bg-surface-bright">
+                        <div class="w-100 mt-4">
+                            <div class="text-body-2 text-primary">Current password</div>
+                            <v-text-field
+                                prepend-inner-icon="mdi-lock"
+                                density="compact"
+                                variant="outlined"
+                                type="password"
+                            ></v-text-field>
+                        </div>
+
+                        <div class="w-100 mt-4">
+                            <div class="text-body-2 text-primary">New password</div>
+                            <v-text-field
+                                prepend-inner-icon="mdi-lock"
+                                density="compact"
+                                variant="outlined"
+                                type="password"
+                            ></v-text-field>
+                        </div>
 
                         <div class="mt-5">MFA Enabled/Disabled</div>
                     </div>

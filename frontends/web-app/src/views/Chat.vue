@@ -68,68 +68,18 @@
         <div class="d-flex justify-space-between">
             <div style="max-width: 800px" class="mx-auto">
                 <div id="chat-scroll" ref="chatScrollContainer" class="d-flex flex-column mb-6">
-                    <v-sheet
-                        v-for="thread in chatHistory"
-                        :key="thread.threadId"
-                        class="my-2"
-                        :class="{ 'reply-view': thread.threadId === replyingInThreadId }"
-                    >
-                        <div class="bg-background rounded px-6 pt-6">
-                            <div v-for="message in thread.messages" :key="message.id">
-                                <div v-if="!message.isSystemMessage" class="bg-surface-bright rounded py-2 px-4 d-flex">
-                                    <v-avatar image="@/assets/avatar.jpg" size="32"></v-avatar>
-                                    <p class="ml-4 mt-1 me-auto text-body-1 text-primary">{{ message.text }}</p>
-                                    <v-btn
-                                        variant="plain"
-                                        icon="mdi-square-edit-outline"
-                                        color="secondary"
-                                        style="height: 30px; width: 30px"
-                                    ></v-btn>
-                                </div>
-                                <div v-else>
-                                    <div class="d-flex">
-                                        <v-avatar
-                                            image="@/assets/orb.gif"
-                                            size="65"
-                                            class="pt-2"
-                                            style="margin-left: -5px"
-                                        ></v-avatar>
-                                        <div
-                                            class="text-body-1 text-primary mt-4 system-message"
-                                            v-html="markdown(message.text)"
-                                        ></div>
-                                    </div>
+                    <div v-if="!replyingInThreadId">
+                        <v-sheet v-for="thread in chatHistory" :key="thread.threadId" class="my-2">
+                            <MessageThreadDisplay :threadContent="thread" />
 
-                                    <div class="d-flex justify-end">
-                                        <v-btn
-                                            variant="plain"
-                                            color="secondary"
-                                            icon="mdi-content-copy"
-                                            @click="copyToClipboard(message.text)"
-                                        ></v-btn>
-                                        <v-btn
-                                            v-if="message.id === last(thread.messages).id"
-                                            variant="plain"
-                                            color="secondary"
-                                            icon="mdi-chat-outline"
-                                            @click="chatStore.setReplyMode(thread.threadId)"
-                                        ></v-btn>
-                                    </div>
-                                </div>
-                            </div>
+                            <p class="text-caption text-secondary my-2">
+                                {{ dateToString(thread.messages[0].createdAt) }}
+                            </p>
+                        </v-sheet>
+                    </div>
 
-                            <div v-if="pendingThreadResponseId === thread.threadId" class="mt-2">
-                                <v-skeleton-loader
-                                    type="sentences"
-                                    color="background"
-                                    :elevation="1"
-                                ></v-skeleton-loader>
-                            </div>
-                        </div>
-                        <p class="text-caption text-secondary my-2">
-                            {{ dateToString(last(thread.messages).createdAt) }}
-                        </p>
-                    </v-sheet>
+                    <ChatReplyContainer v-else />
+
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
                 </div>
 
@@ -155,27 +105,17 @@
     import { useChatStore } from '../stores/chat';
     import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
     import { useRoute } from 'vue-router';
-    import last from 'lodash/last';
-    import { dateToString } from '../utility';
-    import { markdown } from '../utility/markdown';
     import { useGoTo } from 'vuetify';
-    import { useToast } from 'vue-toastification';
     import debounce from 'lodash/debounce';
+    import { dateToString } from '../utility';
+    import ChatReplyContainer from '../components/chat/ChatReplyContainer.vue';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();
     const route = useRoute();
-    const toast = useToast();
 
-    const {
-        chats,
-        selectedChat,
-        chatHistory,
-        pendingThreadResponseId,
-        replyingInThreadId,
-        isLoading,
-        hasMoreChatHistoryResults,
-    } = storeToRefs(chatStore);
+    const { chats, selectedChat, chatHistory, replyingInThreadId, isLoading, hasMoreChatHistoryResults } =
+        storeToRefs(chatStore);
 
     const editTitle = ref<boolean>(false);
     const editTitleStarted = ref<boolean>(false);
@@ -223,11 +163,6 @@
         onTitleEditCanceled();
     };
 
-    const copyToClipboard = (copyText: string) => {
-        navigator.clipboard.writeText(copyText);
-        toast.success('Content coppied to clipboard!');
-    };
-
     const onArchiveConfirmed = async () => {
         await chatStore.updateChat(selectedChat.value!.id, { isArchived: true });
     };
@@ -267,10 +202,6 @@
     #chat-scroll {
         -ms-overflow-style: none;
         scrollbar-width: none;
-    }
-
-    .reply-view {
-        z-index: 100;
     }
 </style>
 

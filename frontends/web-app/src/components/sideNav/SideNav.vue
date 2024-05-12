@@ -17,7 +17,7 @@
                 :key="option.title"
                 class="d-flex justify-start px-4 rounded mb-3 button-hover"
                 :class="{ selected: $route.meta.type === option.metaType }"
-                @click="navigate(option.routeName)"
+                @click="navigate(option.routeName, option.externalLink)"
             >
                 <v-icon
                     v-if="option.icon !== 'mdi-hub-outline'"
@@ -29,7 +29,7 @@
                 <HubOutline
                     v-else
                     style="width: 24px; height: 45px"
-                    class="hub-icon-pink"
+                    class="icon-pink"
                     :class="{ 'mx-auto': !isMenuExpanded }"
                 />
                 <p v-if="isMenuExpanded" class="pl-4 text-body-1 text-primary" style="line-height: 45px">
@@ -67,8 +67,10 @@
         isMenuExpanded.value = !isMenuExpanded.value;
     };
 
-    const navigate = (routeName: RouteName) => {
-        if (routeName === RouteName.CHAT && selectedChat.value && route.meta.type !== RouteType.CHAT) {
+    const navigate = (routeName?: RouteName, externalLink?: string) => {
+        if (externalLink) {
+            window.open(externalLink, '_blank')!.focus();
+        } else if (routeName === RouteName.CHAT && selectedChat.value && route.meta.type !== RouteType.CHAT) {
             router.push({ name: RouteName.MESSAGES, params: { chatId: selectedChat.value.id } });
             return;
         } else if (routeName === RouteName.CHAT) {

@@ -1,6 +1,6 @@
 <template>
-    <div style="max-width: 800px">
-        <div id="gradientTopper"></div>
+    <div style="max-width: 800px" class="mx-auto">
+        <div v-if="$route.name === RouteName.MESSAGES" id="gradientTopper"></div>
         <v-text-field
             style="max-width: 800px"
             rows="1"
@@ -18,6 +18,7 @@
     import { ref } from 'vue';
     import { useChatStore } from '../../stores/chat';
     import { useGoTo } from 'vuetify';
+    import { RouteName } from '../../types/router';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();

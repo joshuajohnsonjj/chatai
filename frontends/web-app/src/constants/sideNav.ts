@@ -26,8 +26,7 @@ export const menuOptions = [
         title: 'Help & support',
         icon: 'mdi-lifebuoy',
         color: 'warning',
-        metaType: RouteType.SUPPORT,
-        routeName: RouteName.SUPPORT,
+        externalLink: 'https://chatai.freshdesk.com/support/home',
     },
     {
         title: 'Settings',

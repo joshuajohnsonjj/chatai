@@ -12,12 +12,20 @@
             <div class="d-flex justify-start">
                 <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${sourceData.name}.png`" size="80"></v-avatar>
                 <div class="ml-4">
-                    <p v-if="!isAddNew" class="text-h5 text-primary mb-1 font-weight-medium">
-                        {{ formatStringStartCase(sourceData.name ?? '') }} Integration Details
-                    </p>
-                    <p v-else class="text-h5 text-primary mb-1 font-weight-medium">
-                        Add {{ formatStringStartCase(sourceData.name ?? '') }} Integration
-                    </p>
+                    <div class="d-flex justify-start">
+                        <p v-if="!isAddNew" class="text-h5 text-primary mb-1 font-weight-medium">
+                            {{ formatStringStartCase(sourceData.name ?? '') }} Integration Details
+                        </p>
+                        <p v-else class="text-h5 text-primary mb-1 font-weight-medium">
+                            Add {{ formatStringStartCase(sourceData.name ?? '') }} Integration
+                        </p>
+
+                        <HelpBox
+                            class="icon-primary grow-hover button-hover ml-2 pb-6"
+                            style="width: 15px"
+                            @click="openDocs"
+                        />
+                    </div>
 
                     <div v-if="!isAddNew">
                         <p class="text-caption text-secondary sub-info-line-height">
@@ -45,7 +53,14 @@
         <v-row>
             <v-col cols="6">
                 <v-sheet class="border-primary rounded pa-6">
-                    <p class="text-h6 text-primary font-weight-medium">Access management</p>
+                    <div class="d-flex justify-start">
+                        <p class="text-h6 text-primary font-weight-medium">Access management</p>
+                        <HelpBox
+                            class="icon-primary grow-hover button-hover ml-2 pb-6"
+                            style="width: 12px"
+                            @click="openAuthDocs"
+                        />
+                    </div>
                     <p class="text-caption text-secondary" style="max-width: 250px">
                         Your credentials are used to connect to and synchronize the data source
                     </p>
@@ -105,6 +120,7 @@
     import { useRoute } from 'vue-router';
     import moment from 'moment';
     import { useToast } from 'vue-toastification';
+    import { KnowledgeBaseMap } from '../../constants/knowledgeBase';
 
     const props = defineProps<{
         isAddNew: boolean;
@@ -159,4 +175,8 @@
             toast.error(result.message);
         }
     };
+
+    const openDocs = () => window.open(KnowledgeBaseMap[sourceData.value.name as string].root, '_blank')!.focus();
+
+    const openAuthDocs = () => window.open(KnowledgeBaseMap[sourceData.value.name as string].auth, '_blank')!.focus();
 </script>
