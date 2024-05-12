@@ -1,12 +1,16 @@
 <template>
-    <div class="fill-height">
+    <div
+        class="fill-height"
+        ref="navContainer"
+        :class="{ 'is-nav-collapsed': !isMenuExpanded, 'is-nav-expanded': isMenuExpanded }"
+    >
         <div class="d-flex justify-space-between">
             <div v-if="isMenuExpanded" class="text-h4 font-weight-thin text-primary">Apoio</div>
             <div v-else class="text-h4 font-weight-thin text-primary">A</div>
             <NavOpenClose
                 style="width: 25px"
-                class="button-hover"
-                :class="{ 'toggle-menu-btn-rotate': !isMenuExpanded }"
+                class="button-hover mr-4"
+                :class="{ 'toggle-menu-btn-rotate': !isMenuExpanded, 'toggle-menu-btn': isMenuExpanded }"
                 @click="toggleMenu"
             />
         </div>
@@ -15,8 +19,9 @@
             <div
                 v-for="option in menuOptions"
                 :key="option.title"
-                class="d-flex justify-start px-4 rounded mb-3 button-hover"
+                class="d-flex justify-start px-4 mb-3 button-hover"
                 :class="{ selected: $route.meta.type === option.metaType }"
+                :style="`border-color: rgb(var(--v-theme-${option.color}))`"
                 @click="navigate(option.routeName, option.externalLink)"
             >
                 <v-icon
@@ -32,12 +37,12 @@
                     class="icon-pink"
                     :class="{ 'mx-auto': !isMenuExpanded }"
                 />
-                <p v-if="isMenuExpanded" class="pl-4 text-body-1 text-primary" style="line-height: 45px">
+                <p class="pl-4 text-body-1 text-primary nav-item-text" style="line-height: 45px">
                     {{ option.title }}
                 </p>
             </div>
 
-            <HorizontalLine v-if="[RouteType.CHAT, RouteType.SETTINGS].includes($route.meta.type)" />
+            <HorizontalLine v-if="[RouteType.CHAT, RouteType.SETTINGS].includes($route.meta.type)" :mr="4" />
 
             <SideNavChatOptions :mini-mode="!isMenuExpanded" />
             <SideNavSettingsOptions :mini-mode="!isMenuExpanded" />
@@ -50,10 +55,11 @@
 <script lang="ts" setup>
     import { RouteName, RouteType } from '../../types/router';
     import { menuOptions } from '../../constants/sideNav';
-    import { ref } from 'vue';
+    import { computed, ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
     import { useChatStore } from '../../stores/chat';
     import { storeToRefs } from 'pinia';
+    import { NAV_STATE_STORAGE_KEY } from '../../constants';
 
     const router = useRouter();
     const route = useRoute();
@@ -61,10 +67,23 @@
     const chatStore = useChatStore();
     const { selectedChat } = storeToRefs(chatStore);
 
-    const isMenuExpanded = ref(true);
+    const isMenuStaticExpanded = ref(localStorage.getItem(NAV_STATE_STORAGE_KEY) !== '0');
+    const isMenuHoverExpanded = ref(false);
+    const navContainer = ref<HTMLElement | null>(null);
+
+    const isMenuExpanded = computed(() => isMenuStaticExpanded.value || isMenuHoverExpanded.value);
 
     const toggleMenu = () => {
-        isMenuExpanded.value = !isMenuExpanded.value;
+        isMenuStaticExpanded.value = !isMenuStaticExpanded.value;
+        localStorage.setItem(NAV_STATE_STORAGE_KEY, isMenuStaticExpanded.value ? '1' : '0');
+
+        if (!isMenuStaticExpanded.value) {
+            navContainer.value!.addEventListener('mouseover', onNavMouseOver);
+            navContainer.value!.addEventListener('mouseleave', onNavMouseLeave);
+        } else {
+            navContainer.value!.removeEventListener('mouseover', onNavMouseOver);
+            navContainer.value!.removeEventListener('mouseleave', onNavMouseLeave);
+        }
     };
 
     const navigate = (routeName?: RouteName, externalLink?: string) => {
@@ -78,14 +97,49 @@
         }
         router.push({ name: routeName });
     };
+
+    const onNavMouseOver = () => {
+        isMenuHoverExpanded.value = true;
+    };
+
+    const onNavMouseLeave = () => {
+        isMenuHoverExpanded.value = false;
+    };
 </script>
 
 <style scoped>
     .selected {
-        background-color: rgb(var(--v-theme-surface-bright));
+        background-color: rgba(var(--v-theme-surface-bright), 0.5);
+        border-radius: 4px 0 0 4px;
+        border: none;
+        border-right: 4px solid;
     }
 
     .toggle-menu-btn-rotate {
         transform: rotateY(180deg);
+        transition: all 0.5s;
+    }
+
+    .toggle-menu-btn {
+        transform: rotateY(0deg);
+        transition: all 0.5s;
+    }
+
+    .is-nav-expanded {
+        width: 290px;
+        transition: all 0.5s;
+
+        .nav-item-text {
+            display: block;
+        }
+    }
+
+    .is-nav-collapsed {
+        width: 80px;
+        transition: all 0.5s;
+
+        .nav-item-text {
+            display: none;
+        }
     }
 </style>

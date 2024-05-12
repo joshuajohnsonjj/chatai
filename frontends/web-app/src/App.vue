@@ -5,7 +5,7 @@
         </v-main>
         <v-main class="pa-4" v-else>
             <div class="h-100 d-flex justify-start">
-                <div class="mr-4">
+                <div class="">
                     <SideNav />
                 </div>
                 <div class="w-100">

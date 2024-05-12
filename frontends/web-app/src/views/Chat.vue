@@ -80,13 +80,26 @@
 
                     <ChatReplyContainer v-else />
 
+                    <v-fade-transition>
+                        <div
+                            v-if="shouldShowScrollToBottomButton"
+                            id="floating-to-bottom-btn"
+                            class="bg-surface shadow button-hover"
+                            @click="scrollToBottom(300)"
+                        >
+                            <v-icon icon="mdi-chevron-down" size="large" color="primary"></v-icon>
+                        </div>
+                    </v-fade-transition>
+
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
                 </div>
 
                 <MessageInput />
             </div>
 
-            <ChatSettingsSideBar v-if="isChatSettingsOpen" />
+            <v-expand-x-transition>
+                <ChatSettingsSideBar v-if="isChatSettingsOpen" />
+            </v-expand-x-transition>
         </div>
     </div>
 
@@ -122,6 +135,7 @@
     const titleEditField = ref<string>('');
     const isConfirmArchive = ref<boolean>(false);
     const chatScrollContainer = ref<HTMLElement | null>(null);
+    const shouldShowScrollToBottomButton = ref<boolean>(false);
 
     const isChatSettingsOpen = computed(() => route.query.settings === 'true');
 
@@ -145,10 +159,11 @@
         scrollToBottom();
     });
 
-    const scrollToBottom = () => {
+    const scrollToBottom = (duration = 0) => {
         goTo('#bottom-of-chat-scroll', {
             container: '#chat-scroll',
-            duration: 0,
+            duration,
+            easing: 'easeOutQuad',
         });
     };
 
@@ -178,6 +193,15 @@
         ) {
             chatStore.setChatHistory(route.params.chatId as string);
         }
+
+        if (
+            chatScrollContainer.value &&
+            chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop > 1500
+        ) {
+            shouldShowScrollToBottomButton.value = true;
+        } else {
+            shouldShowScrollToBottomButton.value = false;
+        }
     };
 </script>
 
@@ -202,6 +226,14 @@
     #chat-scroll {
         -ms-overflow-style: none;
         scrollbar-width: none;
+    }
+
+    #floating-to-bottom-btn {
+        position: absolute;
+        bottom: 15%;
+        left: 48%;
+        padding: 10px;
+        border-radius: 50%;
     }
 </style>
 

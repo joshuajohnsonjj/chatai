@@ -28,104 +28,114 @@
             ></v-text-field>
         </div>
 
-        <div
-            v-if="isFocused && !!searchText"
-            id="searchPredictionContainer"
-            class="bg-surface rounded w-100 mt-2 pa-4 shadow absolute"
-        >
-            <div class="text-secondary text-caption">CONTENT QUERY</div>
+        <v-fade-transition>
             <div
-                @click="handleParam(0)"
-                class="d-flex mt-1 mb-2 rounded button-hover"
-                :class="{
-                    'bg-surface-bright': perdictionSelectorCurrentIndex === 0,
-                    'pa-2': perdictionSelectorCurrentIndex === 0,
-                }"
+                v-if="isFocused && !!searchText"
+                id="searchPredictionContainer"
+                class="bg-surface rounded w-100 mt-2 pa-4 shadow absolute"
             >
-                <v-icon icon="mdi-magnify"></v-icon>
-                <div class="text-primary text-body-1 ml-2 me-auto">{{ searchText }}</div>
-                <v-icon v-if="perdictionSelectorCurrentIndex === 0" icon="mdi-keyboard-return"></v-icon>
-            </div>
-
-            <HorizontalLine v-if="mappedSuggestionsToType[SearchQueryParamType.TOPIC].length" parent-class="mt-4" />
-
-            <div
-                v-if="mappedSuggestionsToType[SearchQueryParamType.TOPIC].length"
-                class="text-secondary text-caption mt-2"
-            >
-                TOPICS
-            </div>
-            <div
-                v-for="topic in mappedSuggestionsToType[SearchQueryParamType.TOPIC]"
-                :key="topic.value"
-                @click="handleParam(topic.ndx)"
-                class="d-flex mt-1 mb-2 rounded button-hover"
-                :class="{
-                    'bg-surface-bright': perdictionSelectorCurrentIndex === topic.ndx,
-                    'pa-2': perdictionSelectorCurrentIndex === topic.ndx,
-                }"
-            >
-                <div class="bg-surface-bright" style="border-radius: 50%">
-                    <v-icon icon="mdi-pound" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                <div class="text-secondary text-caption">CONTENT QUERY</div>
+                <div
+                    @click="handleParam(0)"
+                    class="d-flex mt-1 mb-2 rounded button-hover"
+                    :class="{
+                        'bg-surface-bright': perdictionSelectorCurrentIndex === 0,
+                        'pa-2': perdictionSelectorCurrentIndex === 0,
+                    }"
+                >
+                    <v-icon icon="mdi-magnify"></v-icon>
+                    <div class="text-primary text-body-1 ml-2 me-auto">{{ searchText }}</div>
+                    <v-icon v-if="perdictionSelectorCurrentIndex === 0" icon="mdi-keyboard-return"></v-icon>
                 </div>
-                <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
-                    {{ prettyPrintTopicValue(topic.value) }}
-                </div>
-                <v-icon v-if="perdictionSelectorCurrentIndex === topic.ndx" icon="mdi-keyboard-return"></v-icon>
-            </div>
 
-            <HorizontalLine v-if="mappedSuggestionsToType[SearchQueryParamType.AUTHOR].length" parent-class="mt-4" />
+                <HorizontalLine v-if="mappedSuggestionsToType[SearchQueryParamType.TOPIC].length" parent-class="mt-4" />
 
-            <div
-                v-if="mappedSuggestionsToType[SearchQueryParamType.AUTHOR].length"
-                class="text-secondary text-caption mt-2"
-            >
-                PEOPLE
-            </div>
-            <div
-                v-for="author in mappedSuggestionsToType[SearchQueryParamType.AUTHOR]"
-                :key="author.value"
-                @click="handleParam(author.ndx)"
-                class="d-flex mt-1 mb-2 rounded button-hover"
-                :class="{
-                    'bg-surface-bright': perdictionSelectorCurrentIndex === author.ndx,
-                    'pa-2': perdictionSelectorCurrentIndex === author.ndx,
-                }"
-            >
-                <div class="bg-surface-bright" style="border-radius: 50%">
-                    <v-icon icon="mdi-account-outline" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                <div
+                    v-if="mappedSuggestionsToType[SearchQueryParamType.TOPIC].length"
+                    class="text-secondary text-caption mt-2"
+                >
+                    TOPICS
                 </div>
-                <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">{{ author.value }}</div>
-                <v-icon v-if="perdictionSelectorCurrentIndex === author.ndx" icon="mdi-keyboard-return"></v-icon>
-            </div>
+                <div
+                    v-for="topic in mappedSuggestionsToType[SearchQueryParamType.TOPIC]"
+                    :key="topic.value"
+                    @click="handleParam(topic.ndx)"
+                    class="d-flex mt-1 mb-2 rounded button-hover"
+                    :class="{
+                        'bg-surface-bright': perdictionSelectorCurrentIndex === topic.ndx,
+                        'pa-2': perdictionSelectorCurrentIndex === topic.ndx,
+                    }"
+                >
+                    <div class="bg-surface-bright" style="border-radius: 50%">
+                        <v-icon icon="mdi-pound" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                    </div>
+                    <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
+                        {{ prettyPrintTopicValue(topic.value) }}
+                    </div>
+                    <v-icon v-if="perdictionSelectorCurrentIndex === topic.ndx" icon="mdi-keyboard-return"></v-icon>
+                </div>
 
-            <HorizontalLine v-if="mappedSuggestionsToType[SearchQueryParamType.SOURCE].length" parent-class="mt-4" />
+                <HorizontalLine
+                    v-if="mappedSuggestionsToType[SearchQueryParamType.AUTHOR].length"
+                    parent-class="mt-4"
+                />
 
-            <div
-                v-if="mappedSuggestionsToType[SearchQueryParamType.SOURCE].length"
-                class="text-secondary text-caption mt-2"
-            >
-                SOURCES
-            </div>
-            <div
-                v-for="source in mappedSuggestionsToType[SearchQueryParamType.SOURCE]"
-                :key="source.value"
-                @click="handleParam(source.ndx)"
-                class="d-flex mt-1 mb-2 rounded button-hover"
-                :class="{
-                    'bg-surface-bright': perdictionSelectorCurrentIndex === source.ndx,
-                    'pa-2': perdictionSelectorCurrentIndex === source.ndx,
-                }"
-            >
-                <div class="bg-surface-bright" style="border-radius: 50%">
-                    <v-icon icon="mdi-cloud-outline" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                <div
+                    v-if="mappedSuggestionsToType[SearchQueryParamType.AUTHOR].length"
+                    class="text-secondary text-caption mt-2"
+                >
+                    PEOPLE
                 </div>
-                <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
-                    {{ formatStringStartCase(source.value) }}
+                <div
+                    v-for="author in mappedSuggestionsToType[SearchQueryParamType.AUTHOR]"
+                    :key="author.value"
+                    @click="handleParam(author.ndx)"
+                    class="d-flex mt-1 mb-2 rounded button-hover"
+                    :class="{
+                        'bg-surface-bright': perdictionSelectorCurrentIndex === author.ndx,
+                        'pa-2': perdictionSelectorCurrentIndex === author.ndx,
+                    }"
+                >
+                    <div class="bg-surface-bright" style="border-radius: 50%">
+                        <v-icon icon="mdi-account-outline" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                    </div>
+                    <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
+                        {{ author.value }}
+                    </div>
+                    <v-icon v-if="perdictionSelectorCurrentIndex === author.ndx" icon="mdi-keyboard-return"></v-icon>
                 </div>
-                <v-icon v-if="perdictionSelectorCurrentIndex === source.ndx" icon="mdi-keyboard-return"></v-icon>
+
+                <HorizontalLine
+                    v-if="mappedSuggestionsToType[SearchQueryParamType.SOURCE].length"
+                    parent-class="mt-4"
+                />
+
+                <div
+                    v-if="mappedSuggestionsToType[SearchQueryParamType.SOURCE].length"
+                    class="text-secondary text-caption mt-2"
+                >
+                    SOURCES
+                </div>
+                <div
+                    v-for="source in mappedSuggestionsToType[SearchQueryParamType.SOURCE]"
+                    :key="source.value"
+                    @click="handleParam(source.ndx)"
+                    class="d-flex mt-1 mb-2 rounded button-hover"
+                    :class="{
+                        'bg-surface-bright': perdictionSelectorCurrentIndex === source.ndx,
+                        'pa-2': perdictionSelectorCurrentIndex === source.ndx,
+                    }"
+                >
+                    <div class="bg-surface-bright" style="border-radius: 50%">
+                        <v-icon icon="mdi-cloud-outline" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                    </div>
+                    <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
+                        {{ formatStringStartCase(source.value) }}
+                    </div>
+                    <v-icon v-if="perdictionSelectorCurrentIndex === source.ndx" icon="mdi-keyboard-return"></v-icon>
+                </div>
             </div>
-        </div>
+        </v-fade-transition>
     </div>
 </template>
 

@@ -1,6 +1,10 @@
 <template>
     <div class="w-100 relative" :class="parentClass">
-        <div class="horizantile-line" :style="`border-width: ${thinkness ?? '1px'}`"></div>
+        <div
+            class="horizantile-line"
+            :class="`${mr ? 'mr-' + mr : ''} ${ml ? 'ml-' + ml : ''}`"
+            :style="`border-width: ${thinkness ?? '1px'}`"
+        ></div>
         <div v-if="withText" class="line-text-overlay text-center bg-background">{{ withText }}</div>
     </div>
 </template>
@@ -10,6 +14,8 @@
         withText?: string;
         parentClass?: string;
         thinkness?: string;
+        mr?: number;
+        ml?: number;
     }>();
 </script>
 

@@ -1,5 +1,9 @@
 <template>
-    <DialogModal max-width="500px" :is-open="isModalOpen" @modal-change="(open: boolean) => (isModalOpen = open)" />
+    <RequestIntegrationModal
+        max-width="500px"
+        :is-open="isModalOpen"
+        @modal-change="(open: boolean) => (isModalOpen = open)"
+    />
 
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
         <v-btn
@@ -16,7 +20,7 @@
                 clear-icon="mdi-close"
                 prepend-inner-icon="mdi-magnify"
                 variant="outlined"
-                placeholder="Search integrations..."
+                placeholder="Filter integration options..."
                 v-model="searchText"
             ></v-text-field>
             <div class="w-50 border-primary rounded ml-4 px-4 py-2 d-flex justify-space-between">
@@ -80,8 +84,11 @@
                 </div>
             </div>
         </div>
+        <div v-if="isLoading.dataSourceOptions" class="d-flex justify-center">
+            <v-progress-circular class="mt-8" color="secondary" :size="80" indeterminate></v-progress-circular>
+        </div>
         <div
-            v-if="filteredDataSourceOptions.length"
+            v-else-if="filteredDataSourceOptions.length"
             class="ml-2 mt-2 link button-hover text-secondary text-caption"
             @click="isModalOpen = true"
         >
@@ -125,7 +132,7 @@
     const searchText = ref<string>('');
 
     const dataSourceStore = useDataSourceStore();
-    const { dataSourceOptions } = storeToRefs(dataSourceStore);
+    const { dataSourceOptions, isLoading } = storeToRefs(dataSourceStore);
 
     const router = useRouter();
 

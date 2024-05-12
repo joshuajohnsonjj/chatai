@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 import type {
     DataSourceConnectionsResponse,
     DataSourceTypesResponse,
@@ -12,12 +12,20 @@ export const useDataSourceStore = defineStore('dataSource', () => {
     const connections = ref<DataSourceConnectionsResponse[]>([]);
     const dataSourceOptions = ref<DataSourceTypesResponse[]>([]);
     const dataSourceCategoryToOptionsMap = ref<Record<string, string[]>>({});
+    const isLoading = ref({
+        dataSourceConnections: false,
+        dataSourceOptions: false,
+    });
 
     const retreiveConnections = async () => {
+        isLoading.value.dataSourceConnections = true;
         connections.value = await listDataSourceConnections();
+        isLoading.value.dataSourceConnections = false;
     };
 
     const retreiveDataSourceOptions = async () => {
+        isLoading.value.dataSourceOptions = true;
+
         if (!connections.value.length) {
             await retreiveConnections();
         }
@@ -34,6 +42,8 @@ export const useDataSourceStore = defineStore('dataSource', () => {
                 dataSourceCategoryToOptionsMap.value[option.category] = [option.name];
             }
         });
+
+        isLoading.value.dataSourceOptions = false;
     };
 
     const testDataSourceCredential = async (
@@ -56,6 +66,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         connections,
         dataSourceOptions,
         dataSourceCategoryToOptionsMap,
+        isLoading,
         retreiveConnections,
         retreiveDataSourceOptions,
         testDataSourceCredential,
