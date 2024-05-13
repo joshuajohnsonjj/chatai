@@ -22,3 +22,4 @@ Deploying Layer:
     - dev dependancies (`typescript`, `@types`, `prettier`)
 ***OR*** Can just copy changed dependancy directly out of `node_modules` and replace in `/nodejs/node20`
 1. upload to s3, create new layer version, update layer version on functions
+- layer config: x86_64, nodejs 20

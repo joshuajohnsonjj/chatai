@@ -59,4 +59,5 @@ export type DataElementVectorInput = { vectorizedQuery: number[] } & DataElement
 export enum IndexName {
     VECTOR = 'vector_index',
     TOPIC_SEARCH = 'label_search',
+    AUTHOR_SEARCH = 'author_search',
 }

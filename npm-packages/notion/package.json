@@ -1,6 +1,6 @@
 {
   "name": "@joshuajohnsonjj38/notion",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc"

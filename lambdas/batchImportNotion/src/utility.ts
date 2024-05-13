@@ -91,6 +91,7 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
     const allChildren: NotionBlock[] = [rootBlock];
 
     const collectChildren = async (block: NotionBlock): Promise<void> => {
+        // TODO: remove this log.. not useful, creates alot of noise
         console.log(`collecting children for ${block.id}`);
 
         if (block.has_children) {
@@ -129,7 +130,6 @@ export const publishBlockData = async (
     entityId: string,
     author: CachedUser | null,
 ): Promise<void> => {
-    console.log(aggregatedBlockText)
     if (!aggregatedBlockText || !aggregatedBlockText.length) {
         return;
     }
@@ -147,33 +147,26 @@ export const publishBlockData = async (
     ]);
     const annotationLabels = [...annotations.categories, ...annotations.entities];
 
-    console.log({
-        _id: parentBlock.id,
-        ownerEntityId: entityId,
-        text: cleanedAggregatedText,
-        title: pageTitle,
-        embedding,
-        createdAt: new Date(parentBlock.last_edited_time).getTime(),
-        url: getBlockUrl(pageUrl, parentBlock.id),
-        annotations: annotationLabels,
-        dataSourceType: NOTION_DATA_SOURCE_NAME,
-        author: author ?? undefined,
-    });
-    // await Promise.all([
-    //     mongo.writeLabels(annotationLabels, entityId),
-    //     mongo.writeDataElements({
-    //         _id: parentBlock.id,
-    //         ownerEntityId: entityId,
-    //         text: cleanedAggregatedText,
-    //         title: pageTitle,
-    //         embedding,
-    //         createdAt: new Date(parentBlock.last_edited_time).getTime(),
-    //         url: getBlockUrl(pageUrl, parentBlock.id),
-    //         annotations: annotationLabels,
-    //         dataSourceType: NOTION_DATA_SOURCE_NAME,
-    //         author: author ?? undefined,
-    //     }),
-    // ]);
+    await Promise.all([
+        author ? mongo.writeAuthors({
+            name: author.name,
+            email: author.email,
+            entityId,
+        }) : Promise.resolve(),
+        mongo.writeLabels(annotationLabels, entityId),
+        mongo.writeDataElements({
+            _id: parentBlock.id,
+            ownerEntityId: entityId,
+            text: cleanedAggregatedText,
+            title: pageTitle,
+            embedding,
+            createdAt: new Date(parentBlock.last_edited_time).getTime(),
+            url: getBlockUrl(pageUrl, parentBlock.id),
+            annotations: annotationLabels,
+            dataSourceType: NOTION_DATA_SOURCE_NAME,
+            author: author ?? undefined,
+        }),
+    ]);
 };
 
 export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {

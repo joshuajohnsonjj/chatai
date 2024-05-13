@@ -193,16 +193,17 @@ export class MongoDBService {
     /**
      * Performs an upsert operation based on combination of org id and author name
      */
-    public async writeAuthors(data: MongoAuthorCollectionDoc): Promise<void> {
-        await this.authorCollConnection.replaceOne({ organizationId: data.entityId, name: data.name }, data, {
+    public async writeAuthors(data: Omit<MongoAuthorCollectionDoc, '_id'>): Promise<void> {
+        await this.authorCollConnection.replaceOne({ entityId: data.entityId, name: data.name }, data, {
             upsert: true,
         });
     }
 
-    public async searchAuthorOptions(text: string, entityId: string): Promise<{ name: string }[]> {
+    public async searchAuthorOptions(name: string, entityId: string, limit = 5): Promise<(Pick<MongoAuthorCollectionDoc, '_id' | 'name'> & { score: number })[]> {
         const pipeline = [
             {
                 $search: {
+                    index: IndexName.AUTHOR_SEARCH,
                     compound: {
                         must: [
                             {
@@ -214,24 +215,32 @@ export class MongoDBService {
                         ],
                         should: [
                             {
-                                text: {
-                                    query: text,
+                                autocomplete: {
+                                    query: name,
                                     path: 'name',
+                                    fuzzy: {
+                                        maxEdits: 1,
+                                        prefixLength: 1,
+                                    },
                                 },
                             },
                         ],
                     },
                 },
             },
+            { $limit: limit },
             {
                 $project: {
-                    name: 1,
+                    label: 1,
                     score: { $meta: 'searchScore' },
                 },
             },
         ];
+
         const cursor = this.authorCollConnection.aggregate(pipeline);
-        return (await cursor.toArray()) as { name: string }[];
+        return (await cursor.toArray()) as (Pick<MongoAuthorCollectionDoc, '_id' | 'name'> & {
+            score: number;
+        })[];
     }
 
     /**

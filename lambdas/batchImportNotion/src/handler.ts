@@ -23,8 +23,8 @@ dotenv.config({ path: __dirname + '/../../../../.env' });
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 
 const notionAuthors: { [notionUserId: string]: CachedUser } = {};
-const getBlockAuthor = async (notionAPI: NotionWrapper, author: NotionAuthorAttribution): Promise<CachedUser | null> => {
-    if (author.object !== 'user') {
+const getBlockAuthor = async (notionAPI: NotionWrapper, author?: NotionAuthorAttribution): Promise<CachedUser | null> => {
+    if (!author || author.object !== 'user') {
         return null;
     }
 
@@ -63,44 +63,37 @@ const processBlockList = async (
     pageTitle: string,
 ) => {
     let builtBlocksTextString = '';
-    let connectedBlocks: NotionBlock[] = [];
+    let connectedBlocks: NotionBlock[] = []; // TODO: problably dont need whole obj? ineficient memeory...
 
     for (const parentBlock of blocks) {
         if (parentBlock.in_trash) {
             // TODO: check if we have this data saved and remove it
             continue;
-        } else if (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) {
-            if (!connectedBlocks.length) {
-                continue;
-            }
-
-            // if we hit a block type that is not in importable list or a newline and our current
-            // block list is non empty, publish this group
+        } else if (
+            (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) &&
+            connectedBlocks.length
+        ) {
             const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
             await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
             builtBlocksTextString = '';
             connectedBlocks = [];
             continue;
+        } else if (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) {
+            continue;
         } else if (!shouldConnectToCurrentBlockGroup(connectedBlocks, parentBlock)) {
-            if (!connectedBlocks.length) {
-                continue;
-            }
-
-            const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
+            const author = await getBlockAuthor(notionAPI, connectedBlocks[0]?.last_edited_by);
             await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
             builtBlocksTextString = '';
             connectedBlocks = [];
         }
 
-        // For tables and column lists, always traverse the whole thing to publish all importable content as one
         if (parentBlock.type === NotionBlockType.TABLE) {
             const aggregatedNestedBlocks: NotionBlock[] = await collectAllChildren(parentBlock, notionAPI);
             const aggregatedBlockText = getTextFromTable(
                 aggregatedNestedBlocks.slice(1),
                 parentBlock[parentBlock.type] as NotionTable,
             );
-            const author = await getBlockAuthor(notionAPI, parentBlock.last_edited_by);
-            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, entityId, author);
+            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, entityId, null);
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
             const columnBlocks = await notionAPI.listPageBlocks(parentBlock.id, null);
             await Promise.all(
@@ -115,7 +108,6 @@ const processBlockList = async (
                 }),
             );
         } else {
-            // if not table or column list get children of current block and continue traversing page
             const aggregatedNestedBlocks: NotionBlock[] = await collectAllChildren(parentBlock, notionAPI);
             builtBlocksTextString += aggregatedNestedBlocks.map((block) => getTextFromBlock(block)).join('\n');
             builtBlocksTextString += '. ';
@@ -125,7 +117,6 @@ const processBlockList = async (
 
     // publish anything else left at the end of traversal
     if (connectedBlocks.length) {
-        console.log(6)
         const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
         await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
     }
@@ -220,6 +211,5 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
         // });
     }
 
-    console.log('DONE');
     return { success: true };
 };
