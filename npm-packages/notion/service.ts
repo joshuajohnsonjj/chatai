@@ -7,6 +7,9 @@ import {
     NotionBlockDetailResponse,
 } from './types';
 
+// TODO:
+// - ensure topics are cleaned
+
 export class NotionWrapper {
     private readonly secret: string;
 
@@ -17,7 +20,7 @@ export class NotionWrapper {
     public testConnection = async (): Promise<boolean> => {
         try {
             await this.sendHttpRequest({
-                method: NotionEndpointMethods.SEARCH,
+                method: 'post',
                 baseURL: NotionBaseUrl,
                 url: NotionEndpoints.SEARCH,
                 headers: {
@@ -52,7 +55,7 @@ export class NotionWrapper {
         }
 
         const resp = await this.sendHttpRequest({
-            method: NotionEndpointMethods.SEARCH,
+            method: 'post',
             baseURL: NotionBaseUrl,
             url: NotionEndpoints.SEARCH,
             headers: {
@@ -85,7 +88,7 @@ export class NotionWrapper {
 
     public getUserInfo = async (userId: string): Promise<NotionUserDetailResponse> => {
         const resp = await this.sendHttpRequest({
-            method: NotionEndpointMethods.USER_DETAIL,
+            method: 'get',
             baseURL: NotionBaseUrl,
             url: NotionEndpoints.USER_DETAIL(userId),
             headers: {

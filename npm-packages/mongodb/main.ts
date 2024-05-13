@@ -194,7 +194,7 @@ export class MongoDBService {
      * Performs an upsert operation based on combination of org id and author name
      */
     public async writeAuthors(data: MongoAuthorCollectionDoc): Promise<void> {
-        await this.authorCollConnection.replaceOne({ organizationId: data.organizationId, name: data.name }, data, {
+        await this.authorCollConnection.replaceOne({ organizationId: data.entityId, name: data.name }, data, {
             upsert: true,
         });
     }

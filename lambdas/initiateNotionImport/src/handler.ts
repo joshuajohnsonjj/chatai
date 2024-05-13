@@ -32,7 +32,7 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
     while (!isComplete) {
         const resp = await notionService.listPages(nextCursor);
 
-        console.log(`Retrieved page ${ndx++} of results for data source ${data.dataSourceId}`);
+        console.log(`Retrieved page batch ${ndx++} of results for data source ${data.dataSourceId}`);
 
         resp.results.forEach((page) => {
             // Only process pages created/edited since last sync
@@ -61,6 +61,9 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
         }
     }
 
+    console.log(`Done getting pages for for data source ${data.dataSourceId}, publishing sqs message batches...`);
+
+    // Set is final true on last message entry for job completion handling
     messageBatchEntries[messageBatchEntries.length - 1].MessageBody = JSON.stringify({
         ...JSON.parse(messageBatchEntries[messageBatchEntries.length - 1].MessageBody as string),
         isFinal: true,

@@ -12,11 +12,13 @@ import type {
     NotionToDo,
     NotionWrapper,
 } from '@joshuajohnsonjj38/notion';
-import { JoinableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
+import { ImportableBlockTypes, JoinableBlockTypes, NotionBlockType, getBlockUrl } from '@joshuajohnsonjj38/notion';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
 import { NOTION_DATA_SOURCE_NAME } from './constants';
+import { cleanExcessWhitespace, isEmptyContent } from '../../lib/helper';
+import { CachedUser } from './types';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
@@ -89,6 +91,8 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
     const allChildren: NotionBlock[] = [rootBlock];
 
     const collectChildren = async (block: NotionBlock): Promise<void> => {
+        console.log(`collecting children for ${block.id}`);
+
         if (block.has_children) {
             const children: NotionBlock[] = [];
             let isComplete = false;
@@ -96,9 +100,10 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
 
             while (!isComplete) {
                 const blockResponse: NotionBlockDetailResponse = await notionAPI.listPageBlocks(block.id, nextCursor);
-                children.push(...blockResponse.results);
+                const filteredChildren = blockResponse.results.filter((block) => ImportableBlockTypes.includes(block.type));
+                children.push(...filteredChildren);
 
-                isComplete = !blockResponse.has_more;
+                isComplete = !blockResponse.has_more || filteredChildren.length === 0;
                 nextCursor = blockResponse.next_cursor;
             }
 
@@ -122,39 +127,51 @@ export const publishBlockData = async (
     pageTitle: string,
     pageUrl: string,
     entityId: string,
+    author: CachedUser | null,
 ): Promise<void> => {
+    console.log(aggregatedBlockText)
     if (!aggregatedBlockText || !aggregatedBlockText.length) {
         return;
     }
 
-    const text = `Page Title: ${pageTitle}, Page Excerpt: ${aggregatedBlockText}`;
+    const cleanedAggregatedText = cleanExcessWhitespace(aggregatedBlockText);
+
+    if (isEmptyContent(cleanedAggregatedText)) {
+        return;
+    }
+
+    const fullTextWithTitle = `Page Title: ${pageTitle}, Page Excerpt: ${cleanedAggregatedText}`;
     const [embedding, annotations] = await Promise.all([
-        gemini.getTextEmbedding(aggregatedBlockText),
-        gemini.getTextAnnotation(aggregatedBlockText),
+        gemini.getTextEmbedding(fullTextWithTitle),
+        gemini.getTextAnnotation(cleanedAggregatedText),
     ]);
     const annotationLabels = [...annotations.categories, ...annotations.entities];
 
     console.log({
         _id: parentBlock.id,
         ownerEntityId: entityId,
-        text,
+        text: cleanedAggregatedText,
+        title: pageTitle,
         embedding,
-        createdAt: new Date().getTime(),
-        url: pageUrl,
+        createdAt: new Date(parentBlock.last_edited_time).getTime(),
+        url: getBlockUrl(pageUrl, parentBlock.id),
         annotations: annotationLabels,
         dataSourceType: NOTION_DATA_SOURCE_NAME,
+        author: author ?? undefined,
     });
     // await Promise.all([
     //     mongo.writeLabels(annotationLabels, entityId),
     //     mongo.writeDataElements({
     //         _id: parentBlock.id,
     //         ownerEntityId: entityId,
-    //         text,
+    //         text: cleanedAggregatedText,
+    //         title: pageTitle,
     //         embedding,
-    //         createdAt: new Date().getTime(),
-    //         url: pageUrl,
+    //         createdAt: new Date(parentBlock.last_edited_time).getTime(),
+    //         url: getBlockUrl(pageUrl, parentBlock.id),
     //         annotations: annotationLabels,
     //         dataSourceType: NOTION_DATA_SOURCE_NAME,
+    //         author: author ?? undefined,
     //     }),
     // ]);
 };

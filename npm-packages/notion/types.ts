@@ -29,8 +29,8 @@ export interface NotionPageDetailResponse {
     id: string;
     created_time: string;
     last_edited_time: string;
-    created_by: { object: 'user'; id: string };
-    last_edited_by: { object: 'user'; id: string };
+    created_by: NotionAuthorAttribution;
+    last_edited_by: NotionAuthorAttribution;
     parent: {
         type: string;
         database_id: string;
@@ -97,18 +97,17 @@ export enum NotionBlockType {
     TOGGLE = 'toggle',
 }
 
+export interface NotionAuthorAttribution {
+    object: 'user' | 'bot';
+    id: string;
+}
+
 export interface NotionBlock {
     id: string;
     created_time: string;
     last_edited_time: string;
-    created_by: {
-        object: 'user';
-        id: string;
-    };
-    last_edited_by: {
-        object: 'user';
-        id: string;
-    };
+    created_by: NotionAuthorAttribution;
+    last_edited_by: NotionAuthorAttribution
     has_children: boolean;
     archived: boolean;
     in_trash: boolean;
