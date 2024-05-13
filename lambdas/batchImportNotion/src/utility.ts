@@ -101,7 +101,9 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
 
             while (!isComplete) {
                 const blockResponse: NotionBlockDetailResponse = await notionAPI.listPageBlocks(block.id, nextCursor);
-                const filteredChildren = blockResponse.results.filter((block) => ImportableBlockTypes.includes(block.type));
+                const filteredChildren = blockResponse.results.filter((block) =>
+                    ImportableBlockTypes.includes(block.type),
+                );
                 children.push(...filteredChildren);
 
                 isComplete = !blockResponse.has_more || filteredChildren.length === 0;
@@ -148,11 +150,13 @@ export const publishBlockData = async (
     const annotationLabels = [...annotations.categories, ...annotations.entities];
 
     await Promise.all([
-        author ? mongo.writeAuthors({
-            name: author.name,
-            email: author.email,
-            entityId,
-        }) : Promise.resolve(),
+        author
+            ? mongo.writeAuthors({
+                  name: author.name,
+                  email: author.email,
+                  entityId,
+              })
+            : Promise.resolve(),
         mongo.writeLabels(annotationLabels, entityId),
         mongo.writeDataElements({
             _id: parentBlock.id,

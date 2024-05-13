@@ -1,5 +1,10 @@
 import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
-import type { NotionBlock, NotionBlockDetailResponse, NotionTable, NotionAuthorAttribution } from '@joshuajohnsonjj38/notion';
+import type {
+    NotionBlock,
+    NotionBlockDetailResponse,
+    NotionTable,
+    NotionAuthorAttribution,
+} from '@joshuajohnsonjj38/notion';
 import type { Handler, SQSEvent } from 'aws-lambda';
 import {
     collectAllChildren,
@@ -23,7 +28,10 @@ dotenv.config({ path: __dirname + '/../../../../.env' });
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 
 const notionAuthors: { [notionUserId: string]: CachedUser } = {};
-const getBlockAuthor = async (notionAPI: NotionWrapper, author?: NotionAuthorAttribution): Promise<CachedUser | null> => {
+const getBlockAuthor = async (
+    notionAPI: NotionWrapper,
+    author?: NotionAuthorAttribution,
+): Promise<CachedUser | null> => {
     if (!author || author.object !== 'user') {
         return null;
     }
@@ -74,7 +82,15 @@ const processBlockList = async (
             connectedBlocks.length
         ) {
             const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
-            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
+            await publishBlockData(
+                mongo,
+                builtBlocksTextString,
+                connectedBlocks[0],
+                pageTitle,
+                pageUrl,
+                entityId,
+                author,
+            );
             builtBlocksTextString = '';
             connectedBlocks = [];
             continue;
@@ -82,7 +98,15 @@ const processBlockList = async (
             continue;
         } else if (!shouldConnectToCurrentBlockGroup(connectedBlocks, parentBlock)) {
             const author = await getBlockAuthor(notionAPI, connectedBlocks[0]?.last_edited_by);
-            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
+            await publishBlockData(
+                mongo,
+                builtBlocksTextString,
+                connectedBlocks[0],
+                pageTitle,
+                pageUrl,
+                entityId,
+                author,
+            );
             builtBlocksTextString = '';
             connectedBlocks = [];
         }
@@ -104,7 +128,15 @@ const processBlockList = async (
                         .map((block) => getTextFromBlock(block))
                         .join('\n');
                     const author = await getBlockAuthor(notionAPI, columnBlockParent.last_edited_by);
-                    await publishBlockData(mongo, aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, entityId, author);
+                    await publishBlockData(
+                        mongo,
+                        aggregatedBlockText,
+                        columnBlockParent,
+                        pageTitle,
+                        pageUrl,
+                        entityId,
+                        author,
+                    );
                 }),
             );
         } else {

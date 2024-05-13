@@ -107,7 +107,7 @@ export interface NotionBlock {
     created_time: string;
     last_edited_time: string;
     created_by: NotionAuthorAttribution;
-    last_edited_by: NotionAuthorAttribution
+    last_edited_by: NotionAuthorAttribution;
     has_children: boolean;
     archived: boolean;
     in_trash: boolean;

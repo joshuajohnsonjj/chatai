@@ -199,7 +199,11 @@ export class MongoDBService {
         });
     }
 
-    public async searchAuthorOptions(name: string, entityId: string, limit = 5): Promise<(Pick<MongoAuthorCollectionDoc, '_id' | 'name'> & { score: number })[]> {
+    public async searchAuthorOptions(
+        name: string,
+        entityId: string,
+        limit = 5,
+    ): Promise<(Pick<MongoAuthorCollectionDoc, '_id' | 'name'> & { score: number })[]> {
         const pipeline = [
             {
                 $search: {

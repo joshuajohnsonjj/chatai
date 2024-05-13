@@ -16,8 +16,6 @@ export const isValidMessageBody = (body: GoogleDriveSQSMessageBody): boolean => 
     ) {
         return true;
     }
-    if ('isFinal' in body && typeof body.isFinal === 'boolean' && typeof body.dataSourceId === 'string') {
-        return true;
-    }
+
     return false;
 };

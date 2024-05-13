@@ -7,14 +7,14 @@ import {
     GoogleDriveService,
     buildPayloadTextsFile,
 } from '@joshuajohnsonjj38/google-drive';
-import { GeminiService } from '@joshuajohnsonjj38/openai';
+import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { DataSourceTypeName } from '@prisma/client';
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: __dirname + '/../../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
-const openAI = new GeminiService(process.env.GEMINI_KEY as string);
+const gemini = new GeminiService(process.env.GEMINI_KEY as string);
 
 const processFile = async (
     mongo: MongoDBService,
@@ -24,42 +24,65 @@ const processFile = async (
     fileUrl: string,
     fileName: string,
     modifiedDate: string,
+    authorName?: string,
+    authorEmail?: string,
 ) => {
     const fileContent = await googleAPI.getFileContent(fileId);
-    const text = buildPayloadTextsFile(fileName, fileContent);
-    // const payload: QdrantPayload = {
-    //     date: new Date(modifiedDate).getTime(),
-    //     dataSource: QdrantDataSource.GOOGLE_DRIVE,
-    //     ownerId: ownerEntityId,
-    // };
+    const textChunks = buildPayloadTextsFile(fileContent);
 
-    const embedding = await openAI.getTextEmbedding(text);
-    const annotations = await openAI.getTextAnnotation(text);
-    await mongo.writeDataElements([
-        {
-            _id: fileId,
-            ownerEntityId,
-            text,
-            embedding,
-            createdAt: new Date(modifiedDate).getTime(),
-            url: fileUrl,
-            // FIXME: get author
-            // authorName?: string;
-            // authorRef?: string;
-            annotations: [...annotations.categories, ...annotations.entities],
-            dataSourceType: DataSourceTypeName.GOOGLE_DRIVE,
-        },
-    ]);
-    // await Promise.all([
-    //     qdrant.upsert(fileId, embedding, payload),
-    //     dynamo.putItem({
-    //         id: fileId,
-    //         ownerEntityId,
-    //         text,
-    //         createdAt: new Date().toISOString(),
-    //         url: fileUrl,
-    //     }),
-    // ]);
+    // wipe any previous entries for this page
+    // await mongo.elementCollConnection.deleteMany({
+    //     fileId,
+    //     ownerEntityId,
+    // });
+
+    let ndx = 0;
+
+    await Promise.all(
+        textChunks.map(async (chunk) => {
+            const embedding = await gemini.getTextEmbedding(chunk);
+            const annotations = await gemini.getTextAnnotation(chunk);
+
+            console.log({
+                _id: `${fileId}-${ndx}`,
+                ownerEntityId,
+                text: chunk,
+                title: fileName,
+                embedding,
+                createdAt: new Date(modifiedDate).getTime(),
+                url: fileUrl,
+                author:
+                    authorName && authorEmail
+                        ? {
+                              name: authorName,
+                              email: authorEmail,
+                          }
+                        : undefined,
+                annotations: [...annotations.categories, ...annotations.entities],
+                dataSourceType: DataSourceTypeName.GOOGLE_DRIVE,
+                fileId,
+                filePartIndex: ndx,
+            });
+
+            ndx += 1;
+
+            // await mongo.writeDataElements({
+            //     _id: fileId,
+            //     ownerEntityId,
+            //     text,
+            //     title: fileName,
+            //     embedding,
+            //     createdAt: new Date(modifiedDate).getTime(),
+            //     url: fileUrl,
+            //     author: authorName && authorEmail ? {
+            //         name: authorName,
+            //         email: authorEmail,
+            //     } : undefined,
+            //     annotations: [...annotations.categories, ...annotations.entities],
+            //     dataSourceType: DataSourceTypeName.GOOGLE_DRIVE,
+            // });
+        }),
+    );
 };
 
 /**
@@ -85,7 +108,6 @@ export const handler: Handler = async (event: SQSEvent) => {
 
         if (messageBody.isFinal) {
             completedDataSources.push(messageBody);
-            continue;
         }
 
         const googleKey = rsaService.decrypt(messageBody.secret);
@@ -100,29 +122,13 @@ export const handler: Handler = async (event: SQSEvent) => {
                 messageBody.fileUrl,
                 messageBody.fileName,
                 messageBody.modifiedDate,
+                messageBody.authorName,
+                messageBody.authorEmail,
             ),
         );
     }
 
     await Promise.all(processingFilePromises);
 
-    // if (completedDataSources.length) {
-    //     console.log('Sync completed ofr data source records:', completedDataSources);
-
-    //     await Promise.all([
-    //         prisma.dataSource.updateMany({
-    //             where: {
-    //                 id: {
-    //                     in: completedDataSources.map((message) => message.dataSourceId),
-    //                 },
-    //             },
-    //             data: {
-    //                 lastSync: new Date(),
-    //                 isSyncing: false,
-    //                 updatedAt: new Date(),
-    //             },
-    //         }),
-    //         createWebhookConnections(completedDataSources),
-    //     ]);
-    // }
+    // TODO: complete sources req
 };

@@ -18,6 +18,10 @@ export interface MongoDataElementCollectionDoc {
     // slack specific fields
     slackChannelId?: string;
     slackChannelName?: string;
+
+    // google drive specific fields
+    fileId?: string;
+    filePartIndex?: number;
 }
 
 export interface MongoAuthorCollectionDoc {
