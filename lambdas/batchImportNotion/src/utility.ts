@@ -18,7 +18,7 @@ import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
 import { NOTION_DATA_SOURCE_NAME } from './constants';
 
-dotenv.config({ path: __dirname + '/../../.env' });
+dotenv.config({ path: __dirname + '/../../../../.env' });
 
 const gemini = new GeminiService(process.env.GEMINI_KEY as string);
 
@@ -134,19 +134,29 @@ export const publishBlockData = async (
     ]);
     const annotationLabels = [...annotations.categories, ...annotations.entities];
 
-    await Promise.all([
-        mongo.writeLabels(annotationLabels, entityId),
-        mongo.writeDataElements({
-            _id: parentBlock.id,
-            ownerEntityId: entityId,
-            text,
-            embedding,
-            createdAt: new Date().getTime(),
-            url: pageUrl,
-            annotations: annotationLabels,
-            dataSourceType: NOTION_DATA_SOURCE_NAME,
-        }),
-    ]);
+    console.log({
+        _id: parentBlock.id,
+        ownerEntityId: entityId,
+        text,
+        embedding,
+        createdAt: new Date().getTime(),
+        url: pageUrl,
+        annotations: annotationLabels,
+        dataSourceType: NOTION_DATA_SOURCE_NAME,
+    });
+    // await Promise.all([
+    //     mongo.writeLabels(annotationLabels, entityId),
+    //     mongo.writeDataElements({
+    //         _id: parentBlock.id,
+    //         ownerEntityId: entityId,
+    //         text,
+    //         embedding,
+    //         createdAt: new Date().getTime(),
+    //         url: pageUrl,
+    //         annotations: annotationLabels,
+    //         dataSourceType: NOTION_DATA_SOURCE_NAME,
+    //     }),
+    // ]);
 };
 
 export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {

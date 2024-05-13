@@ -17,7 +17,7 @@ import { COMPLETE_DATA_SOURCE_SYNC_ENDPOINT } from './constants';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: __dirname + '/../../../../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 

@@ -4,7 +4,7 @@
     "main": "dist/batchImportNotion/src/handler.js",
     "scripts": {
         "build": "tsc",
-        "local": "node -e \"console.log(require('./dist/initiateNotionImport/src/handler').handler(require('../testEvents/.json')));\"",
+        "local": "node -e \"console.log(require('./dist/batchImportNotion/src/handler').handler(require('../testEvents/batchImportNotion.json')));\"",
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
         "package": "sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket lambda-batch-import-notion",
         "deploy": "sam deploy --template-file packaged.yml --stack-name batch-import-notion --capabilities CAPABILITY_IAM --region us-east-1"
