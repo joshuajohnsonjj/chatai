@@ -1,5 +1,5 @@
 import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
-import type { NotionBlock, NotionBlockDetailResponse, NotionTable } from '@joshuajohnsonjj38/notion';
+import type { NotionBlock, NotionBlockDetailResponse, NotionTable, NotionAuthorAttribution } from '@joshuajohnsonjj38/notion';
 import type { Handler, SQSEvent } from 'aws-lambda';
 import {
     collectAllChildren,
@@ -16,10 +16,32 @@ import axios from 'axios';
 import { COMPLETE_DATA_SOURCE_SYNC_ENDPOINT } from './constants';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
+import { type CachedUser } from './types';
 
-dotenv.config({ path: __dirname + '/../.env' });
+dotenv.config({ path: __dirname + '/../../../../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
+
+const notionAuthors: { [notionUserId: string]: CachedUser } = {};
+const getBlockAuthor = async (notionAPI: NotionWrapper, author?: NotionAuthorAttribution): Promise<CachedUser | null> => {
+    if (!author || author.object !== 'user') {
+        return null;
+    }
+
+    const cached = notionAuthors[author.id];
+    if (cached && cached.name && cached.email) {
+        return notionAuthors[author.id];
+    } else if (cached) {
+        return null;
+    }
+
+    const userInfo = await notionAPI.getUserInfo(author.id);
+    notionAuthors[author.id] = {
+        name: userInfo.name,
+        email: userInfo.person.email,
+    };
+    return notionAuthors[author.id];
+};
 
 /**
  * The objective here is to break down Notion page content into
@@ -41,7 +63,7 @@ const processBlockList = async (
     pageTitle: string,
 ) => {
     let builtBlocksTextString = '';
-    let connectedBlocks: NotionBlock[] = [];
+    let connectedBlocks: NotionBlock[] = []; // TODO: problably dont need whole obj? ineficient memeory...
 
     for (const parentBlock of blocks) {
         if (parentBlock.in_trash) {
@@ -51,14 +73,16 @@ const processBlockList = async (
             (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) &&
             connectedBlocks.length
         ) {
-            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId);
+            const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
+            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
             builtBlocksTextString = '';
             connectedBlocks = [];
             continue;
         } else if (!ImportableBlockTypes.includes(parentBlock.type) || isNewLineBlock(parentBlock)) {
             continue;
         } else if (!shouldConnectToCurrentBlockGroup(connectedBlocks, parentBlock)) {
-            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId);
+            const author = await getBlockAuthor(notionAPI, connectedBlocks[0]?.last_edited_by);
+            await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
             builtBlocksTextString = '';
             connectedBlocks = [];
         }
@@ -69,7 +93,7 @@ const processBlockList = async (
                 aggregatedNestedBlocks.slice(1),
                 parentBlock[parentBlock.type] as NotionTable,
             );
-            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, entityId);
+            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, entityId, null);
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
             const columnBlocks = await notionAPI.listPageBlocks(parentBlock.id, null);
             await Promise.all(
@@ -79,7 +103,8 @@ const processBlockList = async (
                         .slice(1)
                         .map((block) => getTextFromBlock(block))
                         .join('\n');
-                    await publishBlockData(mongo, aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, entityId);
+                    const author = await getBlockAuthor(notionAPI, columnBlockParent.last_edited_by);
+                    await publishBlockData(mongo, aggregatedBlockText, columnBlockParent, pageTitle, pageUrl, entityId, author);
                 }),
             );
         } else {
@@ -90,8 +115,10 @@ const processBlockList = async (
         }
     }
 
+    // publish anything else left at the end of traversal
     if (connectedBlocks.length) {
-        await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId);
+        const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
+        await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
     }
 };
 
@@ -120,9 +147,6 @@ const processPage = async (
 /**
  * Lambda SQS handler
  *
- * TODO: should set page title as outer document property. include it in embedding
- * TODO: add hash to url for direct to block mapping
- *
  * Message body expected to have following data
  *      pageId: string,
  *      pageTitle: string,
@@ -132,7 +156,7 @@ const processPage = async (
  *      secret: string,
  *      isFinal: true,
  */
-export const handler: Handler = async (event: SQSEvent): Promise<void> => {
+export const handler: Handler = async (event: SQSEvent): Promise<{ success: true }> => {
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
         process.env.MONGO_CONN_STRING as string,
         process.env.MONGO_DB_NAME as string,
@@ -186,4 +210,6 @@ export const handler: Handler = async (event: SQSEvent): Promise<void> => {
         //     },
         // });
     }
+
+    return { success: true };
 };

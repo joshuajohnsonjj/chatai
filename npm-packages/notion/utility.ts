@@ -13,3 +13,6 @@ export const getPageTitle = (pageDetail: NotionPageDetailResponse): string => {
 
     return '';
 };
+
+export const getBlockUrl = (pageUrl: string, blockId: string): string =>
+    `${pageUrl}#${blockId.replace(/-/g,'')}`;

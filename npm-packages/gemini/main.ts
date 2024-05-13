@@ -23,8 +23,8 @@ export class GeminiService {
 
     public getTextAnnotation = async (
         textInput: string,
-        minCategoryConfidence = 0.65,
-        minEntityConfidence = 0.825,
+        minCategoryConfidence = 0.35,
+        minEntityConfidence = 0.51,
     ): Promise<CleanedAnalyzeTextResponse> => {
         try {
             const resp = await axios({
@@ -81,8 +81,6 @@ export class GeminiService {
             settings.toneSetting,
             settings.baseInstructions,
         );
-        // TODO: remove this when confident in results
-        console.log(prompt);
 
         const model = this.client.getGenerativeModel({
             model: GeminiModels.TEXT,
@@ -144,9 +142,15 @@ export class GeminiService {
                     IMPORTABLE_ENTITY_TYPES.includes(entity.type) &&
                     entity.mentions[0]?.probability >= minEntityConfidence,
             )
-            .map((entity) => entity.name),
+            .map((entity) => this.toStartCase(entity.name)),
         categories: raw.categories.filter((cat) => cat.confidence >= minCategoryConfidence).map((cat) => cat.name),
     });
+
+    private toStartCase(str: string): string {
+        return str.toLowerCase().replace(/(?:^|\s)\w/g, function(match) {
+            return match.toUpperCase();
+        });
+    }
 
     private normalizeTemperature(value: number): number {
         const temperatureMax = 1;

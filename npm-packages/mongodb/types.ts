@@ -4,11 +4,14 @@ export interface MongoDataElementCollectionDoc {
     _id: string;
     ownerEntityId: string;
     text: string;
+    title: string;
     embedding: number[];
     createdAt: number; // Unix timestamp
     url?: string;
-    authorName?: string;
-    authorRef?: string;
+    author?: {
+        name: string;
+        email: string;
+    };
     annotations: string[];
     dataSourceType: string;
 
@@ -19,9 +22,9 @@ export interface MongoDataElementCollectionDoc {
 
 export interface MongoAuthorCollectionDoc {
     _id: string;
-    organizationId: string;
+    entityId: string;
     name: string;
-    email?: string;
+    email: string;
 }
 
 export interface MongoAnnotationLabelCollectionDoc {
@@ -56,4 +59,5 @@ export type DataElementVectorInput = { vectorizedQuery: number[] } & DataElement
 export enum IndexName {
     VECTOR = 'vector_index',
     TOPIC_SEARCH = 'label_search',
+    AUTHOR_SEARCH = 'author_search',
 }
