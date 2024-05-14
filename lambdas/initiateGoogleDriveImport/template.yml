@@ -6,8 +6,7 @@ Resources:
     initiateGoogleDriveImport:
         Type: 'AWS::Serverless::Function'
         Properties:
-            Handler: handler.handler
+            Handler: initiateGoogleDriveImport/src/handler.handler
             Runtime: nodejs20.x
             CodeUri: ./dist
             Timeout: 600
-            Events:

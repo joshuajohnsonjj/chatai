@@ -6,7 +6,7 @@
         "build": "tsc",
         "local": "node -e \"console.log(require('./dist/initiateGoogleDriveImport/src/handler').handler(require('../testEvents/initiateGoogleDriveImport.json')));\"",
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
-        "package": "sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket lambdas",
+        "package": "sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket chat-ai-lambdas",
         "deploy": "sam deploy --template-file packaged.yml --stack-name lambda-initiate-google-drive-import --capabilities CAPABILITY_IAM --region us-east-1"
     },
     "devDependencies": {

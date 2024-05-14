@@ -13,8 +13,8 @@
     },
     "dependencies": {
         "@aws-sdk/client-sqs": "^3.565.0",
-        "@joshuajohnsonjj38/gemini": "^1.1.5",
-        "@joshuajohnsonjj38/google-drive": "^1.0.6",
+        "@joshuajohnsonjj38/gemini": "^1.1.6",
+        "@joshuajohnsonjj38/google-drive": "^1.0.7",
         "@joshuajohnsonjj38/mongodb": "^1.0.9",
         "@joshuajohnsonjj38/notion": "^1.0.8",
         "@joshuajohnsonjj38/secret-mananger": "1.0.3",

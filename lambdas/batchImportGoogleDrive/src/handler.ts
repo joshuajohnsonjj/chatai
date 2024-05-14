@@ -9,7 +9,7 @@ import {
 } from '@joshuajohnsonjj38/google-drive';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
-import { DataSourceTypeName } from '@prisma/client';
+import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -27,60 +27,64 @@ const processFile = async (
     authorName?: string,
     authorEmail?: string,
 ) => {
-    const fileContent = await googleAPI.getFileContent(fileId);
-    const textChunks = buildPayloadTextsFile(fileContent);
+    console.log(`Processing file ${fileId}, ${fileName}`);
+
+    let textChunks: string[];
+
+    try {
+        const fileContent = await googleAPI.getFileContent(fileId);
+        textChunks = buildPayloadTextsFile(fileContent);
+    } catch (_e) {
+        console.warn(`Could not get content from file ${fileId}, skipping...`);
+        return;
+    }
 
     // wipe any previous entries for this page
-    // await mongo.elementCollConnection.deleteMany({
-    //     fileId,
-    //     ownerEntityId,
-    // });
+    await mongo.elementCollConnection.deleteMany({
+        fileId,
+        ownerEntityId,
+    });
 
     let ndx = 0;
 
     await Promise.all(
-        textChunks.map(async (chunk) => {
+        textChunks.map(async (chunk: string) => {
             const embedding = await gemini.getTextEmbedding(chunk);
-            const annotations = await gemini.getTextAnnotation(chunk);
+            const annotationsResponse = await gemini.getTextAnnotation(chunk, 0.41, 0.88);
+            const annotations = [...annotationsResponse.categories, ...annotationsResponse.entities];
 
-            console.log({
-                _id: `${fileId}-${ndx}`,
-                ownerEntityId,
-                text: chunk,
-                title: fileName,
-                embedding,
-                createdAt: new Date(modifiedDate).getTime(),
-                url: fileUrl,
-                author:
-                    authorName && authorEmail
-                        ? {
-                              name: authorName,
-                              email: authorEmail,
-                          }
-                        : undefined,
-                annotations: [...annotations.categories, ...annotations.entities],
-                dataSourceType: DataSourceTypeName.GOOGLE_DRIVE,
-                fileId,
-                filePartIndex: ndx,
-            });
+            await Promise.all([
+                authorName && authorEmail
+                    ? mongo.writeAuthors({
+                          name: authorName!,
+                          email: authorEmail!,
+                          entityId: ownerEntityId,
+                      })
+                    : Promise.resolve(),
+                mongo.writeLabels(annotations, ownerEntityId),
+                mongo.writeDataElements({
+                    _id: `${fileId}-${ndx}`,
+                    ownerEntityId,
+                    text: chunk,
+                    title: fileName,
+                    embedding,
+                    createdAt: new Date(modifiedDate).getTime(),
+                    url: fileUrl,
+                    author:
+                        authorName && authorEmail
+                            ? {
+                                  name: authorName,
+                                  email: authorEmail,
+                              }
+                            : undefined,
+                    annotations,
+                    dataSourceType: 'GOOGLE_DRIVE',
+                    fileId,
+                    filePartIndex: ndx,
+                }),
+            ]);
 
             ndx += 1;
-
-            // await mongo.writeDataElements({
-            //     _id: fileId,
-            //     ownerEntityId,
-            //     text,
-            //     title: fileName,
-            //     embedding,
-            //     createdAt: new Date(modifiedDate).getTime(),
-            //     url: fileUrl,
-            //     author: authorName && authorEmail ? {
-            //         name: authorName,
-            //         email: authorEmail,
-            //     } : undefined,
-            //     annotations: [...annotations.categories, ...annotations.entities],
-            //     dataSourceType: DataSourceTypeName.GOOGLE_DRIVE,
-            // });
         }),
     );
 };
@@ -93,8 +97,10 @@ export const handler: Handler = async (event: SQSEvent) => {
     const processingFilePromises: Promise<void>[] = [];
     const completedDataSources: GoogleDriveSQSFinalBody[] = [];
 
-    const mongo = new MongoDBService(process.env.MONGO_CONN_STRING as string, process.env.MONGO_DB_NAME as string);
-    await mongo.init();
+    const mongo = await getMongoClientFromCacheOrInitiateConnection(
+        process.env.MONGO_CONN_STRING as string,
+        process.env.MONGO_DB_NAME as string,
+    );
 
     console.log(`Processing ${event.Records.length} messages`);
 

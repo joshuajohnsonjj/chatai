@@ -135,16 +135,21 @@ export class GeminiService {
         raw: AnalyizeTextResponse,
         minCategoryConfidence: number,
         minEntityConfidence: number,
-    ): CleanedAnalyzeTextResponse => ({
-        entities: raw.entities
-            .filter(
-                (entity) =>
-                    IMPORTABLE_ENTITY_TYPES.includes(entity.type) &&
-                    entity.mentions[0]?.probability >= minEntityConfidence,
-            )
-            .map((entity) => this.toStartCase(entity.name)),
-        categories: raw.categories.filter((cat) => cat.confidence >= minCategoryConfidence).map((cat) => cat.name),
-    });
+    ): CleanedAnalyzeTextResponse => {
+        const uniqueArray = (strArr: string[]): string[] => [...new Set(strArr)];
+        return {
+            entities: uniqueArray(
+                raw.entities
+                    .filter(
+                        (entity) =>
+                            IMPORTABLE_ENTITY_TYPES.includes(entity.type) &&
+                            entity.mentions[0]?.probability >= minEntityConfidence,
+                    )
+                    .map((entity) => this.toStartCase(entity.name)),
+            ),
+            categories: raw.categories.filter((cat) => cat.confidence >= minCategoryConfidence).map((cat) => cat.name),
+        };
+    };
 
     private toStartCase(str: string): string {
         return str.toLowerCase().replace(/(?:^|\s)\w/g, function (match) {

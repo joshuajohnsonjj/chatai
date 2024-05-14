@@ -8,9 +8,7 @@ import {
     docWebUrl,
     buildPayloadTextsFile,
 } from '@joshuajohnsonjj38/google-drive';
-import { GeminiService } from '@joshuajohnsonjj38/openai';
-import { QdrantDataSource, QdrantWrapper, type QdrantPayload } from '@joshuajohnsonjj38/qdrant';
-import { DynamoClient } from '@joshuajohnsonjj38/dynamo';
+import { GeminiService } from '@joshuajohnsonjj38/gemini';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -70,7 +68,7 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
     const googleAPI = new GoogleDriveService(googleKey);
     const fileContent = await googleAPI.getFileContent(messageData.fileId);
 
-    const text = buildPayloadTextsFile(messageData.file.title, fileContent);
+    const text = buildPayloadTextsFile(fileContent);
     const payload: QdrantPayload = {
         date: new Date(messageData.time).getTime(),
         dataSource: QdrantDataSource.GOOGLE_DRIVE,

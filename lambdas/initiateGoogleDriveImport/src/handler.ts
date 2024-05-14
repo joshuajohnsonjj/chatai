@@ -12,8 +12,8 @@ dotenv.config({ path: __dirname + '/../../../../.env' });
 
 const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 
-export const handler: Handler = async (event: APIGatewayEvent) => {
-    const messageData: InitiateImportRequestData = JSON.parse(event.body as string);
+export const handler: Handler = async (event): Promise<{ success: boolean }> => {
+    const messageData: InitiateImportRequestData = event.body;
     console.log(`Retreiving data source ${messageData.dataSourceId} Google Drive documents`);
 
     const decryptedSecret = rsaService.decrypt(messageData.secret);
@@ -61,4 +61,6 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
     // TODO: add is final message
 
     await sendSqsMessageBatches(messageBatchEntries, process.env.GOOGLE_DRIVE_QUEUE_URL as string);
+
+    return { success: true };
 };

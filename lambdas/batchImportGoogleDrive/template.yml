@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: 'Google drive batch import SQS message queue handler'
+
+Resources:
+    batchImportGoogleDrive:
+        Type: 'AWS::Serverless::Function'
+        Properties:
+            Handler: batchImportGoogleDrive/src/handler.handler
+            Runtime: nodejs20.x
+            CodeUri: ./dist
+            Timeout: 600
+            Events:
+                GoogleDriveImportMessage:
+                    Type: SQS
+                    Properties:
+                        Queue: arn:aws:sqs:us-east-1:353643225333:GoogleDriveBatchImportQueue.fifo
