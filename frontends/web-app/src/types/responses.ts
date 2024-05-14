@@ -128,6 +128,7 @@ export interface SearchResult {
     _id: string;
     ownerEntityId: string;
     text: string;
+    title: string;
     createdAt: number; // Unix timestamp
     url?: string;
     authorName?: string;

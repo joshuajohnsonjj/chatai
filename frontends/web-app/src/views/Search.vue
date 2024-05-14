@@ -47,8 +47,8 @@
                     :id="result._id"
                     :source-type="result.dataSourceType"
                     :timestamp="result.createdAt"
-                    :title="result.text.substring(12, result.text.indexOf(', Page Excerpt:'))"
-                    :body="result.text.substring(result.text.indexOf('Page Excerpt: ') + 14)"
+                    :title="result.title"
+                    :body="result.text"
                     :url="result.url"
                 />
             </div>

@@ -10,15 +10,13 @@
 
         <div class="bg-background w-100 pa-6 rounded mb-6 mt-4 d-flex justify-space-between">
             <div class="d-flex justify-start">
-                <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${'NOTION'}.png`" size="80"></v-avatar>
+                <v-avatar
+                    :image="`${BASE_S3_DATASOURCE_LOGO_URL}${selectedSearchResult?.dataSourceType}.png`"
+                    size="80"
+                ></v-avatar>
                 <div class="ml-4">
                     <p class="text-h5 text-primary font-weight-medium mb-1">
-                        {{
-                            selectedSearchResult?.text?.substring(
-                                12,
-                                selectedSearchResult?.text?.indexOf(', Page Excerpt:'),
-                            )
-                        }}
+                        {{ selectedSearchResult?.title }}
                     </p>
                     <div class="d-flex justify-start">
                         <p class="text-caption text-secondary sub-info-line-height">
@@ -62,13 +60,7 @@
                 <div
                     id="content-preview"
                     class="pa-6 text-body-1 text-primary"
-                    v-html="
-                        markdown(
-                            selectedSearchResult?.text?.substring(
-                                selectedSearchResult?.text?.indexOf('Page Excerpt: ') + 14,
-                            ),
-                        )
-                    "
+                    v-html="markdown(selectedSearchResult?.text)"
                 ></div>
             </div>
         </div>
