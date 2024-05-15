@@ -24,6 +24,7 @@ registerPlugins(app);
 
 app.use(Toast, {
     position: POSITION.BOTTOM_CENTER,
+    timeout: 2500,
 });
 
 app.use(FloatingVue);

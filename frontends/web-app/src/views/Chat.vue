@@ -68,28 +68,7 @@
         <div class="d-flex justify-space-between">
             <div style="max-width: 800px" class="mx-auto">
                 <div id="chat-scroll" ref="chatScrollContainer" class="d-flex flex-column mb-6">
-                    <div v-if="!replyingInThreadId">
-                        <v-sheet v-for="thread in chatHistory" :key="thread.threadId" class="my-2">
-                            <MessageThreadDisplay :threadContent="thread" />
-
-                            <p class="text-caption text-secondary my-2">
-                                {{ dateToString(thread.messages[0].createdAt) }}
-                            </p>
-                        </v-sheet>
-                    </div>
-
-                    <ChatReplyContainer v-else />
-
-                    <v-fade-transition>
-                        <div
-                            v-if="shouldShowScrollToBottomButton"
-                            id="floating-to-bottom-btn"
-                            class="bg-surface shadow button-hover"
-                            @click="scrollToBottom(300)"
-                        >
-                            <v-icon icon="mdi-chevron-down" size="large" color="primary"></v-icon>
-                        </div>
-                    </v-fade-transition>
+                    <MessageThreadDisplay />
 
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
                 </div>
@@ -101,6 +80,17 @@
                 <ChatSettingsSideBar v-if="isChatSettingsOpen" />
             </v-expand-x-transition>
         </div>
+
+        <v-fade-transition>
+            <div
+                v-if="shouldShowScrollToBottomButton"
+                id="floating-to-bottom-btn"
+                class="bg-surface shadow button-hover"
+                @click="scrollToBottom(300)"
+            >
+                <v-icon icon="mdi-chevron-down" size="large" color="primary"></v-icon>
+            </div>
+        </v-fade-transition>
     </div>
 
     <ConfirmModal
@@ -120,8 +110,6 @@
     import { useRoute } from 'vue-router';
     import { useGoTo } from 'vuetify';
     import debounce from 'lodash/debounce';
-    import { dateToString } from '../utility';
-    import ChatReplyContainer from '../components/chat/ChatReplyContainer.vue';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();
@@ -194,9 +182,10 @@
             chatStore.setChatHistory(route.params.chatId as string);
         }
 
+        console.log(chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop);
         if (
             chatScrollContainer.value &&
-            chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop > 1500
+            chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop > 1250
         ) {
             shouldShowScrollToBottomButton.value = true;
         } else {
@@ -214,9 +203,14 @@
     }
 
     #chat-scroll {
-        padding-top: 75px;
-        max-height: 86vh;
         overflow-y: scroll;
+        position: absolute;
+        left: 0;
+        top: 2rem;
+        right: 0;
+        max-width: 800px;
+        margin: auto;
+        bottom: 3.1rem;
     }
 
     #chat-scroll::-webkit-scrollbar {
@@ -229,11 +223,14 @@
     }
 
     #floating-to-bottom-btn {
-        position: absolute;
-        bottom: 15%;
-        left: 48%;
         padding: 10px;
+        margin: auto;
+        width: 48px;
+        left: 0;
+        right: 0;
+        position: absolute;
         border-radius: 50%;
+        bottom: 15%;
     }
 </style>
 

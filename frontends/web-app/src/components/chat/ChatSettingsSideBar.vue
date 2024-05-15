@@ -1,5 +1,5 @@
 <template>
-    <div id="chat-settings-container" class="pt-6 pl-6">
+    <div id="chat-settings-container" class="pt-6 pl-6 bg-surface">
         <div class="text-primary text-h5 font-weight-medium">Configuration</div>
         <div class="text-secondary text-caption">
             Configure settings for this chat. By default, chats adhere to your global chat settings configuration.
@@ -134,7 +134,9 @@
         margin-top: 5rem;
         height: 85vh;
         width: 250px;
+        z-index: 100;
         margin-left: 1rem;
         border-left: 1px solid rgb(var(--v-theme-border-color));
+        border-top: 1px solid rgb(var(--v-theme-border-color));
     }
 </style>

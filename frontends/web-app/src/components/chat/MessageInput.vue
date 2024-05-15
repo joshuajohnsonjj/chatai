@@ -1,8 +1,7 @@
 <template>
-    <div style="max-width: 800px" class="mx-auto">
-        <div v-if="$route.name === RouteName.MESSAGES" id="gradientTopper"></div>
+    <div v-if="$route.name === RouteName.MESSAGES" id="gradientTopper"></div>
+    <div class="bg-surface">
         <v-text-field
-            style="max-width: 800px"
             rows="1"
             placeholder="Ask me something..."
             variant="outlined"
@@ -53,10 +52,13 @@
 
 <style scoped>
     #gradientTopper {
-        max-width: 800px;
+        width: 850px;
+        left: 0;
+        right: 0;
+        margin: auto;
         height: 50px;
-        top: -70px;
-        position: relative;
+        bottom: 73px;
+        position: absolute;
         background: none;
         background: linear-gradient(0deg, rgba(var(--v-theme-surface), 1) 0%, rgba(var(--v-theme-surface), 0) 100%);
     }
@@ -64,8 +66,11 @@
     .message-input {
         position: absolute;
         bottom: 20px;
-        width: 95%;
         z-index: 100;
+        width: 850px;
+        left: 0;
+        right: 0;
+        margin: auto;
     }
 
     .send-btn {

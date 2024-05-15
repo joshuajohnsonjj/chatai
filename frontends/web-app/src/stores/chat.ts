@@ -115,46 +115,55 @@ export const useChatStore = defineStore('chat', () => {
 
         pendingThreadResponseId.value = threadId;
 
-        const systemRsponseId = v4();
-        // TODO: use settings values
-        const aiResponseStream = await sendChatMessage(selectedChat.value.id, {
-            userPromptMessageId: promptMessage.id,
-            userPromptText: promptMessage.text,
-            threadId: newOrFoundThread.threadId,
-            systemResponseMessageId: systemRsponseId,
-            isReplyMessage: !!replyingInThreadId.value,
-            creativitySetting: 8,
-            confidenceSetting: 7,
-            toneSetting: ChatResponseTone.DEFAULT,
-            baseInstructions: null,
-        });
+        try {
+            const systemRsponseId = v4();
+            // TODO: use settings values
+            const aiResponseStream = await sendChatMessage(selectedChat.value.id, {
+                userPromptMessageId: promptMessage.id,
+                userPromptText: promptMessage.text,
+                threadId: newOrFoundThread.threadId,
+                systemResponseMessageId: systemRsponseId,
+                isReplyMessage: !!replyingInThreadId.value,
+                creativitySetting: 8,
+                confidenceSetting: 7,
+                toneSetting: ChatResponseTone.DEFAULT,
+                baseInstructions: null,
+            });
 
-        const threadNdx = chatHistory.value.findIndex(
-            (histThread) => histThread.threadId === newOrFoundThread.threadId,
-        );
+            const threadNdx = chatHistory.value.findIndex(
+                (histThread) => histThread.threadId === newOrFoundThread.threadId,
+            );
 
-        const len = newOrFoundThread.messages.push({
-            id: systemRsponseId,
-            text: '',
-            isSystemMessage: true,
-            chatId: selectedChat.value.id,
-            threadId: newOrFoundThread.threadId,
-            createdAt: new Date(),
-        });
+            const newThreadLength = chatHistory.value[threadNdx].messages.push({
+                id: systemRsponseId,
+                text: '',
+                isSystemMessage: true,
+                chatId: selectedChat.value.id,
+                threadId: newOrFoundThread.threadId,
+                createdAt: new Date(),
+            });
 
-        const reader = aiResponseStream.getReader();
-        let done = false,
-            value;
-        while (!done) {
-            ({ value, done } = await reader.read());
-            if (done) {
-                break;
+            const reader = aiResponseStream.getReader();
+            let done = false,
+                value;
+            while (!done) {
+                ({ value, done } = await reader.read());
+                if (done) {
+                    break;
+                }
+                pendingThreadResponseId.value = null;
+                chatHistory.value[threadNdx].messages[newThreadLength - 1].text += String.fromCharCode.apply(
+                    null,
+                    value,
+                );
             }
+            // TODO: retrieve response data from db to get extra info
+        } catch (e) {
+            console.log(e);
+            toast.error('Response generation failed. Contact support if problem persists.');
+        } finally {
             pendingThreadResponseId.value = null;
-            chatHistory.value[threadNdx].messages[len - 1].text += String.fromCharCode.apply(null, value);
         }
-
-        // TODO: retrieve response data from db to get extra info
     };
 
     return {
