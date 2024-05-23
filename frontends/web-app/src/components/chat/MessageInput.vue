@@ -1,6 +1,7 @@
 <template>
     <div v-if="$route.name === RouteName.MESSAGES" id="gradientTopper"></div>
     <div class="bg-surface">
+        <!-- TODO: change to fext area, fix auto sizeing -->
         <v-text-field
             rows="1"
             placeholder="Ask me something..."

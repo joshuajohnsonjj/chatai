@@ -152,15 +152,28 @@ model ChatMessageThread {
 }
 
 model ChatMessage {
-  id              String            @id @default(uuid())
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @default(now())
+  id              String                @id @default(uuid())
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @default(now())
   text            String
   isSystemMessage Boolean
   threadId        String
-  thread          ChatMessageThread @relation(fields: [threadId], references: [id])
+  thread          ChatMessageThread     @relation(fields: [threadId], references: [id])
   chatId          String
-  chat            Chat              @relation(fields: [chatId], references: [id])
+  chat            Chat                  @relation(fields: [chatId], references: [id])
+  informers       ChatMessageInformer[]
+}
+
+model ChatMessageInformer {
+  id         String      @id @default(uuid())
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now())
+  messageId  String
+  message    ChatMessage @relation(fields: [messageId], references: [id])
+  name       String
+  url        String
+  sourceName String
+  confidence Float
 }
 
 enum EntityType {

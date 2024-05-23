@@ -38,7 +38,6 @@ export class ChatController {
         return await this.service.updateChatDetail(chatId, params, req.user as DecodedUserTokenDto);
     }
 
-    // TODO: put limit on input prompt size
     @Post(':chatId/message')
     async generateChatResponse(
         @Param('chatId') chatId: string,
@@ -49,11 +48,11 @@ export class ChatController {
         res.setHeader('Content-Type', 'text/plain');
 
         try {
-            const contentStream = await this.service.generateResponse(chatId, params, req.user as DecodedUserTokenDto);
+            const data = await this.service.generateResponse(chatId, params, req.user as DecodedUserTokenDto);
 
             this.logger.log('Chunking response content', 'Chat');
             let generatedResponse = '';
-            for await (const chunk of contentStream) {
+            for await (const chunk of data.stream) {
                 const chunkText = chunk.choices[0]?.delta?.content;
 
                 if (!chunkText) {
@@ -73,6 +72,7 @@ export class ChatController {
                 params.threadId,
                 params.isReplyMessage,
                 params.systemResponseMessageId,
+                data.matchedDataResult,
             );
         } catch (e) {
             this.logger.error(e.message, e.stack, 'Chat');

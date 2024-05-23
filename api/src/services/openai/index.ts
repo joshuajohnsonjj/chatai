@@ -12,6 +12,7 @@ export class OpenAIService {
     }
 
     public getGptReponseFromSourceData = async (
+        userId: string,
         userPrompt: string,
         sourceData: string,
         settings: Pick<EntitySettings, 'chatCreativity' | 'chatTone' | 'baseInstructions'>,
@@ -36,6 +37,7 @@ export class OpenAIService {
             model: OpenAIModels.CHAT,
             temperature: this.normalizeTemperature(settings.chatCreativity),
             stream: true,
+            user: userId,
         });
     };
 

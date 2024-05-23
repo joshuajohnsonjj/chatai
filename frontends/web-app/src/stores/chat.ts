@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { ChatMessageResponse, ChatResponse, ChatThreadResponse } from '../types/responses';
 import { getChatHistory, listChats, sendChatMessage, updateChatDetail } from '../requests/chat';
 import find from 'lodash/find';
 import { useToast } from 'vue-toastification';
 import { v4 } from 'uuid';
 import { ChatResponseTone, UpdateChatParams } from '../types/chat-store';
+import { useUserStore } from './user';
 
 const toast = useToast();
 
@@ -22,6 +23,17 @@ export const useChatStore = defineStore('chat', () => {
         chatUpdate: false,
     });
     const pendingThreadResponseId = ref<string | null>(null);
+
+    const chatSettings = computed(() => {
+        const userInfo = useUserStore().userData;
+
+        return {
+            chatCreativity: selectedChat.value?.chatCreativity ?? userInfo?.settings.chatCreativity ?? 7,
+            chatMinConfidence: selectedChat.value?.chatMinConfidence ?? userInfo?.settings.chatMinConfidence ?? 7,
+            chatTone: selectedChat.value?.chatTone ?? userInfo?.settings.chatTone ?? ChatResponseTone.DEFAULT,
+            baseInstructions: selectedChat.value?.baseInstructions ?? userInfo?.settings.baseInstructions ?? null,
+        };
+    });
 
     const getChatList = async () => {
         isLoading.value.chatList = true;
@@ -117,17 +129,16 @@ export const useChatStore = defineStore('chat', () => {
 
         try {
             const systemRsponseId = v4();
-            // TODO: use settings values
             const aiResponseStream = await sendChatMessage(selectedChat.value.id, {
                 userPromptMessageId: promptMessage.id,
                 userPromptText: promptMessage.text,
                 threadId: newOrFoundThread.threadId,
                 systemResponseMessageId: systemRsponseId,
                 isReplyMessage: !!replyingInThreadId.value,
-                creativitySetting: 8,
-                confidenceSetting: 7,
-                toneSetting: ChatResponseTone.DEFAULT,
-                baseInstructions: null,
+                creativitySetting: chatSettings.value.chatCreativity,
+                confidenceSetting: chatSettings.value.chatMinConfidence,
+                toneSetting: chatSettings.value.chatTone,
+                baseInstructions: chatSettings.value.baseInstructions,
             });
 
             const threadNdx = chatHistory.value.findIndex(

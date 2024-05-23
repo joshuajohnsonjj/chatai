@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
-import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
+import { MongoDBService, type MongoDataElementCollectionDoc } from '@joshuajohnsonjj38/mongodb';
 import type {
     GetChatResponseQueryDto,
     GetChatResponseResponseDto,
@@ -84,18 +84,23 @@ export class ChatService {
             chatHistory = this.openai.buildGptHistoryFromRawMessages(queryRes);
         }
 
-        this.logger.log(`Start chat response for chat ${chatId}`, 'Chat');
+        const chatSettings = {
+            chatCreativity: params.creativitySetting,
+            baseInstructions: params.baseInstructions,
+            chatTone: params.toneSetting,
+        };
 
-        return this.openai.getGptReponseFromSourceData(
+        this.logger.log(`Start chat response for chat ${chatId} with settings ${JSON.stringify(chatSettings)}`, 'Chat');
+
+        const stream = await this.openai.getGptReponseFromSourceData(
+            user.idUser,
             params.userPromptText,
             matchedDataText,
-            {
-                chatCreativity: params.creativitySetting,
-                baseInstructions: params.baseInstructions,
-                chatTone: params.toneSetting,
-            },
+            chatSettings,
             chatHistory,
         );
+
+        return { stream, matchedDataResult };
     }
 
     async handleChatResponseCompletion(
@@ -106,6 +111,7 @@ export class ChatService {
         threadId: string,
         isReply: boolean,
         systemResponseMessageId: string,
+        matchedInformers: (MongoDataElementCollectionDoc & { score: number })[],
     ): Promise<GetChatResponseResponseDto> {
         this.logger.log(`Chat generation complete. Writing thread ${threadId} data to db.`, 'Chat');
 
@@ -118,7 +124,6 @@ export class ChatService {
             });
         }
 
-        // // TODO: we can potentiall do more here with the data we have (i.e. confiedence, cite links, who said it, etc..)
         const [, savedResponse] = await Promise.all([
             this.prisma.chatMessage.create({
                 data: {
@@ -143,6 +148,15 @@ export class ChatService {
             this.prisma.chat.update({
                 where: { id: chatId },
                 data: { updatedAt: new Date() },
+            }),
+            this.prisma.chatMessageInformer.createMany({
+                data: matchedInformers.map((match) => ({
+                    messageId: systemResponseMessageId,
+                    name: match.title,
+                    url: match.url ?? '',
+                    sourceName: match.dataSourceType,
+                    confidence: match.score,
+                })),
             }),
         ]);
 
@@ -169,7 +183,7 @@ export class ChatService {
         updates: UpdateChatDetailRequestDto,
         user: DecodedUserTokenDto,
     ): Promise<ChatResponseDto> {
-        this.logger.log(`Patching updates ${JSON.stringify(updates)} to chat ${chatId}`);
+        this.logger.log(`Patching updates ${JSON.stringify(updates)} to chat ${chatId}`, 'Chat');
 
         try {
             return await this.prisma.chat.update({
@@ -216,6 +230,9 @@ export class ChatService {
                                 createdAt: 'asc',
                             },
                             take: 2,
+                            include: {
+                                informers: true,
+                            },
                         },
                         _count: {
                             select: { messages: true },
@@ -243,6 +260,9 @@ export class ChatService {
                             where: { threadId: thread.id },
                             orderBy: { createdAt: 'asc' },
                             take: -2,
+                            include: {
+                                informers: true,
+                            },
                         });
                         return [thread.id, messages];
                     }
