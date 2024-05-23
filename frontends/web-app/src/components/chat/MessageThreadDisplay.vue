@@ -12,7 +12,7 @@
             </div>
 
             <div v-if="pendingThreadResponseId === thread.threadId" class="mt-2 py-2">
-                <v-skeleton-loader type="sentences" color="background" :elevation="1"></v-skeleton-loader>
+                <v-skeleton-loader type="sentences" color="background" :elevation="0"></v-skeleton-loader>
             </div>
         </div>
 
@@ -26,6 +26,7 @@
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../../stores/chat';
     import { dateToString } from '../../utility';
+    import { computed } from 'vue';
 
     const chatStore = useChatStore();
 

@@ -1,12 +1,9 @@
-import { type GenerativeModel, GoogleGenerativeAI, GenerateContentStreamResult } from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
     type AnalyizeTextReqPayload,
     type AnalyizeTextResponse,
-    type ChatHistory,
-    type ChatSettings,
     type CleanedAnalyzeTextResponse,
     GeminiModels,
-    ChatTone,
 } from './types';
 import axios from 'axios';
 import { IMPORTABLE_ENTITY_TYPES, NLP_URL } from './constants';
@@ -69,68 +66,6 @@ export class GeminiService {
         return embedding.values;
     };
 
-    public getGptReponseFromSourceData = async (
-        userPrompt: string,
-        sourceData: string,
-        settings: ChatSettings,
-        history?: ChatHistory[],
-    ): Promise<GenerateContentStreamResult> => {
-        const prompt = this.buildPromptWithSourceData(
-            userPrompt,
-            sourceData,
-            settings.toneSetting,
-            settings.baseInstructions,
-        );
-
-        const model = this.client.getGenerativeModel({
-            model: GeminiModels.TEXT,
-            generationConfig: { temperature: this.normalizeTemperature(settings.creativitySetting) },
-        });
-
-        if (history) {
-            return this.getChatContinuationResponse(model, prompt, history);
-        } else {
-            return this.getOneOffResponse(model, prompt);
-        }
-    };
-
-    private async getChatContinuationResponse(
-        model: GenerativeModel,
-        prompt: string,
-        history: ChatHistory[],
-    ): Promise<GenerateContentStreamResult> {
-        const chat = model.startChat({
-            history,
-            generationConfig: {
-                maxOutputTokens: 100,
-            },
-        });
-
-        return chat.sendMessageStream(prompt);
-    }
-
-    private async getOneOffResponse(model: GenerativeModel, prompt: string): Promise<GenerateContentStreamResult> {
-        return model.generateContentStream(prompt);
-    }
-
-    private buildPromptWithSourceData(
-        userPrompt: string,
-        sourceData: string,
-        tone: ChatTone,
-        baseInstructions?: string | null,
-    ): string {
-        let instructions =
-            'Use the data that followes as a basis to help inform your response, if possible, or do your best if the data is inadequate.';
-        if (tone !== ChatTone.DEFAULT) {
-            instructions += this.buildTonePrompt(tone);
-        }
-        if (baseInstructions) {
-            instructions += baseInstructions;
-        }
-
-        return `${userPrompt}.\nInstructions: ${instructions}\nData:\n${sourceData}`;
-    }
-
     private cleanTextAnnotation = (
         raw: AnalyizeTextResponse,
         minCategoryConfidence: number,
@@ -155,28 +90,5 @@ export class GeminiService {
         return str.toLowerCase().replace(/(?:^|\s)\w/g, function (match) {
             return match.toUpperCase();
         });
-    }
-
-    private normalizeTemperature(value: number): number {
-        const temperatureMax = 1;
-        const temperatureMin = 0;
-        const settingsMax = 9;
-        const settingsMin = 1;
-
-        const normalizedValue = (value - settingsMin) / (settingsMax - settingsMin);
-        const normalized = normalizedValue * (temperatureMax - temperatureMin) + temperatureMin;
-
-        return normalized;
-    }
-
-    private buildTonePrompt(tone: ChatTone): string {
-        switch (tone) {
-            case ChatTone.CASUAL:
-                return ' Respond in a very casual tone. ';
-            case ChatTone.PROFESSIONAL:
-                return ' Respond in a very professional tone. ';
-            default:
-                return '';
-        }
     }
 }

@@ -304,6 +304,7 @@ export class DataSourceService {
     }
 
     async completedImports(dataSourceIds: string[], apiKey?: string) {
+        // FIXME: put this into table in DB
         if (apiKey !== this.configService.get<string>('INTERNAL_API_ACCESS_KEY')!) {
             throw new AccessDeniedError('Valid API key not provided');
         }

@@ -7,25 +7,6 @@ export enum GeminiModels {
     TEXT = 'gemini-pro',
 }
 
-export interface ChatHistory {
-    role: 'user' | 'model';
-    parts: {
-        text: string;
-    }[];
-}
-
-export enum ChatTone {
-    CASUAL = 'CASUAL',
-    DEFAULT = 'DEFAULT',
-    PROFESSIONAL = 'PROFESSIONAL',
-}
-
-export interface ChatSettings {
-    creativitySetting: number;
-    toneSetting: ChatTone;
-    baseInstructions?: string | null;
-}
-
 export interface AnalyizeTextReqPayload {
     document: {
         type: 'PLAIN_TEXT';

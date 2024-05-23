@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { type GeminiContentStream, GeminiService, type ChatHistory, type ChatTone } from '@joshuajohnsonjj38/gemini';
+import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import type {
     GetChatResponseQueryDto,
@@ -20,10 +20,13 @@ import { omit, reverse } from 'lodash';
 import * as moment from 'moment';
 import { PrismaError } from 'src/types';
 import { ChatMessage } from '@prisma/client';
+import { type OpenAIMessageHistory, OpenAIService } from 'src/services/openai';
 
 @Injectable()
 export class ChatService {
-    private readonly ai = new GeminiService(this.configService.get<string>('GEMINI_KEY')!);
+    private readonly gemini = new GeminiService(this.configService.get<string>('GEMINI_KEY')!);
+
+    private readonly openai = new OpenAIService(this.configService.get<string>('OPENAI_KEY')!);
 
     constructor(
         private readonly prisma: PrismaService,
@@ -34,11 +37,7 @@ export class ChatService {
         private readonly mongo: MongoDBService,
     ) {}
 
-    async generateResponse(
-        chatId: string,
-        params: GetChatResponseQueryDto,
-        user: DecodedUserTokenDto,
-    ): Promise<GeminiContentStream> {
+    async generateResponse(chatId: string, params: GetChatResponseQueryDto, user: DecodedUserTokenDto) {
         this.logger.log(`Start generate response for chat ${chatId}`, 'Chat');
 
         const chat = await this.prisma.chat.findUniqueOrThrow({
@@ -47,12 +46,16 @@ export class ChatService {
         });
 
         if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
-            this.logger.error(`Blocked user ${user.idUser} from interacting with chat ${chatId}`, undefined, 'Chat');
+            this.logger.error(
+                `Blocked user ${user.idUser} from interacting with chat ${chatId}`,
+                'generateResponse authorization',
+                'Chat',
+            );
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
         this.logger.log(`Embedding prompt: ${params.userPromptText}`, 'Chat');
-        const userPromptEmbedding = await this.ai.getTextEmbedding(params.userPromptText);
+        const userPromptEmbedding = await this.gemini.getTextEmbedding(params.userPromptText);
         const matchedDataResult = await this.mongo.queryDataElementsByVector(
             {
                 vectorizedQuery: userPromptEmbedding,
@@ -61,13 +64,15 @@ export class ChatService {
             4,
         );
 
+        // TODO: adjust confidence values so they're acturally useful...
         // convert confidence from 1-9 to 0-1
         // const normalizedMinConfidence = (params.confidenceSetting - 1) / 8;
-        // console.log(matchedDataResult)
-        const matchedDataText = matchedDataResult.map((data) => data.text ?? '').join('. ');
-        // .filter((data) => data.score >= normalizedMinConfidence)
+        const matchedDataText = matchedDataResult
+            // .filter((data) => data.score >= normalizedMinConfidence)
+            .map((data) => data.text ?? '')
+            .join('. ');
 
-        let chatHistory: ChatHistory[] | undefined;
+        let chatHistory: OpenAIMessageHistory | undefined;
         if (params.isReplyMessage) {
             this.logger.log(`Retrieving thread ${params.threadId} history for response continuation`, 'Chat');
 
@@ -76,20 +81,18 @@ export class ChatService {
                 orderBy: { createdAt: 'asc' },
             });
 
-            chatHistory = queryRes.map((message) => ({
-                role: message.isSystemMessage ? 'model' : 'user',
-                parts: [{ text: message.text }],
-            }));
+            chatHistory = this.openai.buildGptHistoryFromRawMessages(queryRes);
         }
 
         this.logger.log(`Start chat response for chat ${chatId}`, 'Chat');
-        return this.ai.getGptReponseFromSourceData(
+
+        return this.openai.getGptReponseFromSourceData(
             params.userPromptText,
             matchedDataText,
             {
-                creativitySetting: params.creativitySetting,
+                chatCreativity: params.creativitySetting,
                 baseInstructions: params.baseInstructions,
-                toneSetting: params.toneSetting as ChatTone,
+                chatTone: params.toneSetting,
             },
             chatHistory,
         );

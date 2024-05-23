@@ -182,7 +182,6 @@
             chatStore.setChatHistory(route.params.chatId as string);
         }
 
-        console.log(chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop);
         if (
             chatScrollContainer.value &&
             chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop > 1250

@@ -7,11 +7,11 @@ export const buildPayloadTextsFile = (fileContent: GoogleDoc): string[] => {
         if (!block.paragraph) {
             return '';
         }
-        // TODO: test this out. with join + \n or .\t
+
         const text = block.paragraph.elements
             .map((el) => el.textRun.content)
-            .join('')
-            .replace(/\r?\n|\r/g, '');
+            .join(' ')
+            .replace(/\s{2,}/g, ' ');
         return text;
     });
 
