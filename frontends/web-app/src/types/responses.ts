@@ -45,6 +45,17 @@ export interface ChatThreadResponse {
     messages: ChatMessageResponse[];
 }
 
+export class ChatMessageInformer {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    messageId: string;
+    name: string;
+    url: string;
+    sourceName: string;
+    confidence: number;
+}
+
 export interface ChatMessageResponse {
     id: string;
     text: string;
@@ -53,6 +64,7 @@ export interface ChatMessageResponse {
     threadId: string;
     createdAt: Date;
     updatedAt?: Date;
+    informers: ChatMessageInformer[];
 }
 
 export interface UserInfoResponse {

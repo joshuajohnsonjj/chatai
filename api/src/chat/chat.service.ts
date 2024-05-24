@@ -149,16 +149,17 @@ export class ChatService {
                 where: { id: chatId },
                 data: { updatedAt: new Date() },
             }),
-            this.prisma.chatMessageInformer.createMany({
-                data: matchedInformers.map((match) => ({
-                    messageId: systemResponseMessageId,
-                    name: match.title,
-                    url: match.url ?? '',
-                    sourceName: match.dataSourceType,
-                    confidence: match.score,
-                })),
-            }),
         ]);
+
+        await this.prisma.chatMessageInformer.createMany({
+            data: matchedInformers.map((match) => ({
+                messageId: systemResponseMessageId,
+                name: match.title,
+                url: match.url ?? '',
+                sourceName: match.dataSourceType,
+                confidence: match.score,
+            })),
+        });
 
         return savedResponse;
     }

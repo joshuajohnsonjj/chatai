@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { ChatMessageResponse, ChatResponse, ChatThreadResponse } from '../types/responses';
-import { getChatHistory, listChats, sendChatMessage, updateChatDetail } from '../requests/chat';
+import { getChatHistory, listChats, retrieveChatMessage, sendChatMessage, updateChatDetail } from '../requests/chat';
 import find from 'lodash/find';
 import { useToast } from 'vue-toastification';
 import { v4 } from 'uuid';
@@ -109,6 +109,7 @@ export const useChatStore = defineStore('chat', () => {
             threadId,
             createdAt: new Date(),
             updatedAt: new Date(),
+            informers: [],
         };
 
         if (replyingInThreadId.value) {
@@ -152,6 +153,7 @@ export const useChatStore = defineStore('chat', () => {
                 chatId: selectedChat.value.id,
                 threadId: newOrFoundThread.threadId,
                 createdAt: new Date(),
+                informers: [],
             });
 
             const reader = aiResponseStream.getReader();
@@ -168,7 +170,10 @@ export const useChatStore = defineStore('chat', () => {
                     value,
                 );
             }
-            // TODO: retrieve response data from db to get extra info
+
+            const savedSystemResponse = await retrieveChatMessage(selectedChat.value.id, systemRsponseId);
+            chatHistory.value[threadNdx].messages[newThreadLength - 1].informers = savedSystemResponse.informers;
+            chatHistory.value[threadNdx].totalMessageCount += 1;
         } catch (e) {
             console.log(e);
             toast.error('Response generation failed. Contact support if problem persists.');

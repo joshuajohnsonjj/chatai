@@ -1,6 +1,6 @@
 import type { SendMessageParams, UpdateChatParams } from '../types/chat-store';
 import { APIEndpoints, APIMethods } from '../types/requests';
-import type { ChatResponse, ListChatHistoryResponse, ListChatsResponse } from '../types/responses';
+import type { ChatMessageResponse, ChatResponse, ListChatHistoryResponse, ListChatsResponse } from '../types/responses';
 import { sendAPIRequest } from './service';
 import { TOKEN_STORAGE_KEY } from '../constants';
 
@@ -42,6 +42,7 @@ export const getChatHistory = async (chatId: string, page: number): Promise<List
     return resp as ListChatHistoryResponse;
 };
 
+// TODO: need to implement retries here since its not using the sendAPIRequest axios wrapper
 export const sendChatMessage = async (chatId: string, params: SendMessageParams): Promise<any> => {
     const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
     const response = await fetch(
@@ -57,4 +58,16 @@ export const sendChatMessage = async (chatId: string, params: SendMessageParams)
     );
 
     return response.body;
+};
+
+export const retrieveChatMessage = async (chatId: string, messageId: string): Promise<ChatMessageResponse> => {
+    const resp = await sendAPIRequest({
+        method: APIMethods.GET,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        baseURL: import.meta.env.VITE_API_BASE_URL,
+        url: `${APIEndpoints.CHAT_MESSAGE.replace(':chatId', chatId).replace(':messageId', messageId)}`,
+    });
+    return resp as ChatMessageResponse;
 };

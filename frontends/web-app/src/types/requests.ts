@@ -5,6 +5,7 @@ export enum APIEndpoints {
     CHATS = '/v1/chat',
     CHAT = '/v1/chat/:chatId',
     CHAT_MESSAGES = '/v1/chat/:chatId/message',
+    CHAT_MESSAGE = '/v1/chat/:chatId/message/:messageId',
     DATA_SOURCE_CONNECTION = '/v1/dataSource/connections',
     DATA_SOURCE = '/v1/dataSource',
     TEST_DATA_SOURCE = '/v1/dataSource/test',

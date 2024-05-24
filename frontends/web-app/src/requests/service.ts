@@ -46,7 +46,7 @@ export const sendAPIRequest = async (req: AxiosRequestConfig, withAuthRetry = tr
         } else if (isBadToken) {
             localStorage.removeItem(TOKEN_STORAGE_KEY);
             window.location.pathname = '/login';
-        } else if (e.response.data?.error?.code >= 400 && e.response.data?.error?.code <= 404) {
+        } else if (e.response.data?.error?.code >= 400 && e.response.data?.error?.code < 500) {
             toast.error(e.response.data.error.message);
         } else {
             toast.error('An internal error has occured. Contact support if the issue continues.');

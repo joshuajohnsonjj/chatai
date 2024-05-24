@@ -6,9 +6,16 @@
         :class="{ 'z-100': !!replyingInThreadId }"
     >
         <div class="bg-background rounded px-6 pt-6">
-            <div v-for="message in thread.messages" :key="message.id">
+            <div v-for="(message, ndx) in thread.messages" :key="message.id">
                 <UserChatMessage v-if="!message.isSystemMessage" :text="message.text" />
-                <SystemChatMessage v-else :text="message.text" :thread-id="thread.threadId" />
+                <SystemChatMessage
+                    v-else
+                    :text="message.text"
+                    :thread-id="thread.threadId"
+                    :is-final="ndx === thread.totalMessageCount - 1"
+                    :message-id="message.id"
+                    :informers="message.informers"
+                />
             </div>
 
             <div v-if="pendingThreadResponseId === thread.threadId" class="mt-2 py-2">
