@@ -39,6 +39,17 @@ export class ListChatMessagesQueryDto {
     page: number;
 }
 
+export class ChatMessageInformerDto {
+    id: string;
+    createdAt: Date;
+    updatedAt: Date;
+    messageId: string;
+    name: string;
+    url: string;
+    sourceName: string;
+    confidence: number;
+}
+
 export class GetChatResponseResponseDto {
     id: string;
     text: string;
@@ -47,6 +58,7 @@ export class GetChatResponseResponseDto {
     threadId: string;
     createdAt: Date;
     updatedAt: Date;
+    informers?: ChatMessageInformerDto[];
 }
 
 export class ChatThreadResponseDto {

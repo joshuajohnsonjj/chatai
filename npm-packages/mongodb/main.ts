@@ -160,6 +160,7 @@ export class MongoDBService {
                 $project: {
                     ownerEntityId: 1,
                     text: 1,
+                    title: 1,
                     createdAt: 1,
                     url: 1,
                     authorName: 1,

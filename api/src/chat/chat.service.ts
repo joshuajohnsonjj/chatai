@@ -221,22 +221,14 @@ export class ChatService {
                 threads: {
                     take: pageSize,
                     skip: page * pageSize,
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
+                    orderBy: { createdAt: 'desc' },
                     include: {
                         messages: {
-                            orderBy: {
-                                createdAt: 'asc',
-                            },
                             take: 2,
-                            include: {
-                                informers: true,
-                            },
+                            orderBy: { createdAt: 'asc' },
+                            include: { informers: true },
                         },
-                        _count: {
-                            select: { messages: true },
-                        },
+                        _count: { select: { messages: true } },
                     },
                 },
             },
@@ -259,10 +251,8 @@ export class ChatService {
                         const messages = await this.prisma.chatMessage.findMany({
                             where: { threadId: thread.id },
                             orderBy: { createdAt: 'asc' },
+                            include: { informers: true },
                             take: -2,
-                            include: {
-                                informers: true,
-                            },
                         });
                         return [thread.id, messages];
                     }
@@ -284,6 +274,32 @@ export class ChatService {
             responseSize: threads.length,
             threads: reverse(threads),
         };
+    }
+
+    async getMessageById(messageId: string, user: DecodedUserTokenDto): Promise<GetChatResponseResponseDto> {
+        const query = await this.prisma.chatMessage.findUnique({
+            where: {
+                id: messageId,
+            },
+            include: {
+                informers: true,
+                thread: { include: { chat: true } },
+            },
+        });
+
+        if (
+            query?.thread.chat.associatedEntityId !== user.idUser &&
+            query?.thread.chat.associatedEntityId !== user.organization
+        ) {
+            this.logger.error(
+                `Blocked user ${user.idUser} from querying message ${messageId}`,
+                'permissionError',
+                'Chat',
+            );
+            throw new AccessDeniedError('User unauthorized to read this data');
+        }
+
+        return omit(query, ['thread']);
     }
 
     async listChats(page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
