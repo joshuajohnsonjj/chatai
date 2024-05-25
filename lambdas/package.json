@@ -17,12 +17,12 @@
         "@joshuajohnsonjj38/google-drive": "^1.0.7",
         "@joshuajohnsonjj38/mongodb": "^1.0.9",
         "@joshuajohnsonjj38/notion": "^1.0.8",
-        "@joshuajohnsonjj38/secret-mananger": "1.0.3",
         "@joshuajohnsonjj38/slack": "^1.0.3",
         "aws-lambda": "^1.0.7",
         "axios": "^1.6.8",
         "dotenv": "^16.4.5",
-        "moment": "^2.30.1"
+        "moment": "^2.30.1",
+        "node-forge": "^1.3.1"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.137",

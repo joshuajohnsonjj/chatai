@@ -1,5 +1,5 @@
 import type { APIGatewayEvent, Handler } from 'aws-lambda';
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
+import { decryptData } from '../../lib/descryption';
 import { DataSourceTypeName, PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import {
@@ -12,7 +12,6 @@ import { GeminiService } from '@joshuajohnsonjj38/gemini';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
-const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 const prisma = new PrismaClient();
 const openAI = new GeminiService(process.env.GEMINI_KEY as string);
 const qdrant = new QdrantWrapper(
@@ -64,7 +63,7 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
 
     console.log(`Upserting file ${messageData.fileId} data for data source ${dataSource.id}`);
 
-    const googleKey = rsaService.decrypt(dataSource.secret);
+    const googleKey = decryptData(process.env.RSA_PRIVATE_KEY!, dataSource.secret);
     const googleAPI = new GoogleDriveService(googleKey);
     const fileContent = await googleAPI.getFileContent(messageData.fileId);
 

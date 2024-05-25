@@ -1,5 +1,5 @@
-import type { APIGatewayEvent, Handler } from 'aws-lambda';
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
+import type { Handler } from 'aws-lambda';
+import { decryptData } from '../../lib/descryption';
 import { v4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import moment from 'moment';
@@ -10,13 +10,11 @@ import { GoogleDriveSQSMessageBody, GoogleDriveService } from '@joshuajohnsonjj3
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
-const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
-
 export const handler: Handler = async (event): Promise<{ success: boolean }> => {
     const messageData: InitiateImportRequestData = event.body;
     console.log(`Retreiving data source ${messageData.dataSourceId} Google Drive documents`);
 
-    const decryptedSecret = rsaService.decrypt(messageData.secret);
+    const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, messageData.secret);
     const googleDriveService = new GoogleDriveService(decryptedSecret);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];

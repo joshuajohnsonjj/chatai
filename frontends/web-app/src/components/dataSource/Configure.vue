@@ -65,7 +65,9 @@
                         Your credentials are used to connect to and synchronize the data source
                     </p>
 
-                    <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">Update API Key</p>
+                    <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">
+                        {{ isAddNew ? 'Add' : 'Update' }} API Key
+                    </p>
                     <v-text-field
                         type="password"
                         placeholder="****************"
@@ -74,8 +76,10 @@
                     ></v-text-field>
 
                     <div class="d-flex justify-end mt-4">
-                        <v-btn variant="plain" @click="onTestConnection">Test connection</v-btn>
-                        <v-btn color="blue" variant="tonal">Update keys</v-btn>
+                        <v-btn variant="plain" :loading="isLoading.connectionTest" @click="onTestConnection"
+                            >Test connection</v-btn
+                        >
+                        <v-btn color="blue" variant="tonal">{{ isAddNew ? 'Set' : 'Update' }} Key</v-btn>
                     </div>
                 </v-sheet>
             </v-col>
@@ -85,19 +89,6 @@
                     <p class="text-caption text-secondary" style="max-width: 250px">
                         Configure the interval with which your content is indexed
                     </p>
-
-                    <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">Update API Key</p>
-                    <v-text-field
-                        type="password"
-                        placeholder="****************"
-                        variant="outlined"
-                        v-model="apiKeyInput"
-                    ></v-text-field>
-
-                    <div class="d-flex justify-end mt-4">
-                        <v-btn variant="plain" @click="onTestConnection">Test connection</v-btn>
-                        <v-btn color="blue" variant="tonal">Update keys</v-btn>
-                    </div>
                 </v-sheet>
             </v-col>
         </v-row>
@@ -121,6 +112,7 @@
     import moment from 'moment';
     import { useToast } from 'vue-toastification';
     import { KnowledgeBaseMap } from '../../constants/knowledgeBase';
+    import { encrypt } from '../../utility/encryption';
 
     const props = defineProps<{
         isAddNew: boolean;
@@ -130,7 +122,7 @@
     const toast = useToast();
 
     const dataSourceStore = useDataSourceStore();
-    const { connections, dataSourceOptions } = storeToRefs(dataSourceStore);
+    const { connections, dataSourceOptions, isLoading } = storeToRefs(dataSourceStore);
     const userStore = useUserStore();
     const { userData, userEntityId } = storeToRefs(userStore);
 
@@ -162,11 +154,13 @@
     });
 
     const onTestConnection = async () => {
+        const encryptedSecret = await encrypt(apiKeyInput.value);
+
         const result = await dataSourceStore.testDataSourceCredential(
             sourceData.value.dataSourceTypeId as string,
             userEntityId.value,
             userData.value!.type,
-            apiKeyInput.value,
+            encryptedSecret,
         );
 
         if (result.isValid) {

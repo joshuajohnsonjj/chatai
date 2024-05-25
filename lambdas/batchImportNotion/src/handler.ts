@@ -15,7 +15,7 @@ import {
     publishBlockData,
     shouldConnectToCurrentBlockGroup,
 } from './utility';
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
+import { decryptData } from '../../lib/descryption';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
 import { COMPLETE_DATA_SOURCE_SYNC_ENDPOINT } from './constants';
@@ -24,8 +24,6 @@ import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { type CachedUser } from './types';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
-
-const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 
 const notionAuthors: { [notionUserId: string]: CachedUser } = {};
 const getBlockAuthor = async (
@@ -212,7 +210,7 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
             completedDataSources.push(messageBody.dataSourceId);
         }
 
-        const notionKey = rsaService.decrypt(messageBody.secret);
+        const notionKey = decryptData(process.env.RSA_PRIVATE_KEY!, messageBody.secret);
         const notionAPI = new NotionWrapper(notionKey);
 
         processingPagePromises.push(

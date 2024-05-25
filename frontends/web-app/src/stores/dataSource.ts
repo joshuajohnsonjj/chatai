@@ -15,6 +15,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
     const isLoading = ref({
         dataSourceConnections: false,
         dataSourceOptions: false,
+        connectionTest: false,
     });
 
     const retreiveConnections = async () => {
@@ -59,7 +60,11 @@ export const useDataSourceStore = defineStore('dataSource', () => {
             };
         }
 
-        return testConnection(dataSourceTypeId, ownerEntityId, userType, secret);
+        isLoading.value.connectionTest = true;
+        const res = await testConnection(dataSourceTypeId, ownerEntityId, userType, secret);
+        isLoading.value.connectionTest = false;
+
+        return res;
     };
 
     return {

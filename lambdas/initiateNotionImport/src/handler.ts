@@ -1,17 +1,15 @@
 import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
 import type { NotionSQSMessageBody } from '@joshuajohnsonjj38/notion';
 import type { Handler } from 'aws-lambda';
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import * as dotenv from 'dotenv';
 import moment from 'moment';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
 import { type InitiateImportRequestData } from '../../lib/types';
 import { v4 } from 'uuid';
+import { decryptData } from '../../lib/descryption';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
-
-const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
 
 /**
  * API Gateway /notion POST handler
@@ -20,7 +18,7 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
     const data: InitiateImportRequestData = req.body;
     console.log(`Retreiving data source ${data.dataSourceId} Notion pages`, 'DataSource');
 
-    const decryptedSecret = rsaService.decrypt(data.secret);
+    const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
     const notionService = new NotionWrapper(decryptedSecret);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
@@ -69,7 +67,7 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
         isFinal: true,
     });
 
-    await sendSqsMessageBatches(messageBatchEntries, process.env.NOTION_QUEUE_URL as string);
+    await sendSqsMessageBatches(messageBatchEntries, process.env.NOTION_QUEUE_URL!);
 
     return { success: true };
 };

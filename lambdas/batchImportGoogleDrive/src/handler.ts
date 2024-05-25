@@ -1,6 +1,6 @@
 import type { Handler, SQSEvent } from 'aws-lambda';
 import { isValidMessageBody } from './utility';
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
+import { decryptData } from '../../lib/descryption';
 import * as dotenv from 'dotenv';
 import {
     type GoogleDriveSQSFinalBody,
@@ -13,8 +13,7 @@ import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCach
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
-const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
-const gemini = new GeminiService(process.env.GEMINI_KEY as string);
+const gemini = new GeminiService(process.env.GEMINI_KEY!);
 
 const processFile = async (
     mongo: MongoDBService,
@@ -116,7 +115,7 @@ export const handler: Handler = async (event: SQSEvent) => {
             completedDataSources.push(messageBody);
         }
 
-        const googleKey = rsaService.decrypt(messageBody.secret);
+        const googleKey = decryptData(process.env.RSA_PRIVATE_KEY!, messageBody.secret);
         const googleAPI = new GoogleDriveService(googleKey);
 
         processingFilePromises.push(

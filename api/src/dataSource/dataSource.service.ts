@@ -7,7 +7,6 @@ import type {
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
 } from './dto/dataSource.dto';
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { DataSourceTypeName, EntityType, UserType } from '@prisma/client';
 import { NotionWrapper } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
@@ -24,11 +23,10 @@ import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit, snakeCase } from 'lodash';
 import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
 import axios from 'axios';
+import { decryptData } from 'src/services/decryption';
 
 @Injectable()
 export class DataSourceService {
-    private readonly rsaService = new RsaCipher(this.configService.get<string>('RSA_PRIVATE_KEY')!);
-
     constructor(
         private readonly prisma: PrismaService,
         private readonly configService: ConfigService,
@@ -159,7 +157,7 @@ export class DataSourceService {
             throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
         }
 
-        const decryptedSecret = this.rsaService.decrypt(dataSource.secret);
+        const decryptedSecret = decryptData(this.configService.get<string>('RSA_PRIVATE_KEY')!, dataSource.secret);
 
         await new GoogleDriveService(decryptedSecret).killWebhookConnection(
             dataSource.googleDriveConnection.connectionId,
@@ -194,7 +192,7 @@ export class DataSourceService {
             throw new BadRequestError('Connection already exists');
         }
 
-        const decryptedSecret = this.rsaService.decrypt(dataSource.secret);
+        const decryptedSecret = decryptData(this.configService.get<string>('RSA_PRIVATE_KEY')!, dataSource.secret);
         const googleAPI = new GoogleDriveService(decryptedSecret);
         const response = await googleAPI.initiateWebhookConnection(
             dataSource.ownerEntityId,
@@ -330,7 +328,7 @@ export class DataSourceService {
         secret: string,
         externalId?: string,
     ): Promise<{ isValid: boolean; message: string }> {
-        const decryptedSecret = this.rsaService.decrypt(secret);
+        const decryptedSecret = decryptData(this.configService.get<string>('RSA_PRIVATE_KEY')!, secret);
 
         switch (dataSourceTypeName) {
             case DataSourceTypeName.NOTION: {
