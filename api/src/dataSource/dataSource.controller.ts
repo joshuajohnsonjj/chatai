@@ -17,7 +17,13 @@ import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 export class DataSourceController {
     constructor(private readonly service: DataSourceService) {}
 
-    @Post()
+    @Get()
+    @UseGuards(AuthGuard('jwt'))
+    async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
+        return await this.service.listDataSourceTypes();
+    }
+
+    @Post('/connections')
     @UseGuards(AuthGuard('jwt'))
     async createDataSource(
         @Body() body: CreateDataSourceQueryDto,
@@ -26,10 +32,29 @@ export class DataSourceController {
         return await this.service.createDataSource(body, req.user as DecodedUserTokenDto);
     }
 
-    @Get()
+    @Patch('/connections/:dataSourceId')
     @UseGuards(AuthGuard('jwt'))
-    async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
-        return await this.service.listDataSourceTypes();
+    async updateDataSource(): Promise<void> {
+        return;
+    }
+
+    @Post('/connections/test')
+    @UseGuards(AuthGuard('jwt'))
+    async testDataSourceCredential(
+        @Body() body: CreateDataSourceQueryDto,
+        @Req() req: Request,
+    ): Promise<TestDataSourceResponseDto> {
+        return await this.service.testDataSourceCredential(body, req.user as DecodedUserTokenDto);
+    }
+
+    @Post('/connections/:dataSourceId/sync')
+    @UseGuards(AuthGuard('jwt'))
+    async syncDataSource(
+        @Param() { dataSourceId }: { dataSourceId: string },
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.syncDataSource(dataSourceId, req.user as DecodedUserTokenDto);
+        return { success: true };
     }
 
     @Get('/connections')
@@ -61,25 +86,6 @@ export class DataSourceController {
             body.dataSourceId,
             (req.user as DecodedUserTokenDto).idUser,
         );
-        return { success: true };
-    }
-
-    @Post('test')
-    @UseGuards(AuthGuard('jwt'))
-    async testDataSourceCredential(
-        @Body() body: CreateDataSourceQueryDto,
-        @Req() req: Request,
-    ): Promise<TestDataSourceResponseDto> {
-        return await this.service.testDataSourceCredential(body, req.user as DecodedUserTokenDto);
-    }
-
-    @Post('/:dataSourceId/sync')
-    @UseGuards(AuthGuard('jwt'))
-    async syncDataSource(
-        @Param() { dataSourceId }: { dataSourceId: string },
-        @Req() req: Request,
-    ): Promise<{ success: boolean }> {
-        await this.service.syncDataSource(dataSourceId, req.user as DecodedUserTokenDto);
         return { success: true };
     }
 

@@ -7,7 +7,7 @@ import type {
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
 } from './dto/dataSource.dto';
-import { DataSourceTypeName, EntityType, UserType } from '@prisma/client';
+import { DataSourceTypeName, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import { NotionWrapper } from '@joshuajohnsonjj38/notion';
 import { SlackWrapper } from '@joshuajohnsonjj38/slack';
 import {
@@ -296,16 +296,21 @@ export class DataSourceService {
                 data: {
                     dataSourceId,
                     userId: user.idUser,
+                    dataSourceType: dataSource.type.name,
+                    secret: dataSource.secret,
+                    ownerEntityId: user.organization ?? user.idUser,
+                    lastSync: dataSource.lastSync?.toISOString(),
+                },
+                headers: {
+                    'x-api-key': this.configService.get<string>('API_GATEWAY_KEY')!,
                 },
             });
         });
     }
 
-    async completedImports(dataSourceIds: string[], apiKey?: string) {
-        // FIXME: put this into table in DB
-        if (apiKey !== this.configService.get<string>('INTERNAL_API_ACCESS_KEY')!) {
-            throw new AccessDeniedError('Valid API key not provided');
-        }
+    // TODO: in addition to handling completion, need to handle error state out of either lambda...
+    async completedImports(dataSourceIds: string[], apiKey: string) {
+        await this.validateInternalAPIKey(apiKey);
 
         this.logger.log(`Updating data source ${dataSourceIds}`, 'DataSource');
 
@@ -321,6 +326,23 @@ export class DataSourceService {
                 updatedAt: new Date(),
             },
         });
+    }
+
+    private async validateInternalAPIKey(apiKey: string): Promise<void> {
+        const keyRes = await this.prisma.internalAPIKey.findUnique({
+            where: {
+                key: apiKey,
+                isDisabled: false,
+                scopes: {
+                    hasSome: [InternalAPIKeyScope.ALL, InternalAPIKeyScope.DATA_SOURCE],
+                },
+            },
+            select: { key: true },
+        });
+
+        if (!keyRes) {
+            throw new AccessDeniedError('Valid API key not provided');
+        }
     }
 
     private async testDataSourceConnection(

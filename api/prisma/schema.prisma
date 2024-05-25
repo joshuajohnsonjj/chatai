@@ -176,6 +176,18 @@ model ChatMessageInformer {
   confidence Float
 }
 
+model InternalAPIKey {
+  key        String                @id
+  isDisabled Boolean               @default(false)
+  scopes     InternalAPIKeyScope[]
+  createdAt  DateTime              @default(now())
+}
+
+enum InternalAPIKeyScope {
+  ALL
+  DATA_SOURCE
+}
+
 enum EntityType {
   INDIVIDUAL
   ORGANIZATION
