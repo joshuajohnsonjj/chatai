@@ -4,6 +4,7 @@ import {
     DataSourceTypeName,
     DataSyncInterval,
     EntityType,
+    InternalAPIKeyScope,
     PrismaClient,
     UserType,
 } from '@prisma/client';
@@ -116,6 +117,14 @@ async function main() {
     await prisma.chatMessageThread.createMany({ data: seedThreads });
 
     await prisma.chatMessage.createMany({ data: seedMessages });
+
+    await prisma.internalAPIKey.createMany({
+        data: [{
+            key: 'usuovSN4kSceU9DEXjxT9ysQA100AK5sfA59Obd8tKRF9YClYbg2ex8WhZxnIrZTDbfUA4qH8NEfDXvbXgAbtAdWtJhcB8OjWuzM9Xq5GT7BiBGaYXWLwJY5ePffC9q4',
+            isDisabled: false,
+            scopes: [InternalAPIKeyScope.DATA_SOURCE],
+        }],
+    });
 }
 
 main()

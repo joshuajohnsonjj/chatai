@@ -9,7 +9,7 @@
         "build": "nest build",
         "build:prod": "nest build",
         "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-        "start": "nest start",
+        "start": "node dist/main",
         "dev": "nest start --watch",
         "start:debug": "nest start --debug --watch",
         "start:prod": "node dist/main",
@@ -26,7 +26,6 @@
     },
     "dependencies": {
         "@aws-sdk/client-cloudwatch-logs": "^3.556.0",
-        "@aws-sdk/client-sqs": "^3.556.0",
         "@joshuajohnsonjj38/gemini": "^1.1.2",
         "@joshuajohnsonjj38/google-drive": "^1.0.6",
         "@joshuajohnsonjj38/mailer": "^1.0.1",
