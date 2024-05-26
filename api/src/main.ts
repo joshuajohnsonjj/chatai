@@ -22,9 +22,9 @@ const cloudwatchLogger = WinstonModule.createLogger({
     format: winston.format.uncolorize(),
     transports: [
         new CloudWatchTransport({
-            name: 'Cloudwatch Logs',
+            name: 'Cloudwatch API Logs',
             logGroupName: process.env.CLOUDWATCH_GROUP_NAME,
-            logStreamName: process.env.CLOUDWATCH_STREAM_NAME,
+            logStreamName: `${process.env.CLOUDWATCH_GROUP_NAME}-${process.env.NODE_ENV}`,
             awsAccessKeyId: process.env.AWS_ACCESS_KEY,
             awsSecretKey: process.env.AWS_KEY_SECRET,
             awsRegion: process.env.AWS_REGION,
