@@ -51,6 +51,7 @@ async function main() {
                 requiredCredentialTypes: ['secret'],
             },
             {
+                id: 'ea998762-bd13-41e5-bc6c-8277bf142c1f',
                 name: DataSourceTypeName.GOOGLE_DRIVE,
                 category: DataSourceCategory.OTHER,
                 requiredCredentialTypes: ['secret'],
@@ -66,6 +67,13 @@ async function main() {
                 ownerEntityId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
                 ownerEntityType: EntityType.INDIVIDUAL,
                 secret: 'RbpMDiBN38ZFvT3QV7hrLTG1VGTF6RTJOAthw/9hd1B8yDVV0h34qyH2oQ6rMZRrAUDiSo7CNlanK/5aOuaYaAXxMF/+wZMfWGwpWlckGlF4uM8mq6YszuU9rx6LCUvFPWy4rGnKKqI0cbhJPKF8XWt6LnggPA0ppyF4uG4gDfCfDFnqUthP/PI8hmbl/eKWK3WclwzVMwO1IaP0GSTo6VUi3v6ODCSDWCHZ6KQSL2hoZGMBCp8XabmTaQXd+OVAPlz6JGh7f3fSz+ywVgzuEUWjw8sYNBNlJMaz920x+1YsWe4fk0lOrNtK6+MxBY5CgUBW1W/KiRhjZ489kjFGtQ==',
+            },
+            {
+                id: '4aa61374-b7d5-4728-9a63-49cf0582007f',
+                dataSourceTypeId: 'ea998762-bd13-41e5-bc6c-8277bf142c1f',
+                ownerEntityId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
+                ownerEntityType: EntityType.INDIVIDUAL,
+                secret: 'HyPH8F1eld7YApo+g8t1rHRtrb+r+OhZa8jE5MahTcgKO2gpVI8TOqRpUkyH732Dgx+kmd7wql0+I6XhQWrohDEtqsunqZEnZG9b4ZRkQeWab37m6qEjbepkBi62Tg4ngEszqcxBCBaiKkXrPzhvv+eYHZUwwt8k9Ske97MuoRvkzHNNODstjAR+ZXKBY87o1aq6RXfLr7N93ZnMDNIRzXuUkfco0GgAhMVQXsFZHOT2gS8QdN642NzWzTI4J8/JH7lHEpEPi1l0ZyRIjYdEfIXRwSUiBoVUWDDPJ42nsDkGeGeiIDeF6wDmwwwkb+78cggdyOClFdeux2RX9GUna3LdgdnkFabEF4wwpRiaxEBFC/P/XrJ1g2/IqZYW5llE6H8St9HJiJGnU5uWiEUS3XP8FRbFPvVWWpHh4aP+hxB9y7MUxf7io9EUGmIcdUukqqo5Z2hc/353eOFqMMs0DKm+nkRG1xdC2E2uO3usaPQ9DmtPU7utqUgoFuXVolbUrR4dIfiKt4uXaV2+g2qKm6UqjPIMEr+BlMBzez0XLjj/Bu9yiR0b4JEBDCqyeTTG2lWjoStpWb8kiCiA4vMJFii0Pm954Sfrb++D/jKL+Jkj4Y/0IQEYnQQLj49Fr2ZKMYPxBsWdD1Gb22EyV197ukRamV+d/b3BnY/+w7WdS/Q',
             },
         ],
     });

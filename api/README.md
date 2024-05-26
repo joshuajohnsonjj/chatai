@@ -69,3 +69,12 @@ $ yarn run test:cov
 1. run `npx prisma generate` generate based on schema file
 
 `npx prisma migrate reset` to wipe db and run all migrations
+
+
+## Heroku deploys (manual, temp)
+
+1. set git remote `git remote ...`
+1. add, commit
+1. from root dir, `git subtree push --prefix api heroku main`
+
+after set git remote back to github: `git remote ...`
