@@ -7,7 +7,7 @@ import type {
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
 } from './dto/dataSource.dto';
-import { EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
+import { DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
     AccessDeniedError,
     BadCredentialsError,
@@ -24,6 +24,7 @@ import {
     modifyGoogleDriveWebhookConnection,
     testDataSourceConnection,
 } from 'src/services/apiGateway';
+import * as moment from 'moment';
 
 @Injectable()
 export class DataSourceService {
@@ -332,19 +333,85 @@ export class DataSourceService {
 
         this.logger.log(`Updating data sources for completed import ${dataSourceIds}`, 'DataSource');
 
-        // TODO: set next import date
-        await this.prisma.dataSource.updateMany({
-            where: {
-                id: {
-                    in: dataSourceIds,
-                },
-            },
-            data: {
-                lastSync: new Date(),
-                isSyncing: false,
-                updatedAt: new Date(),
-            },
-        });
+        const getAccountPlanSyncInterval = async (
+            entityType: EntityType,
+            id: string,
+        ): Promise<DataSyncInterval | undefined> => {
+            if (entityType === EntityType.INDIVIDUAL) {
+                const res = await this.prisma.user.findUnique({
+                    where: { id },
+                    select: { plan: { select: { dataSyncInterval: true } } },
+                });
+                return res?.plan?.dataSyncInterval;
+            }
+            const res = await this.prisma.organization.findUnique({
+                where: { id },
+                select: { plan: { select: { dataSyncInterval: true } } },
+            });
+            return res?.plan?.dataSyncInterval;
+        };
+
+        const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
+            if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
+                return null;
+            }
+
+            switch (interval) {
+                case DataSyncInterval.INSTANT:
+                    return moment().add(30, 'm').toDate();
+                case DataSyncInterval.SEMI_DAILY:
+                    return moment().add(12, 'h').toDate();
+                case DataSyncInterval.DAILY:
+                    return moment().add(24, 'h').toDate();
+                case DataSyncInterval.WEEKLY:
+                default:
+                    return moment().add(7, 'd').toDate();
+            }
+        };
+
+        await Promise.all(
+            dataSourceIds.map(async (dataSourceId) => {
+                const queryRes = await this.prisma.dataSource.findUnique({
+                    where: { id: dataSourceId },
+                    select: {
+                        ownerEntityId: true,
+                        ownerEntityType: true,
+                        type: {
+                            select: {
+                                isLiveSyncAvailable: true,
+                            },
+                        },
+                    },
+                });
+
+                if (!queryRes) {
+                    this.logger.warn(`Query returned no results for ${dataSourceId}`, 'DataSource');
+                    return;
+                }
+
+                const syncInterval = await getAccountPlanSyncInterval(queryRes.ownerEntityType, queryRes.ownerEntityId);
+
+                if (!syncInterval) {
+                    this.logger.warn(
+                        `Failed to retrieve account plan for ${queryRes.ownerEntityType} ${queryRes.ownerEntityId}`,
+                        'DataSource',
+                    );
+                    return;
+                }
+
+                // TODO: set cloudwatch event for next sync
+
+                await this.prisma.dataSource.update({
+                    where: { id: dataSourceId },
+                    data: {
+                        lastSync: new Date(),
+                        isSyncing: false,
+                        nextScheduledSync: syncIntervalToNextSyncDate(syncInterval, queryRes.type.isLiveSyncAvailable),
+                        updatedAt: new Date(),
+                    },
+                });
+            }),
+        );
     }
 
     private async validateInternalAPIKey(apiKey: string): Promise<void> {

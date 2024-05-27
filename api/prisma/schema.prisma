@@ -16,8 +16,8 @@ model DataSource {
   dataSourceTypeId  String
   ownerEntityId     String
   ownerEntityType   EntityType
-  secret            String         @unique
-  externalId        String?        @unique
+  secret            String
+  externalId        String?
   isSyncing         Boolean        @default(false)
   nextScheduledSync DateTime?
   type              DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
