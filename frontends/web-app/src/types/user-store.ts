@@ -1,4 +1,5 @@
 import { ChatResponseTone } from './chat-store';
+import { DataSyncInterval } from './responses';
 
 export enum UserType {
     INDIVIDUAL = 'INDIVIDUAL',
@@ -38,5 +39,14 @@ export interface OrgInfo {
 }
 
 export interface AccountPlan {
-    id: string;
+    isActive: boolean;
+    adHocUploadsEnabled: boolean;
+    dailyMessageQuota: number | null;
+    dailyQueryQuota: number | null;
+    dataSyncInterval: DataSyncInterval;
+    integrationsEnabled: boolean;
+    maxDataSources: number | null;
+    isAdfree: boolean;
+    maxStorageMegaBytes: number;
+    stripeProductId: string;
 }

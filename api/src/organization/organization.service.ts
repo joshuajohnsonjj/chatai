@@ -67,34 +67,15 @@ export class OrganizationService {
             id: organization.id,
             name: organization.name,
             planId: organization.planId,
-            plan: {
-                isActive: accountPlan.isActive,
-                maxDataSources: accountPlan.maxDataSources,
-                dataSyncInterval: accountPlan.dataSyncInterval,
-                dailyMessageQuota: accountPlan.dailyMessageQuota,
-                adHocUploadsEnabled: accountPlan.adHocUploadsEnabled,
-                integrationsEnabled: accountPlan.integrationsEnabled,
-            },
+            plan: accountPlan,
         };
     }
 
     async getOrganizationById(orgId: string): Promise<OrganizationResponseDto> {
         const organization = await this.prisma.organization.findUnique({
             where: { id: orgId },
-            select: {
-                id: true,
-                name: true,
-                planId: true,
-                plan: {
-                    select: {
-                        isActive: true,
-                        maxDataSources: true,
-                        dataSyncInterval: true,
-                        dailyMessageQuota: true,
-                        adHocUploadsEnabled: true,
-                        integrationsEnabled: true,
-                    },
-                },
+            include: {
+                plan: true,
             },
         });
 
@@ -106,14 +87,7 @@ export class OrganizationService {
             id: organization.id,
             name: organization.name,
             planId: organization.planId,
-            plan: {
-                isActive: organization.plan?.isActive,
-                maxDataSources: organization.plan?.maxDataSources,
-                dataSyncInterval: organization.plan?.dataSyncInterval,
-                dailyMessageQuota: organization.plan?.dailyMessageQuota,
-                adHocUploadsEnabled: organization.plan?.adHocUploadsEnabled,
-                integrationsEnabled: organization.plan?.integrationsEnabled,
-            },
+            plan: organization.plan,
         };
     }
 

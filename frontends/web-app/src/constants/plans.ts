@@ -6,7 +6,7 @@ export const IndividualAccountPlans = [
         annualPrice: 0,
         features: [
             {
-                text: 'Up to 2 data source connections',
+                text: 'Up to 2 data connections',
                 enabled: true,
             },
             {
@@ -42,11 +42,11 @@ export const IndividualAccountPlans = [
     {
         name: 'Essentials',
         description: 'The ideal plan for most users',
-        price: 7.99,
-        annualPrice: 76.99,
+        price: 6.99,
+        annualPrice: 5.59,
         features: [
             {
-                text: 'Up to 4 integration connections',
+                text: 'Up to 4 data connections',
                 enabled: true,
             },
             {
@@ -82,11 +82,11 @@ export const IndividualAccountPlans = [
     {
         name: 'Unlimited',
         description: 'Our most capable plan for power users',
-        price: 12.99,
-        annualPrice: 124.99,
+        price: 10.99,
+        annualPrice: 8.79,
         features: [
             {
-                text: 'Unlimited integration connections',
+                text: 'Unlimited data connections',
                 enabled: true,
             },
             {

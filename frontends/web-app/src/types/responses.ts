@@ -67,6 +67,13 @@ export interface ChatMessageResponse {
     informers: ChatMessageInformer[];
 }
 
+export enum DataSyncInterval {
+    INSTANT = 'INSTANT',
+    SEMI_DAILY = 'SEMI_DAILY',
+    DAILY = 'DAILY',
+    WEEKLY = 'WEEKLY',
+}
+
 export interface UserInfoResponse {
     id: string;
     createdAt: Date;
@@ -93,10 +100,13 @@ export interface UserInfoResponse {
         updatedAt: Date;
         isActive: boolean;
         adHocUploadsEnabled: boolean;
-        dailyMessageQuota: number;
-        dataSyncInterval: string;
+        dailyMessageQuota: number | null;
+        dailyQueryQuota: number | null;
+        dataSyncInterval: DataSyncInterval;
         integrationsEnabled: boolean;
-        maxDataSources: number;
+        maxDataSources: number | null;
+        isAdfree: boolean;
+        maxStorageMegaBytes: number;
         stripeProductId: string;
     } | null;
     settings: {

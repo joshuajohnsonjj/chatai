@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { getUserInfo, loginUser } from '../requests';
-import { OrgInfo, UserInfo, UserType } from '../types/user-store';
+import { AccountPlan, OrgInfo, UserInfo, UserType } from '../types/user-store';
 import { computed, ref } from 'vue';
 import { omit } from 'lodash';
 import { TOKEN_STORAGE_KEY } from '../constants';
@@ -16,6 +16,8 @@ export const useUserStore = defineStore('user', () => {
         planId: null,
         isAccountActive: null,
     });
+
+    const planData = ref<AccountPlan | null>();
 
     const userEntityId = computed((): string => {
         if (!userData.value) {
@@ -66,6 +68,8 @@ export const useUserStore = defineStore('user', () => {
 
         if (resp.organization) {
             userOrgData.value = resp.organization;
+        } else {
+            planData.value = resp.plan;
         }
 
         isLoading.value = false;
@@ -76,6 +80,7 @@ export const useUserStore = defineStore('user', () => {
         userOrgData,
         isLoading,
         userEntityId,
+        planData,
         login,
         setCurrentUser,
     };

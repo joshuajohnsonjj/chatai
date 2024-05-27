@@ -1,4 +1,4 @@
-import { ChatTone, UserType } from '@prisma/client';
+import { ChatTone, DataSyncInterval, UserType } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsBooleanString, IsOptional } from 'class-validator';
 
@@ -41,9 +41,12 @@ export class GetUserInfoResponseDto {
         isActive: boolean;
         adHocUploadsEnabled: boolean;
         dailyMessageQuota: number | null;
-        dataSyncInterval: string;
+        dailyQueryQuota: number | null;
+        dataSyncInterval: DataSyncInterval;
         integrationsEnabled: boolean;
-        maxDataSources: number;
+        maxDataSources: number | null;
+        isAdfree: boolean;
+        maxStorageMegaBytes: number;
         stripeProductId: string;
     } | null;
     settings: {

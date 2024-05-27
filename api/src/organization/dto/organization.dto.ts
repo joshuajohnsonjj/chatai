@@ -13,12 +13,16 @@ export class OrganizationResponseDto {
     name: string;
     planId: string | null;
     plan: {
-        isActive?: boolean;
-        maxDataSources?: number;
-        dataSyncInterval?: DataSyncInterval;
-        dailyMessageQuota?: number | null;
-        adHocUploadsEnabled?: boolean;
-        integrationsEnabled?: boolean;
+        isActive: boolean;
+        adHocUploadsEnabled: boolean;
+        dailyMessageQuota: number | null;
+        dailyQueryQuota: number | null;
+        dataSyncInterval: DataSyncInterval;
+        integrationsEnabled: boolean;
+        maxDataSources: number | null;
+        isAdfree: boolean;
+        maxStorageMegaBytes: number;
+        stripeProductId: string;
     };
 }
 

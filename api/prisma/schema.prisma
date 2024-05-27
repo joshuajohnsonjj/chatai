@@ -19,7 +19,7 @@ model DataSource {
   secret            String         @unique
   externalId        String?        @unique
   isSyncing         Boolean        @default(false)
-  isLiveSyncEnabled Boolean        @default(false)
+  nextScheduledSync DateTime?
   type              DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
 
   googleDriveConnection GoogleDriveWebhookConnection?
@@ -116,9 +116,12 @@ model AccountPlan {
   isActive            Boolean          @default(true)
   adHocUploadsEnabled Boolean
   dailyMessageQuota   Int?
+  dailyQueryQuota     Int?
   dataSyncInterval    DataSyncInterval
   integrationsEnabled Boolean
-  maxDataSources      Int
+  maxDataSources      Int?
+  isAdfree            Boolean          @default(false)
+  maxStorageMegaBytes Int              @default(256)
   stripeProductId     String           @unique
   registeredOrgs      Organization[]
   registeredUsers     User[]
@@ -215,6 +218,7 @@ enum DataSourceCategory {
 
 enum DataSyncInterval {
   INSTANT
+  SEMI_DAILY
   DAILY
   WEEKLY
 }

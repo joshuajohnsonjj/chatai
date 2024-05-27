@@ -7,19 +7,26 @@
                 <div class="d-flex justify-start">
                     <p class="text-caption text-secondary sub-info-line-height">
                         <HubOutline style="width: 16px; height: 16px; margin-bottom: -3px" class="icon-secondary" />
-                        {{ dataSources.length }} Data sources
+                        {{ dataSources.length }}
+                        {{ planData.maxDataSources ? `of ${planData.maxDataSources}` : '' }} Data sources connected
                     </p>
                     <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
                     <p class="text-caption text-secondary sub-info-line-height">
                         <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
                         <!-- TODO: figure out how to calculate storage -->
-                        4 GB used
+                        52 of {{ planData.maxStorageMegaBytes }} MB used
                     </p>
                 </div>
             </div>
         </div>
 
-        <div class="d-flex flex-wrap">
+        <div v-if="isLoading.dataSourceConnections">
+            <div class="d-flex justify-center">
+                <v-progress-circular color="secondary" :size="80" indeterminate></v-progress-circular>
+            </div>
+            <div class="text-secondary text-body-1 text-center my-2">Loading integrations...</div>
+        </div>
+        <div v-else class="d-flex flex-wrap">
             <div
                 v-for="dataSource in dataSources"
                 :key="dataSource.id"
@@ -87,9 +94,13 @@
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import { dateToString, formatStringStartCase } from '../utility';
     import { RouteName } from '../types/router';
+    import { useUserStore } from '../stores/user';
 
     const dataSourceStore = useDataSourceStore();
-    const { connections: dataSources } = storeToRefs(dataSourceStore);
+    const { connections: dataSources, isLoading } = storeToRefs(dataSourceStore);
+
+    const userStore = useUserStore();
+    const { planData } = storeToRefs(userStore);
 
     onBeforeMount(async () => {
         if (!dataSources.value.length) {

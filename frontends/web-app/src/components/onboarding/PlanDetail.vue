@@ -1,11 +1,8 @@
 <template>
     <div
         class="border-primary rounded ma-4 grow-hover"
-        :class="{ selected: name === selectedPlan }"
-        @click="
-            selectedPlan = name;
-            $emit('selected', name);
-        "
+        :class="{ selected: isSelected }"
+        @click="$emit('selected', name)"
     >
         <div class="plan-header pa-4 bottom-border-primary bottom-border-primary">
             <div class="text-h5 text-primary font-weight-bold w-100 text-center">{{ name }}</div>
@@ -16,9 +13,7 @@
                 <div class="text-h4 text-primary font-weight-bold py-6">
                     {{ price === 0 ? 'FREE' : `$${price}` }}
                 </div>
-                <div class="text-body-1 text-primary font-weight-bold py-6 mt-4" v-if="price > 0">
-                    /{{ priceLabel }}
-                </div>
+                <div class="text-body-1 text-primary font-weight-bold py-6 mt-4" v-if="price > 0">/mo</div>
             </div>
             <div v-for="feature in features" :key="feature.text" class="d-flex justify-start px-6">
                 <v-icon v-if="feature.enabled" icon="mdi-check-bold" color="success"></v-icon>
@@ -32,9 +27,7 @@
 </template>
 
 <script lang="ts" setup>
-    import { computed, ref } from 'vue';
-
-    const props = defineProps<{
+    defineProps<{
         name: string;
         description: string;
         price: number;
@@ -43,13 +36,10 @@
             text: string;
             enabled: boolean;
         }[];
+        isSelected: boolean;
     }>();
 
     defineEmits(['selected']);
-
-    const selectedPlan = ref<string | null>(null);
-
-    const priceLabel = computed(() => (props.isAnnual ? 'yr' : 'mo'));
 </script>
 
 <style scoped>

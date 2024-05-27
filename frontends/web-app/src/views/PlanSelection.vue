@@ -43,6 +43,7 @@
                 :price="isAnnual ? plan.annualPrice : plan.price"
                 :isAnnual="isAnnual"
                 :features="plan.features"
+                :is-selected="selectedPlan === plan.name"
                 @selected="(name: string) => (selectedPlan = name)"
             />
         </div>
