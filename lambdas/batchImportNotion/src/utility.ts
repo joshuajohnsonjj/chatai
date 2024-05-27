@@ -11,8 +11,8 @@ import type {
     NotionTableRow,
     NotionToDo,
     NotionWrapper,
-} from '@joshuajohnsonjj38/notion';
-import { ImportableBlockTypes, JoinableBlockTypes, NotionBlockType, getBlockUrl } from '@joshuajohnsonjj38/notion';
+} from '../../lib/dataSources/notion';
+import { ImportableBlockTypes, JoinableBlockTypes, NotionBlockType, getBlockUrl } from '../../lib/dataSources/notion';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';

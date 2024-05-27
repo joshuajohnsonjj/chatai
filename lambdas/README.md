@@ -7,7 +7,7 @@ Uses aws sam cli to deploy. Deploy function code only, dependancies deployed as 
 Deployment steps:
 
 1. Create a `template.yml` file
-1. `sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket <BUCKET_NAME>`
+1. `sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket chat-ai-lambdas`
 1. `sam deploy --template-file packaged.yml --stack-name <STACK_NAME> --capabilities CAPABILITY_IAM --region us-east-1`
 
 Deploying Layer:

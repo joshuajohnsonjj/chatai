@@ -19,9 +19,11 @@ import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit } from 'lodash';
-import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
-import { decryptData } from 'src/services/decryption';
-import { initiateDataSourceImport, testDataSourceConnection } from 'src/services/apiGateway';
+import {
+    initiateDataSourceImport,
+    modifyGoogleDriveWebhookConnection,
+    testDataSourceConnection,
+} from 'src/services/apiGateway';
 
 @Injectable()
 export class DataSourceService {
@@ -167,12 +169,17 @@ export class DataSourceService {
             throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
         }
 
-        const decryptedSecret = decryptData(this.configService.get<string>('RSA_PRIVATE_KEY')!, dataSource.secret);
-
-        await new GoogleDriveService(decryptedSecret).killWebhookConnection(
-            dataSource.googleDriveConnection.connectionId,
-            dataSource.googleDriveConnection.resourceId,
+        await modifyGoogleDriveWebhookConnection(
+            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+            this.configService.get<string>('API_GATEWAY_KEY')!,
+            false,
+            {
+                secret: dataSource.secret,
+                connectionId: dataSource.googleDriveConnection.connectionId,
+                resourceId: dataSource.googleDriveConnection.resourceId,
+            },
         );
+
         await this.prisma.googleDriveWebhookConnection.delete({
             where: { id: dataSource.googleDriveConnection.id },
         });
@@ -202,12 +209,16 @@ export class DataSourceService {
             throw new BadRequestError('Connection already exists');
         }
 
-        const decryptedSecret = decryptData(this.configService.get<string>('RSA_PRIVATE_KEY')!, dataSource.secret);
-        const googleAPI = new GoogleDriveService(decryptedSecret);
-        const response = await googleAPI.initiateWebhookConnection(
-            dataSource.ownerEntityId,
-            this.configService.get<string>('GOOGLE_WEBHOOK_HANDLER_ADDRESS')!,
+        const response = await modifyGoogleDriveWebhookConnection(
+            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+            this.configService.get<string>('API_GATEWAY_KEY')!,
+            false,
+            {
+                secret: dataSource.secret,
+                ownerEntityId: dataSource.ownerEntityId,
+            },
         );
+
         await this.prisma.googleDriveWebhookConnection.create({
             data: {
                 connectionId: response.id,
