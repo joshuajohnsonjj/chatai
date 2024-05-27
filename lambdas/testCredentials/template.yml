@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: 'AWS::Serverless-2016-10-31'
+Description: 'Invoked via API Gateway, tests validity of provided user data source credentials'
+
+Resources:
+    testCredentials:
+        Type: 'AWS::Serverless::Function'
+        Properties:
+            Handler: testCredentials/src/handler.handler
+            Runtime: nodejs20.x
+            CodeUri: ./dist
+            Timeout: 15

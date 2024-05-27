@@ -1,13 +1,13 @@
 {
-    "name": "initiate-notion-import",
+    "name": "test-credentials",
     "version": "1.0.0",
     "main": "dist/index.js",
     "scripts": {
         "build": "tsc",
-        "local": "node -e \"console.log(require('./dist/initiateNotionImport/src/handler').handler(require('../testEvents/initiateNotionImport.json')));\"",
+        "local": "node -e \"console.log(require('./dist/testCredentials/src/handler').handler(require('../testEvents/testCredentials.json')));\"",
         "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
         "package": "sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket chat-ai-lambdas",
-        "deploy": "sam deploy --template-file packaged.yml --stack-name lambda-initiate-notion-import --capabilities CAPABILITY_IAM --region us-east-1"
+        "deploy": "sam deploy --template-file packaged.yml --stack-name lambda-test-credentials --capabilities CAPABILITY_IAM --region us-east-1"
     },
     "devDependencies": {
         "typescript": "^5.4.5"

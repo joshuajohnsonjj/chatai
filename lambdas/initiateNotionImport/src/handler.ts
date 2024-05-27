@@ -1,5 +1,5 @@
-import { NotionWrapper, getPageTitle } from '@joshuajohnsonjj38/notion';
-import type { NotionSQSMessageBody } from '@joshuajohnsonjj38/notion';
+import { NotionWrapper, getPageTitle } from '../../lib/dataSources/notion';
+import type { NotionSQSMessageBody } from '../../lib/dataSources/notion';
 import type { Handler } from 'aws-lambda';
 import * as dotenv from 'dotenv';
 import moment from 'moment';

@@ -7,7 +7,7 @@ import {
     type GoogleDriveChangeEvent,
     docWebUrl,
     buildPayloadTextsFile,
-} from '@joshuajohnsonjj38/google-drive';
+} from '../../lib/dataSources/googleDrive';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 
 dotenv.config({ path: __dirname + '/../.env' });

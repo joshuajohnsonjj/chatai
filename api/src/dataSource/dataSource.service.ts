@@ -7,9 +7,7 @@ import type {
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
 } from './dto/dataSource.dto';
-import { DataSourceTypeName, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
-import { NotionWrapper } from '@joshuajohnsonjj38/notion';
-import { SlackWrapper } from '@joshuajohnsonjj38/slack';
+import { EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
     AccessDeniedError,
     BadCredentialsError,
@@ -20,10 +18,10 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
-import { omit, snakeCase } from 'lodash';
+import { omit } from 'lodash';
 import { GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
-import axios from 'axios';
 import { decryptData } from 'src/services/decryption';
+import { initiateDataSourceImport, testDataSourceConnection } from 'src/services/apiGateway';
 
 @Injectable()
 export class DataSourceService {
@@ -57,10 +55,14 @@ export class DataSourceService {
 
         this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
 
-        const { isValid, message } = await this.testDataSourceConnection(
-            dataSourceType.name,
-            params.secret,
-            params.externalId,
+        const { isValid, message } = await testDataSourceConnection(
+            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+            this.configService.get<string>('API_GATEWAY_KEY')!,
+            {
+                dataSourceTypeName: dataSourceType.name,
+                secret: params.secret,
+                externalId: params.externalId,
+            },
         );
 
         if (!isValid) {
@@ -123,7 +125,15 @@ export class DataSourceService {
             },
         });
 
-        return await this.testDataSourceConnection(dataSourceType.name, params.secret, params.externalId);
+        return await testDataSourceConnection(
+            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+            this.configService.get<string>('API_GATEWAY_KEY')!,
+            {
+                dataSourceTypeName: dataSourceType.name,
+                secret: params.secret,
+                externalId: params.externalId,
+            },
+        );
     }
 
     async killGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
@@ -289,22 +299,19 @@ export class DataSourceService {
                 data: { isSyncing: true, updatedAt: new Date() },
             });
 
-            axios({
-                baseURL: this.configService.get<string>('BASE_API_GATEWAY_URL')!,
-                url: snakeCase(dataSource.type.name),
-                method: 'post',
-                data: {
+            initiateDataSourceImport(
+                this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+                this.configService.get<string>('API_GATEWAY_KEY')!,
+                dataSource.type.name,
+                {
                     dataSourceId,
                     userId: user.idUser,
                     dataSourceType: dataSource.type.name,
                     secret: dataSource.secret,
                     ownerEntityId: user.organization ?? user.idUser,
-                    lastSync: dataSource.lastSync?.toISOString(),
+                    lastSync: dataSource.lastSync?.toISOString() ?? null,
                 },
-                headers: {
-                    'x-api-key': this.configService.get<string>('API_GATEWAY_KEY')!,
-                },
-            });
+            );
         });
     }
 
@@ -312,8 +319,9 @@ export class DataSourceService {
     async completedImports(dataSourceIds: string[], apiKey: string) {
         await this.validateInternalAPIKey(apiKey);
 
-        this.logger.log(`Updating data source ${dataSourceIds}`, 'DataSource');
+        this.logger.log(`Updating data sources for completed import ${dataSourceIds}`, 'DataSource');
 
+        // TODO: set next import date
         await this.prisma.dataSource.updateMany({
             where: {
                 id: {
@@ -342,39 +350,6 @@ export class DataSourceService {
 
         if (!keyRes) {
             throw new AccessDeniedError('Valid API key not provided');
-        }
-    }
-
-    private async testDataSourceConnection(
-        dataSourceTypeName: string,
-        secret: string,
-        externalId?: string,
-    ): Promise<{ isValid: boolean; message: string }> {
-        const decryptedSecret = decryptData(this.configService.get<string>('RSA_PRIVATE_KEY')!, secret);
-
-        switch (dataSourceTypeName) {
-            case DataSourceTypeName.NOTION: {
-                const validity = await new NotionWrapper(decryptedSecret).testConnection();
-                return { isValid: validity, message: validity ? '' : 'Invalid token' };
-            }
-            case DataSourceTypeName.GOOGLE_DRIVE: {
-                const validity = await new GoogleDriveService(decryptedSecret).testConnection();
-                return { isValid: validity, message: validity ? '' : 'Invalid token' };
-            }
-            case DataSourceTypeName.SLACK: {
-                const validity = await new SlackWrapper(decryptedSecret).testConnection(externalId ?? '');
-                return {
-                    isValid: validity.appId && validity.token,
-                    message:
-                        validity.appId && validity.token
-                            ? ''
-                            : !validity.appId
-                              ? 'Invalid app id'
-                              : 'Invalid token or missing scopes',
-                };
-            }
-            default:
-                return { isValid: false, message: 'Invalid data source type' };
         }
     }
 

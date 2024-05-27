@@ -6,3 +6,9 @@ export interface InitiateImportRequestData {
     ownerEntityId: string;
     lastSync: string | null;
 }
+
+export interface TestCredentialsRequestData {
+    dataSourceTypeName: string;
+    secret: string;
+    externalId?: string;
+}

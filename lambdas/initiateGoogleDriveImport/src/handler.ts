@@ -6,7 +6,7 @@ import moment from 'moment';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
 import { InitiateImportRequestData } from '../../lib/types';
-import { GoogleDriveSQSMessageBody, GoogleDriveService } from '@joshuajohnsonjj38/google-drive';
+import { GoogleDriveSQSMessageBody, GoogleDriveService } from '../../lib/dataSources/googleDrive';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 

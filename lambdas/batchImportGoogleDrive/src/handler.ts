@@ -6,7 +6,7 @@ import {
     type GoogleDriveSQSFinalBody,
     GoogleDriveService,
     buildPayloadTextsFile,
-} from '@joshuajohnsonjj38/google-drive';
+} from '../../lib/dataSources/googleDrive';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';

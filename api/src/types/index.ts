@@ -20,3 +20,18 @@ export interface CognitoIdUserPayload {
     'custom:oganizationUserRole'?: string;
     'custom:organization'?: string;
 }
+
+export interface APIGatewayInitiateImportParams {
+    dataSourceId: string;
+    dataSourceType: string;
+    userId: string;
+    secret: string;
+    ownerEntityId: string;
+    lastSync: string | null;
+}
+
+export interface APIGatewayTestCredentialsParams {
+    dataSourceTypeName: string;
+    secret: string;
+    externalId?: string;
+}

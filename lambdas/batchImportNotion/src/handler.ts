@@ -1,10 +1,10 @@
-import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '@joshuajohnsonjj38/notion';
+import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '../../lib/dataSources/notion';
 import type {
     NotionBlock,
     NotionBlockDetailResponse,
     NotionTable,
     NotionAuthorAttribution,
-} from '@joshuajohnsonjj38/notion';
+} from '../../lib/dataSources/notion';
 import type { Handler, SQSEvent } from 'aws-lambda';
 import {
     collectAllChildren,
@@ -230,15 +230,17 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
     if (completedDataSources.length) {
         console.log('Sync completed of data source records:', completedDataSources);
 
-        // TODO: fill in host env once first live deployment happens
-        // await axios({
-        //     method: 'patch',
-        //     baseURL: process.env.BASE_API_HOST,
-        //     url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
-        //     data: {
-        //         dataSourceIds: completedDataSources,
-        //     },
-        // });
+        await axios({
+            method: 'patch',
+            baseURL: process.env.INTERNAL_BASE_API_HOST!,
+            url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
+            data: {
+                dataSourceIds: completedDataSources,
+            },
+            headers: {
+                'api=key': process.env.INTERNAL_API_KEY!,
+            },
+        });
     }
 
     return { success: true };
