@@ -1,0 +1,1 @@
+export const EMBEDDING_SIZE_IN_BYTES = 6144;

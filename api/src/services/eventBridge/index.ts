@@ -1,5 +1,11 @@
-import { EventBridgeClient, PutRuleCommand, PutTargetsCommand } from '@aws-sdk/client-eventbridge';
+import {
+    EventBridgeClient,
+    PutRuleCommand,
+    type PutRuleCommandInput,
+    PutTargetsCommand,
+} from '@aws-sdk/client-eventbridge';
 import { Logger } from '@nestjs/common';
+import type { APIGatewayInitiateImportParams } from 'src/types';
 
 const dateToCron = (date: Date): string => {
     const minutes = date.getUTCMinutes();
@@ -11,23 +17,24 @@ const dateToCron = (date: Date): string => {
     return `${minutes} ${hours} ${dayOfMonth} ${month} ? ${year}`;
 };
 
-export const createEventBridgeSchedule = async (
+export const createEventBridgeScheduledExecution = async (
     region: string,
-    executionDate: Date,
     lambdaArn: string,
     logger: Logger,
-) => {
+    executionDate: Date,
+    payload: APIGatewayInitiateImportParams,
+): Promise<void> => {
     const eventBridgeClient = new EventBridgeClient({ region });
+
     try {
         const ruleName = `rule-${Date.now()}`;
-        const ruleParams = {
+        const ruleParams: PutRuleCommandInput = {
             Name: ruleName,
             ScheduleExpression: `cron(${dateToCron(executionDate)})`,
             State: 'ENABLED',
         };
 
-        const ruleCommand = new PutRuleCommand(ruleParams);
-        const ruleResponse = await eventBridgeClient.send(ruleCommand);
+        const ruleResponse = await eventBridgeClient.send(new PutRuleCommand(ruleParams));
         logger.log(`Added scheduler rule ${ruleResponse.RuleArn} for execution on ${executionDate.toISOString()}`);
 
         const targetParams = {
@@ -36,12 +43,12 @@ export const createEventBridgeSchedule = async (
                 {
                     Id: 'MyLambdaFunctionTarget',
                     Arn: lambdaArn,
+                    Input: JSON.stringify(payload),
                 },
             ],
         };
 
-        const targetCommand = new PutTargetsCommand(targetParams);
-        await eventBridgeClient.send(targetCommand);
+        await eventBridgeClient.send(new PutTargetsCommand(targetParams));
         logger.log('Target added.');
     } catch (error) {
         logger.error('Error creating EventBridge schedule:', error);

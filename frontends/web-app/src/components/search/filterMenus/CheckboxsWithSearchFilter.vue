@@ -25,10 +25,7 @@
 
         <div class="d-flex justify-space-between">
             <div class="text-primary text-caption">Selected: {{ selectedOptions.length }}</div>
-            <div
-                class="text-secondary font-weight-bold text-caption button-hover link"
-                @click="selectedOptions = []"
-            >
+            <div class="text-secondary font-weight-bold text-caption button-hover link" @click="selectedOptions = []">
                 Clear Selections
             </div>
         </div>

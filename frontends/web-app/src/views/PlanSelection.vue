@@ -54,7 +54,6 @@
                     View full plan comparisons
                     <v-icon icon="mdi-arrow-right" class="pl-2"></v-icon>
                 </div>
-                
             </div>
             <div class="d-flex justify-end">
                 <div class="text-h6 text-primary mr-2" style="line-height: 55px">Monthly</div>

@@ -27,7 +27,7 @@ import {
     testDataSourceConnection,
 } from 'src/services/apiGateway';
 import * as moment from 'moment';
-import { createEventBridgeSchedule } from 'src/services/eventBridge';
+import { createEventBridgeScheduledExecution } from 'src/services/eventBridge';
 import { BYTES_IN_MB } from 'src/constants';
 
 @Injectable()
@@ -409,6 +409,8 @@ export class DataSourceService {
                         ownerEntityId: true,
                         ownerEntityType: true,
                         selectedSyncInterval: true,
+                        secret: true,
+                        lastSync: true,
                         type: {
                             select: {
                                 name: true,
@@ -428,14 +430,20 @@ export class DataSourceService {
                     queryRes.type.isLiveSyncAvailable,
                 );
 
-                // TODO: complete event bridge implementation
                 await Promise.all([
                     nextScheduledSync
-                        ? createEventBridgeSchedule(
+                        ? createEventBridgeScheduledExecution(
                               this.configService.get<string>('AWS_REGION')!,
-                              nextScheduledSync,
                               this.configService.get<string>(`INITIATE_${queryRes.type.name}_LAMBDA_ARN`)!,
                               this.logger,
+                              nextScheduledSync,
+                              {
+                                  dataSourceId: completed.dataSourceId,
+                                  dataSourceType: queryRes.type.name,
+                                  secret: queryRes.secret,
+                                  ownerEntityId: queryRes.ownerEntityId,
+                                  lastSync: new Date().toISOString(),
+                              },
                           )
                         : Promise.resolve(),
                     this.prisma.dataSource.update({
