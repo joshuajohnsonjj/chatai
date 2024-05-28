@@ -26,6 +26,7 @@ import {
     testDataSourceConnection,
 } from 'src/services/apiGateway';
 import * as moment from 'moment';
+import { createEventBridgeSchedule } from 'src/services/eventBridge';
 
 @Injectable()
 export class DataSourceService {
@@ -419,17 +420,28 @@ export class DataSourceService {
                     return;
                 }
 
-                // TODO: set cloudwatch event for next sync
+                const nextScheduledSync = syncIntervalToNextSyncDate(syncInterval, queryRes.type.isLiveSyncAvailable);
 
-                await this.prisma.dataSource.update({
-                    where: { id: dataSourceId },
-                    data: {
-                        lastSync: new Date(),
-                        isSyncing: false,
-                        nextScheduledSync: syncIntervalToNextSyncDate(syncInterval, queryRes.type.isLiveSyncAvailable),
-                        updatedAt: new Date(),
-                    },
-                });
+                // TODO: complete event bridge implementation
+                await Promise.all([
+                    nextScheduledSync
+                        ? createEventBridgeSchedule(
+                              this.configService.get<string>('AWS_REGION')!,
+                              nextScheduledSync,
+                              this.configService.get<string>('LAMBDA_ARN')!,
+                              this.logger,
+                          )
+                        : Promise.resolve(),
+                    this.prisma.dataSource.update({
+                        where: { id: dataSourceId },
+                        data: {
+                            lastSync: new Date(),
+                            isSyncing: false,
+                            nextScheduledSync,
+                            updatedAt: new Date(),
+                        },
+                    }),
+                ]);
             }),
         );
     }
