@@ -96,8 +96,13 @@ export class DataSourceController {
         return { success: true };
     }
 
-    @Patch('/completedImports')
+    @Patch('internal/imports/initiate')
+    async initiateImport(@Body() body: { dataSourceId: string }, @Req() req: Request): Promise<void> {
+        await this.service.handleImportInitiated(body.dataSourceId, req.headers['api-key'] as string);
+    }
+
+    @Patch('internal/imports/completed')
     async completedImports(@Body() body: CompletedImportsRequestDto, @Req() req: Request): Promise<void> {
-        await this.service.completedImports(body, req.headers['api-key'] as string);
+        await this.service.handleImportsCompleted(body, req.headers['api-key'] as string);
     }
 }

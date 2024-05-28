@@ -365,8 +365,20 @@ export class DataSourceService {
         });
     }
 
+    // TODO: call this from initiate import lambdas
+    async handleImportInitiated(dataSourceId: string, apiKey: string): Promise<void> {
+        await this.validateInternalAPIKey(apiKey);
+        await this.prisma.dataSource.update({
+            where: { id: dataSourceId },
+            data: {
+                isSyncing: true,
+                updatedAt: new Date(),
+            },
+        });
+    }
+
     // TODO: in addition to handling completion, need to handle error state out of either lambda...
-    async completedImports(data: CompletedImportsRequestDto, apiKey: string) {
+    async handleImportsCompleted(data: CompletedImportsRequestDto, apiKey: string): Promise<void> {
         await this.validateInternalAPIKey(apiKey);
 
         const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
@@ -399,6 +411,7 @@ export class DataSourceService {
                         selectedSyncInterval: true,
                         type: {
                             select: {
+                                name: true,
                                 isLiveSyncAvailable: true,
                             },
                         },
@@ -421,7 +434,7 @@ export class DataSourceService {
                         ? createEventBridgeSchedule(
                               this.configService.get<string>('AWS_REGION')!,
                               nextScheduledSync,
-                              this.configService.get<string>('LAMBDA_ARN')!,
+                              this.configService.get<string>(`INITIATE_${queryRes.type.name}_LAMBDA_ARN`)!,
                               this.logger,
                           )
                         : Promise.resolve(),
