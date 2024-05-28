@@ -445,6 +445,7 @@ export class DataSourceService {
                             isSyncing: false,
                             nextScheduledSync,
                             mbStorageEstimate: {
+                                // TODO: figure out how to handle overwrites...
                                 increment: completed.bytesDelta / BYTES_IN_MB,
                             },
                             updatedAt: new Date(),

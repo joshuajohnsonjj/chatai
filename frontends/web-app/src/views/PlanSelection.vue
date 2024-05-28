@@ -47,12 +47,23 @@
                 @selected="(name: string) => (selectedPlan = name)"
             />
         </div>
-        <div class="d-flex justify-end">
-            <div class="text-h6 text-primary mr-2" style="line-height: 55px">Monthly</div>
-            <v-switch hide-details color="blue" inset v-model="isAnnual"></v-switch>
-            <div class="text-h6 text-primary ml-2" style="line-height: 55px">Anually</div>
-            <v-btn color="success" variant="tonal" class="text-caption rounded pa-0 mt-2 ml-2 mr-8">Save 20%</v-btn>
+
+        <div class="d-flex justify-space-between">
+            <div class="d-flex justify-start">
+                <div class="pt-2 ml-4 text-primary text-body-1 link button-hover">
+                    View full plan comparisons
+                    <v-icon icon="mdi-arrow-right" class="pl-2"></v-icon>
+                </div>
+                
+            </div>
+            <div class="d-flex justify-end">
+                <div class="text-h6 text-primary mr-2" style="line-height: 55px">Monthly</div>
+                <v-switch hide-details color="blue" inset v-model="isAnnual"></v-switch>
+                <div class="text-h6 text-primary ml-2" style="line-height: 55px">Anually</div>
+                <v-btn color="success" variant="tonal" class="text-caption rounded pa-0 mt-2 ml-2 mr-8">Save 20%</v-btn>
+            </div>
         </div>
+
         <div class="d-flex justify-center">
             <v-btn
                 v-if="!!selectedPlan"

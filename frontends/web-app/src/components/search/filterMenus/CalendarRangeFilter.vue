@@ -20,7 +20,7 @@
         <v-btn variant="tonal" color="blue" class="w-100 mt-4 mb-2">apply</v-btn>
 
         <div class="d-flex justify-end">
-            <div class="text-secondary font-weight-bold text-caption button-hover" style="text-decoration: underline">
+            <div class="text-secondary font-weight-bold text-caption button-hover link">
                 Clear Dates
             </div>
         </div>
