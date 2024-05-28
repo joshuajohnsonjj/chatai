@@ -20,6 +20,7 @@ model DataSource {
   isSyncing            Boolean          @default(false)
   lastSync             DateTime?
   nextScheduledSync    DateTime?
+  mbStorageEstimate    Float            @default(0)
   selectedSyncInterval DataSyncInterval @default(WEEKLY)
   type                 DataSourceType   @relation(fields: [dataSourceTypeId], references: [id])
 

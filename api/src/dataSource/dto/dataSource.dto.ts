@@ -1,5 +1,6 @@
 import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType, UserType } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsArray, IsEnum, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -26,6 +27,18 @@ export class UpdateDataSourceQueryDto {
     @IsEnum(DataSyncInterval)
     @IsOptional()
     syncInterval?: DataSyncInterval;
+}
+
+class CompletedImport {
+    dataSourceId: string;
+    bytesDelta: number;
+}
+
+export class CompletedImportsRequestDto {
+    @IsArray({ each: true })
+    @ValidateNested({ each: true })
+    @Type(() => CompletedImport)
+    completed: CompletedImport[];
 }
 
 export class DeleteGoogleDriveWebookQueryDto {

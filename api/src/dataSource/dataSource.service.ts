@@ -7,6 +7,7 @@ import type {
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     UpdateDataSourceQueryDto,
+    CompletedImportsRequestDto,
 } from './dto/dataSource.dto';
 import { DataSource, DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
@@ -27,6 +28,7 @@ import {
 } from 'src/services/apiGateway';
 import * as moment from 'moment';
 import { createEventBridgeSchedule } from 'src/services/eventBridge';
+import { BYTES_IN_MB } from 'src/constants';
 
 @Injectable()
 export class DataSourceService {
@@ -364,10 +366,8 @@ export class DataSourceService {
     }
 
     // TODO: in addition to handling completion, need to handle error state out of either lambda...
-    async completedImports(dataSourceIds: string[], apiKey: string) {
+    async completedImports(data: CompletedImportsRequestDto, apiKey: string) {
         await this.validateInternalAPIKey(apiKey);
-
-        this.logger.log(`Updating data sources for completed import ${dataSourceIds}`, 'DataSource');
 
         const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
             if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
@@ -388,12 +388,15 @@ export class DataSourceService {
         };
 
         await Promise.all(
-            dataSourceIds.map(async (dataSourceId) => {
+            data.completed.map(async (completed) => {
+                this.logger.log(`Updating data sources for completed import ${completed.dataSourceId}`, 'DataSource');
+
                 const queryRes = await this.prisma.dataSource.findUnique({
-                    where: { id: dataSourceId },
+                    where: { id: completed.dataSourceId },
                     select: {
                         ownerEntityId: true,
                         ownerEntityType: true,
+                        selectedSyncInterval: true,
                         type: {
                             select: {
                                 isLiveSyncAvailable: true,
@@ -403,24 +406,14 @@ export class DataSourceService {
                 });
 
                 if (!queryRes) {
-                    this.logger.warn(`Query returned no results for ${dataSourceId}`, 'DataSource');
+                    this.logger.warn(`Query returned no results for ${completed.dataSourceId}`, 'DataSource');
                     return;
                 }
 
-                const syncInterval = await this.getAccountPlanSyncInterval(
-                    queryRes.ownerEntityType === EntityType.ORGANIZATION,
-                    queryRes.ownerEntityId,
+                const nextScheduledSync = syncIntervalToNextSyncDate(
+                    queryRes.selectedSyncInterval,
+                    queryRes.type.isLiveSyncAvailable,
                 );
-
-                if (!syncInterval) {
-                    this.logger.warn(
-                        `Failed to retrieve account plan for ${queryRes.ownerEntityType} ${queryRes.ownerEntityId}`,
-                        'DataSource',
-                    );
-                    return;
-                }
-
-                const nextScheduledSync = syncIntervalToNextSyncDate(syncInterval, queryRes.type.isLiveSyncAvailable);
 
                 // TODO: complete event bridge implementation
                 await Promise.all([
@@ -433,11 +426,14 @@ export class DataSourceService {
                           )
                         : Promise.resolve(),
                     this.prisma.dataSource.update({
-                        where: { id: dataSourceId },
+                        where: { id: completed.dataSourceId },
                         data: {
                             lastSync: new Date(),
                             isSyncing: false,
                             nextScheduledSync,
+                            mbStorageEstimate: {
+                                increment: completed.bytesDelta / BYTES_IN_MB,
+                            },
                             updatedAt: new Date(),
                         },
                     }),

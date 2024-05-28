@@ -25,7 +25,10 @@ import { type CachedUser } from './types';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
+const entityStorageUsageMap: { [dataSourceId: string]: number } = {};
+
 const notionAuthors: { [notionUserId: string]: CachedUser } = {};
+
 const getBlockAuthor = async (
     notionAPI: NotionWrapper,
     author?: NotionAuthorAttribution,
@@ -67,6 +70,7 @@ const processBlockList = async (
     entityId: string,
     pageUrl: string,
     pageTitle: string,
+    dataSourceId: string,
 ) => {
     let builtBlocksTextString = '';
     let connectedBlocks: NotionBlock[] = []; // TODO: problably dont need whole obj? ineficient memeory...
@@ -88,6 +92,8 @@ const processBlockList = async (
                 pageUrl,
                 entityId,
                 author,
+                entityStorageUsageMap,
+                dataSourceId,
             );
             builtBlocksTextString = '';
             connectedBlocks = [];
@@ -104,6 +110,8 @@ const processBlockList = async (
                 pageUrl,
                 entityId,
                 author,
+                entityStorageUsageMap,
+                dataSourceId,
             );
             builtBlocksTextString = '';
             connectedBlocks = [];
@@ -115,7 +123,17 @@ const processBlockList = async (
                 aggregatedNestedBlocks.slice(1),
                 parentBlock[parentBlock.type] as NotionTable,
             );
-            await publishBlockData(mongo, aggregatedBlockText, parentBlock, pageTitle, pageUrl, entityId, null);
+            await publishBlockData(
+                mongo,
+                aggregatedBlockText,
+                parentBlock,
+                pageTitle,
+                pageUrl,
+                entityId,
+                null,
+                entityStorageUsageMap,
+                dataSourceId,
+            );
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
             const columnBlocks = await notionAPI.listPageBlocks(parentBlock.id, null);
             await Promise.all(
@@ -134,6 +152,8 @@ const processBlockList = async (
                         pageUrl,
                         entityId,
                         author,
+                        entityStorageUsageMap,
+                        dataSourceId,
                     );
                 }),
             );
@@ -148,7 +168,17 @@ const processBlockList = async (
     // publish anything else left at the end of traversal
     if (connectedBlocks.length) {
         const author = await getBlockAuthor(notionAPI, connectedBlocks[0].last_edited_by);
-        await publishBlockData(mongo, builtBlocksTextString, connectedBlocks[0], pageTitle, pageUrl, entityId, author);
+        await publishBlockData(
+            mongo,
+            builtBlocksTextString,
+            connectedBlocks[0],
+            pageTitle,
+            pageUrl,
+            entityId,
+            author,
+            entityStorageUsageMap,
+            dataSourceId,
+        );
     }
 };
 
@@ -159,6 +189,7 @@ const processPage = async (
     entityId: string,
     pageUrl: string,
     pageTitle: string,
+    dataSourceId: string,
 ) => {
     let isComplete = false;
     let nextCursor: string | null = null;
@@ -171,7 +202,7 @@ const processPage = async (
         nextCursor = blockResponse.next_cursor;
     }
 
-    await processBlockList(mongo, notionAPI, blocks, entityId, pageUrl, pageTitle);
+    await processBlockList(mongo, notionAPI, blocks, entityId, pageUrl, pageTitle, dataSourceId);
 };
 
 /**
@@ -221,6 +252,7 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
                 messageBody.ownerEntityId,
                 messageBody.pageUrl,
                 messageBody.pageTitle,
+                messageBody.dataSourceId,
             ),
         );
     }
@@ -235,10 +267,13 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
             baseURL: process.env.INTERNAL_BASE_API_HOST!,
             url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
             data: {
-                dataSourceIds: completedDataSources,
+                completed: completedDataSources.map((id) => ({
+                    dataSourceId: id,
+                    bytesDelta: entityStorageUsageMap[id] ?? 0,
+                })),
             },
             headers: {
-                'api=key': process.env.INTERNAL_API_KEY!,
+                'api-key': process.env.INTERNAL_API_KEY!,
             },
         });
     }

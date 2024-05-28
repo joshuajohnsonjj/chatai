@@ -3,6 +3,7 @@ import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
 import { UseGuards } from '@nestjs/common/decorators';
 import type {
+    CompletedImportsRequestDto,
     CreateDataSourceQueryDto,
     CreateDataSourceResponseDto,
     DeleteGoogleDriveWebookQueryDto,
@@ -96,7 +97,7 @@ export class DataSourceController {
     }
 
     @Patch('/completedImports')
-    async completedImports(@Body() body: { dataSourceIds: string[] }, @Req() req: Request): Promise<void> {
-        await this.service.completedImports(body.dataSourceIds, req.headers['api-key'] as string);
+    async completedImports(@Body() body: CompletedImportsRequestDto, @Req() req: Request): Promise<void> {
+        await this.service.completedImports(body, req.headers['api-key'] as string);
     }
 }

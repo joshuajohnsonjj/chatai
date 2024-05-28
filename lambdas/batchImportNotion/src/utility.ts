@@ -18,6 +18,7 @@ import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
 import { NOTION_DATA_SOURCE_NAME } from './constants';
 import { cleanExcessWhitespace, isEmptyContent } from '../../lib/helper';
+import { EMBEDDING_SIZE_IN_BYTES } from '../../lib/constants';
 import { CachedUser } from './types';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
@@ -120,6 +121,15 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
     return allChildren;
 };
 
+const updateUserStorageTracker = (
+    entityId: string,
+    entityStorageUsageMap: { [id: string]: number },
+    textLen: number,
+): void => {
+    const addedBytes = EMBEDDING_SIZE_IN_BYTES + textLen * 2;
+    entityStorageUsageMap[entityId] = entityStorageUsageMap[entityId] ?? 0 + addedBytes;
+};
+
 /**
  * Publishes text embeddings and metadata to mongo
  */
@@ -131,6 +141,8 @@ export const publishBlockData = async (
     pageUrl: string,
     entityId: string,
     author: CachedUser | null,
+    entityStorageUsageMap: { [id: string]: number },
+    dataSourceId: string,
 ): Promise<void> => {
     if (!aggregatedBlockText || !aggregatedBlockText.length) {
         return;
@@ -171,6 +183,8 @@ export const publishBlockData = async (
             author: author ?? undefined,
         }),
     ]);
+
+    updateUserStorageTracker(dataSourceId, entityStorageUsageMap, cleanedAggregatedText.length);
 };
 
 export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {
