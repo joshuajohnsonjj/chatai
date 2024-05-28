@@ -28,13 +28,21 @@
                     </div>
 
                     <div v-if="!isAddNew">
-                        <p class="text-caption text-secondary sub-info-line-height">
-                            <v-icon icon="mdi-calendar-blank" color="secondary"></v-icon>
-                            Linked since {{ moment(sourceData.createdAt).format('M/D/YYYY') }}
-                        </p>
+                        <div class="d-flex justify-start">
+                            <p class="text-caption text-secondary sub-info-line-height">
+                                <v-icon icon="mdi-calendar-star" color="secondary"></v-icon>
+                                Next index {{ moment(sourceData.createdAt).format('M/D H:MM A') }}
+                            </p>
+                            <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
+                            <p class="text-caption text-secondary sub-info-line-height">
+                                <v-icon icon="mdi-calendar-blank" color="secondary"></v-icon>
+                                Linked since {{ moment(sourceData.createdAt).format('M/D/YYYY') }}
+                            </p>
+                        </div>
+
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
-                            4 GB used
+                            27 MB stored
                         </p>
                     </div>
                 </div>
@@ -87,8 +95,42 @@
                 <v-sheet class="border-primary rounded pa-6">
                     <p class="text-h6 text-primary font-weight-medium">Indexing configuration</p>
                     <p class="text-caption text-secondary" style="max-width: 250px">
-                        Configure the interval with which your content is indexed
+                        Configure the interval upon which your content is indexed
                     </p>
+
+                    <p class="mt-8 mb-2 text-body-1 font-weight-medium text-primary">
+                        {{ isAddNew ? 'Set' : 'Update' }} Interval
+                    </p>
+                    <div class="border-primary rounded px-4 py-2 d-flex justify-space-between">
+                        <div
+                            v-for="option in Object.values(IndexingIntervalOptions)"
+                            :key="option.value"
+                            class="button-hover"
+                            :class="{
+                                'filter-selected': selectedIndexingOption === option.value,
+                                disabled: maxPlanIntervalLevel < option.level,
+                            }"
+                            @click="onIndexingIntervalSelection(option.value)"
+                        >
+                            <p
+                                class="text-caption font-weight-light px-4"
+                                :class="{ 'text-primary': maxPlanIntervalLevel >= option.level }"
+                                style="line-height: 38px"
+                            >
+                                {{ option.text }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-end mt-4">
+                        <v-btn
+                            color="blue"
+                            variant="tonal"
+                            @click="commitIndexingSelection"
+                            :loading="isLoading.indexingIntervalUpdate"
+                            >{{ isAddNew ? 'Save' : 'Update' }} Preference</v-btn
+                        >
+                    </div>
                 </v-sheet>
             </v-col>
         </v-row>
@@ -113,6 +155,7 @@
     import { useToast } from 'vue-toastification';
     import { KnowledgeBaseMap } from '../../constants/knowledgeBase';
     import { encrypt } from '../../utility/encryption';
+    import { IndexingIntervalOptions, DataSyncInterval } from '../../constants/dataSourceConfiguration';
 
     const props = defineProps<{
         isAddNew: boolean;
@@ -124,17 +167,24 @@
     const dataSourceStore = useDataSourceStore();
     const { connections, dataSourceOptions, isLoading } = storeToRefs(dataSourceStore);
     const userStore = useUserStore();
-    const { userData, userEntityId } = storeToRefs(userStore);
+    const { userData, userEntityId, planData } = storeToRefs(userStore);
 
     const apiKeyInput = ref<string>('');
+    const selectedIndexingOption = ref<DataSyncInterval>();
 
     onBeforeMount(async () => {
         if (!props.isAddNew && !connections.value.length) {
             await dataSourceStore.retreiveConnections();
+            const source = find(connections.value, (option) => option.id === route.params.dataSourceId);
+            selectedIndexingOption.value = source!.selectedSyncInterval;
         } else if (props.isAddNew && !dataSourceOptions.value.length) {
             await dataSourceStore.retreiveDataSourceOptions();
         }
     });
+
+    const maxPlanIntervalLevel = computed(
+        () => IndexingIntervalOptions[planData.value?.dataSyncInterval || DataSyncInterval.WEEKLY].level,
+    );
 
     const sourceData = computed(() => {
         if (props.isAddNew) {
@@ -153,7 +203,33 @@
         }
     });
 
+    const onIndexingIntervalSelection = (value: DataSyncInterval) => {
+        if (maxPlanIntervalLevel.value < IndexingIntervalOptions[value].level) {
+            toast.warning('Please upgrade plan to unlock this feature.');
+            return;
+        }
+
+        selectedIndexingOption.value = value;
+    };
+
+    const commitIndexingSelection = async () => {
+        const success = await dataSourceStore.commitDataSourceConnectionUpdate(
+            route.params.dataSourceId as string,
+            userData.value!.type,
+            selectedIndexingOption.value!,
+        );
+
+        if (success) {
+            toast.success('Indexing interval updates!');
+        }
+    };
+
     const onTestConnection = async () => {
+        if (apiKeyInput.value.length < 5) {
+            toast.error('Invalid token');
+            return;
+        }
+
         const encryptedSecret = await encrypt(apiKeyInput.value);
 
         const result = await dataSourceStore.testDataSourceCredential(
@@ -174,3 +250,16 @@
 
     const openAuthDocs = () => window.open(KnowledgeBaseMap[sourceData.value.name as string].auth, '_blank')!.focus();
 </script>
+
+<style scoped>
+    .filter-selected {
+        background-color: rgb(var(--v-theme-background));
+    }
+
+    .disabled {
+        font-weight: normal !important;
+        filter: brightness(100%) !important;
+        cursor: not-allowed !important;
+        color: rgb(var(--v-theme-secondary)) !important;
+    }
+</style>

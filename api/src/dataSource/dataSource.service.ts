@@ -6,8 +6,9 @@ import type {
     TestDataSourceResponseDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
+    UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
-import { DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
+import { DataSource, DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
     AccessDeniedError,
     BadCredentialsError,
@@ -105,6 +106,58 @@ export class DataSourceService {
             }
             throw new InternalError();
         }
+    }
+
+    async updateDataSource(
+        dataSourceId: string,
+        params: UpdateDataSourceQueryDto,
+        user: DecodedUserTokenDto,
+    ): Promise<void> {
+        this.logger.log(`Updating new data source ${dataSourceId}`, 'DataSource');
+
+        const updates: Partial<DataSource> = {};
+
+        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+            this.checkIsOrganizationAdmin(user.organization, user.organization, user.oganizationUserRole);
+        }
+
+        const dataSource = await this.prisma.dataSource.findUniqueOrThrow({
+            where: { id: dataSourceId },
+            select: {
+                ownerEntityId: true,
+            },
+        });
+
+        if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user.organization) {
+            throw new AccessDeniedError('User unauthorized to modify this data source');
+        }
+
+        const validateRequestedIntervalChange = async (requested: DataSyncInterval): Promise<void> => {
+            const intervalLevels = [
+                DataSyncInterval.WEEKLY,
+                DataSyncInterval.DAILY,
+                DataSyncInterval.SEMI_DAILY,
+                DataSyncInterval.INSTANT,
+            ];
+            const planInterval = await this.getAccountPlanSyncInterval(
+                params.userType === UserType.ORGANIZATION_MEMBER,
+                dataSource.ownerEntityId,
+            );
+
+            if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
+                throw new BadRequestError('Current plan does not allow this indexing interval');
+            }
+        };
+
+        if ('syncInterval' in params) {
+            await validateRequestedIntervalChange(params.syncInterval!);
+            updates.selectedSyncInterval = params.syncInterval;
+        }
+
+        await this.prisma.dataSource.update({
+            where: { id: dataSourceId },
+            data: updates,
+        });
     }
 
     async testDataSourceCredential(
@@ -244,33 +297,15 @@ export class DataSourceService {
     }
 
     async listUserDataSourceConnections(user: DecodedUserTokenDto): Promise<ListDataSourceConnectionsResponseDto[]> {
-        const entityId = user[CognitoAttribute.ORG_USER_ROLE] ?? user.idUser;
+        const entityId = user.organization || user.idUser;
 
         const queryRes = await this.prisma.dataSource.findMany({
-            where: {
-                ownerEntityId: entityId,
-            },
-            select: {
-                id: true,
-                createdAt: true,
-                updatedAt: true,
-                lastSync: true,
-                dataSourceTypeId: true,
-                ownerEntityId: true,
-                ownerEntityType: true,
-                externalId: true,
-                isSyncing: true,
-                type: {
-                    select: {
-                        name: true,
-                        isLiveSyncAvailable: true,
-                    },
-                },
-            },
+            where: { ownerEntityId: entityId },
+            include: { type: true },
         });
 
         return queryRes.map((item) => ({
-            ...omit(item, ['externalId', 'type']),
+            ...omit(item, ['externalId', 'type', 'secret']),
             hasExternalId: !!item.externalId,
             dataSourceName: item.type.name,
             dataSourceLiveSyncAvailable: item.type.isLiveSyncAvailable,
@@ -320,7 +355,7 @@ export class DataSourceService {
                     userId: user.idUser,
                     dataSourceType: dataSource.type.name,
                     secret: dataSource.secret,
-                    ownerEntityId: user.organization ?? user.idUser,
+                    ownerEntityId: user.organization || user.idUser,
                     lastSync: dataSource.lastSync?.toISOString() ?? null,
                 },
             );
@@ -332,24 +367,6 @@ export class DataSourceService {
         await this.validateInternalAPIKey(apiKey);
 
         this.logger.log(`Updating data sources for completed import ${dataSourceIds}`, 'DataSource');
-
-        const getAccountPlanSyncInterval = async (
-            entityType: EntityType,
-            id: string,
-        ): Promise<DataSyncInterval | undefined> => {
-            if (entityType === EntityType.INDIVIDUAL) {
-                const res = await this.prisma.user.findUnique({
-                    where: { id },
-                    select: { plan: { select: { dataSyncInterval: true } } },
-                });
-                return res?.plan?.dataSyncInterval;
-            }
-            const res = await this.prisma.organization.findUnique({
-                where: { id },
-                select: { plan: { select: { dataSyncInterval: true } } },
-            });
-            return res?.plan?.dataSyncInterval;
-        };
 
         const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
             if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
@@ -389,7 +406,10 @@ export class DataSourceService {
                     return;
                 }
 
-                const syncInterval = await getAccountPlanSyncInterval(queryRes.ownerEntityType, queryRes.ownerEntityId);
+                const syncInterval = await this.getAccountPlanSyncInterval(
+                    queryRes.ownerEntityType === EntityType.ORGANIZATION,
+                    queryRes.ownerEntityId,
+                );
 
                 if (!syncInterval) {
                     this.logger.warn(
@@ -450,5 +470,23 @@ export class DataSourceService {
                 throw new BadRequestError('Missing required credentials for DataSource type');
             }
         });
+    }
+
+    private async getAccountPlanSyncInterval(
+        isOrganization: boolean,
+        id: string,
+    ): Promise<DataSyncInterval | undefined> {
+        if (!isOrganization) {
+            const res = await this.prisma.user.findUnique({
+                where: { id },
+                select: { plan: { select: { dataSyncInterval: true } } },
+            });
+            return res?.plan?.dataSyncInterval;
+        }
+        const res = await this.prisma.organization.findUnique({
+            where: { id },
+            select: { plan: { select: { dataSyncInterval: true } } },
+        });
+        return res?.plan?.dataSyncInterval;
     }
 }

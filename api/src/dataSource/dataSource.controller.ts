@@ -2,13 +2,14 @@ import { Controller, Body, Post, Param, Req, Get, Delete, Patch } from '@nestjs/
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
 import { UseGuards } from '@nestjs/common/decorators';
-import {
+import type {
     CreateDataSourceQueryDto,
     CreateDataSourceResponseDto,
     DeleteGoogleDriveWebookQueryDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     TestDataSourceResponseDto,
+    UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
 import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
@@ -34,8 +35,13 @@ export class DataSourceController {
 
     @Patch('/connections/:dataSourceId')
     @UseGuards(AuthGuard('jwt'))
-    async updateDataSource(): Promise<void> {
-        return;
+    async updateDataSource(
+        @Param('dataSourceId') dataSourceId: string,
+        @Body() body: UpdateDataSourceQueryDto,
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.updateDataSource(dataSourceId, body, req.user as DecodedUserTokenDto);
+        return { success: true };
     }
 
     @Post('/connections/test')
@@ -50,7 +56,7 @@ export class DataSourceController {
     @Post('/connections/:dataSourceId/sync')
     @UseGuards(AuthGuard('jwt'))
     async syncDataSource(
-        @Param() { dataSourceId }: { dataSourceId: string },
+        @Param('dataSourceId') dataSourceId: string,
         @Req() req: Request,
     ): Promise<{ success: boolean }> {
         await this.service.syncDataSource(dataSourceId, req.user as DecodedUserTokenDto);

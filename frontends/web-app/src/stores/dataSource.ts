@@ -3,9 +3,15 @@ import { ref } from 'vue';
 import type {
     DataSourceConnectionsResponse,
     DataSourceTypesResponse,
+    DataSyncInterval,
     TestDataSourceConnectionResponse,
 } from '../types/responses';
-import { listDataSourceConnections, listDataSourceOptions, testConnection } from '../requests';
+import {
+    listDataSourceConnections,
+    listDataSourceOptions,
+    testConnection,
+    updateDataSourceConnection,
+} from '../requests';
 import { UserType } from '../types/user-store';
 
 export const useDataSourceStore = defineStore('dataSource', () => {
@@ -16,6 +22,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         dataSourceConnections: false,
         dataSourceOptions: false,
         connectionTest: false,
+        indexingIntervalUpdate: false,
     });
 
     const retreiveConnections = async () => {
@@ -53,18 +60,32 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         userType: UserType,
         secret: string,
     ): Promise<TestDataSourceConnectionResponse> => {
-        if (secret.length < 5) {
-            return {
-                isValid: false,
-                message: 'Invalid credential',
-            };
-        }
-
         isLoading.value.connectionTest = true;
         const res = await testConnection(dataSourceTypeId, ownerEntityId, userType, secret);
         isLoading.value.connectionTest = false;
 
         return res;
+    };
+
+    // TODO: wrap everything with an isLoading true/false in try/catch/finally...
+    const commitDataSourceConnectionUpdate = async (
+        dataSourceId: string,
+        userType: string,
+        syncInterval: DataSyncInterval,
+    ): Promise<boolean> => {
+        let success = true;
+        try {
+            isLoading.value.indexingIntervalUpdate = true;
+            await updateDataSourceConnection(dataSourceId, userType, syncInterval);
+            const ndx = connections.value.findIndex((conn) => conn.id === dataSourceId);
+            connections.value[ndx].selectedSyncInterval = syncInterval;
+        } catch (e) {
+            console.error(e);
+            success = false;
+        } finally {
+            isLoading.value.indexingIntervalUpdate = false;
+        }
+        return success;
     };
 
     return {
@@ -75,5 +96,6 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         retreiveConnections,
         retreiveDataSourceOptions,
         testDataSourceCredential,
+        commitDataSourceConnectionUpdate,
     };
 });

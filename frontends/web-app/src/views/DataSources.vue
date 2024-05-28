@@ -39,21 +39,14 @@
                     class="rounded live-sync text-warning text-caption px-2 absolute"
                     style="right: 12px; top: 12px"
                 >
-                    Live sync
+                    Real-time
                 </div>
                 <div
                     v-else-if="dataSource.isSyncing"
                     class="rounded syncing text-caption text-info px-2 absolute"
                     style="right: 12px; top: 12px"
                 >
-                    Syncing
-                </div>
-                <div
-                    v-else
-                    class="rounded sync-now text-caption text-success px-2 absolute button-hover"
-                    style="right: 12px; top: 12px"
-                >
-                    Sync now
+                    Indexing
                 </div>
 
                 <div class="d-flex justify-start mb-4">
@@ -71,7 +64,7 @@
                 </p>
                 <p class="text-caption text-secondary">
                     <v-icon icon="mdi-calendar-star"></v-icon>
-                    Next Sync: 4/22 11:30PM
+                    Next Index: 4/22 11:30PM
                 </p>
             </div>
         </div>

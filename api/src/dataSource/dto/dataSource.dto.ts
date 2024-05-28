@@ -1,5 +1,5 @@
-import { DataSourceCategory, DataSourceTypeName, EntityType, UserType } from '@prisma/client';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType, UserType } from '@prisma/client';
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -17,6 +17,15 @@ export class CreateDataSourceQueryDto {
     @IsString()
     @IsOptional()
     externalId?: string;
+}
+
+export class UpdateDataSourceQueryDto {
+    @IsString()
+    userType: UserType;
+
+    @IsEnum(DataSyncInterval)
+    @IsOptional()
+    syncInterval?: DataSyncInterval;
 }
 
 export class DeleteGoogleDriveWebookQueryDto {
@@ -49,6 +58,8 @@ export class ListDataSourceConnectionsResponseDto {
     hasExternalId: boolean;
     isSyncing: boolean;
     dataSourceName: string;
+    selectedSyncInterval: DataSyncInterval;
+    nextScheduledSync: Date | null;
     dataSourceLiveSyncAvailable: boolean;
 }
 

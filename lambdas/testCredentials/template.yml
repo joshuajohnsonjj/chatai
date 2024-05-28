@@ -9,4 +9,4 @@ Resources:
             Handler: testCredentials/src/handler.handler
             Runtime: nodejs20.x
             CodeUri: ./dist
-            Timeout: 15
+            Timeout: 30

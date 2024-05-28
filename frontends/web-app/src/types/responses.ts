@@ -131,6 +131,8 @@ export interface DataSourceConnectionsResponse {
     isSyncing: boolean;
     dataSourceName: string;
     dataSourceLiveSyncAvailable: boolean;
+    selectedSyncInterval: DataSyncInterval;
+    nextScheduledSync: Date | null;
 }
 
 export interface DataSourceTypesResponse {

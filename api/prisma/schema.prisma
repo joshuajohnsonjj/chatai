@@ -9,18 +9,19 @@ datasource db {
 }
 
 model DataSource {
-  id                String         @id @default(uuid())
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @default(now())
-  lastSync          DateTime?
-  dataSourceTypeId  String
-  ownerEntityId     String
-  ownerEntityType   EntityType
-  secret            String
-  externalId        String?
-  isSyncing         Boolean        @default(false)
-  nextScheduledSync DateTime?
-  type              DataSourceType @relation(fields: [dataSourceTypeId], references: [id])
+  id                   String           @id @default(uuid())
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @default(now())
+  dataSourceTypeId     String
+  ownerEntityId        String
+  ownerEntityType      EntityType
+  secret               String
+  externalId           String?
+  isSyncing            Boolean          @default(false)
+  lastSync             DateTime?
+  nextScheduledSync    DateTime?
+  selectedSyncInterval DataSyncInterval @default(WEEKLY)
+  type                 DataSourceType   @relation(fields: [dataSourceTypeId], references: [id])
 
   googleDriveConnection GoogleDriveWebhookConnection?
 

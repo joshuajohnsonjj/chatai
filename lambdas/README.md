@@ -13,8 +13,6 @@ Deployment steps:
 Deploying Layer:
 
 1. `yarn`
-1. ensure contents of api prisma schema copied to lambda prisma schema if updated
-1. `yarn generate:schema`
 1. copy `/node_modules` directoy path `/nodejs/node20` and zip it
     - **NOTE:** uncompressed `/nodejs` dir must be < 260mb, manually delete dev/unnessessary dependancies to reduce package size
     - `aws-sdk` (not `@aws-sdk`)

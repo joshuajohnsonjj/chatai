@@ -18,7 +18,7 @@ export const initiateDataSourceImport = async (
         baseURL,
         url: snakeCase(dataSourceType),
         method: 'post',
-        data,
+        data: { body: data },
         headers: {
             'x-api-key': apiKey,
         },
@@ -30,15 +30,14 @@ export const testDataSourceConnection = async (
     apiKey: string,
     data: APIGatewayTestCredentialsParams,
 ): Promise<{ isValid: boolean; message: string }> => {
-    return await axios({
+    const resp = await axios({
         baseURL,
         url: APIGatewayEndpoints.TEST_CONN,
         method: 'post',
-        data,
-        headers: {
-            'x-api-key': apiKey,
-        },
+        data: { body: data },
+        headers: { 'x-api-key': apiKey },
     });
+    return resp.data;
 };
 
 /**
@@ -66,7 +65,7 @@ export const modifyGoogleDriveWebhookConnection = async (
         baseURL,
         url: APIGatewayEndpoints.GOOGLE_DRIVE_WEBHOOK,
         method: isCreate ? 'post' : 'delete',
-        data,
+        data: { body: data },
         headers: {
             'x-api-key': apiKey,
         },
