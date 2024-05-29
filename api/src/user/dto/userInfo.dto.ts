@@ -29,6 +29,7 @@ export class GetUserInfoResponseDto {
     email: string;
     firstName: string;
     lastName: string;
+    photoUrl: string | null;
     phoneNumber: string | null;
     stripeCustomerId: string | null;
     organization: {

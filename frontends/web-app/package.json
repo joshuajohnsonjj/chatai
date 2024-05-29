@@ -17,6 +17,7 @@
         "roboto-fontface": "*",
         "uuid": "^9.0.1",
         "vue": "^3.4.21",
+        "vue-picture-cropper": "^0.7.0",
         "vue-toastification": "^2.0.0-rc.5",
         "vuetify": "^3.5.8"
     },

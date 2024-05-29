@@ -41,7 +41,7 @@ export const createEventBridgeScheduledExecution = async (
             Rule: ruleName,
             Targets: [
                 {
-                    Id: 'MyLambdaFunctionTarget',
+                    Id: `${payload.dataSourceType}EventBridgeTarget-${process.env.NODE_ENV}`,
                     Arn: lambdaArn,
                     Input: JSON.stringify(payload),
                 },

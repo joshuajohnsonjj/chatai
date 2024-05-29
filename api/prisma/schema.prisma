@@ -13,6 +13,7 @@ model DataSource {
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @default(now())
   dataSourceTypeId     String
+  type                 DataSourceType   @relation(fields: [dataSourceTypeId], references: [id])
   ownerEntityId        String
   ownerEntityType      EntityType
   secret               String
@@ -22,7 +23,6 @@ model DataSource {
   nextScheduledSync    DateTime?
   mbStorageEstimate    Float            @default(0)
   selectedSyncInterval DataSyncInterval @default(WEEKLY)
-  type                 DataSourceType   @relation(fields: [dataSourceTypeId], references: [id])
 
   googleDriveConnection GoogleDriveWebhookConnection?
 
@@ -87,6 +87,7 @@ model User {
   email            String
   firstName        String
   lastName         String
+  photoUrl         String?
   phoneNumber      String?
   stripeCustomerId String
   chats            Chat[]
