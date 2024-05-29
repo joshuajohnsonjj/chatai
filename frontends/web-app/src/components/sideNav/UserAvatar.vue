@@ -2,7 +2,8 @@
     <div class="rounded pa-4 mt-2" :class="{ 'bg-surface': !miniMode, 'large-container': !miniMode }">
         <div class="d-flex justify-space-between">
             <div class="d-flex justify-start" :class="miniMode ? 'mx-auto' : 'mb-4'">
-                <v-avatar image="@/assets/avatar.jpg" size="49"></v-avatar>
+                <v-avatar v-if="userData.photoUrl" :image="userData.photoUrl" size="49"></v-avatar>
+                <v-avatar v-else icon="mdi-account-circle" size="49" style="font-size: 2.25rem"></v-avatar>
                 <div v-if="!miniMode" class="ml-2">
                     <div class="d-flex justify-space-between">
                         <p class="text-body-1 text-primary font-weight-medium">

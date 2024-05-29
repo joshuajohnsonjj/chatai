@@ -59,7 +59,7 @@
     import { useRoute, useRouter } from 'vue-router';
     import { useChatStore } from '../../stores/chat';
     import { storeToRefs } from 'pinia';
-    import { NAV_STATE_STORAGE_KEY } from '../../constants';
+    import { SETTINGS_STORAGE_KEY } from '../../constants';
 
     const router = useRouter();
     const route = useRoute();
@@ -67,7 +67,9 @@
     const chatStore = useChatStore();
     const { selectedChat } = storeToRefs(chatStore);
 
-    const isMenuStaticExpanded = ref(localStorage.getItem(NAV_STATE_STORAGE_KEY) !== '0');
+    const isMenuStaticExpanded = ref(
+        JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}')?.sideNavExpanded !== '0',
+    );
     const isMenuHoverExpanded = ref(false);
     const navContainer = ref<HTMLElement | null>(null);
 
@@ -75,7 +77,14 @@
 
     const toggleMenu = () => {
         isMenuStaticExpanded.value = !isMenuStaticExpanded.value;
-        localStorage.setItem(NAV_STATE_STORAGE_KEY, isMenuStaticExpanded.value ? '1' : '0');
+
+        localStorage.setItem(
+            SETTINGS_STORAGE_KEY,
+            JSON.stringify({
+                ...JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}'),
+                sideNavExpanded: isMenuStaticExpanded.value ? '1' : '0',
+            }),
+        );
 
         if (!isMenuStaticExpanded.value) {
             navContainer.value!.addEventListener('mouseover', onNavMouseOver);

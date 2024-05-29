@@ -2,7 +2,13 @@ import { SearchQueryParamType } from '../types/search-store';
 
 export const TOKEN_STORAGE_KEY = 'chatai:token';
 export const EMAIL_STORAGE_KEY = 'chatai:email';
-export const NAV_STATE_STORAGE_KEY = 'chatai:nav-expanded';
+
+/**
+ * stores stringified object w/ keys:
+ * @param sideNavExpanded "1" or "0"
+ * @param darkMode "1" or "0"
+ */
+export const SETTINGS_STORAGE_KEY = 'chatai:settings';
 
 export const BASE_S3_DATASOURCE_LOGO_URL = 'https://chatai-data-source-logos.s3.amazonaws.com/';
 

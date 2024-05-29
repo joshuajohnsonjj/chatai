@@ -1,8 +1,12 @@
 <template>
-    <div style="width: 150px" class="grow-hover mr-6">
+    <div style="width: 150px; display: inline-block" class="grow-hover mr-6">
         <div class="container mr-4 relative" :class="{ dark: darkMode, light: !darkMode }">
             <div class="sub-container absolute pa-4" :class="{ dark: darkMode, light: !darkMode }">
                 <div class="text text-body-1 font-weight-bold" :class="{ dark: darkMode, light: !darkMode }">Aa</div>
+            </div>
+
+            <div v-if="isSelected" class="selected-badge">
+                <v-icon icon="mdi-check-bold" size="x-small" color="success"></v-icon>
             </div>
         </div>
 
@@ -13,6 +17,7 @@
 <script setup lang="ts">
     defineProps<{
         darkMode: boolean;
+        isSelected: boolean;
     }>();
 </script>
 
@@ -57,5 +62,15 @@
 
     .text.light {
         color: black;
+    }
+
+    .selected-badge {
+        background: rgba(var(--v-theme-success), 0.25);
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        padding: 3px 6px;
+        border-radius: 50%;
+        font-size: 12px;
     }
 </style>

@@ -19,6 +19,7 @@ export interface UserInfo {
     email: string;
     firstName: string;
     lastName: string;
+    photoUrl: string | null;
     phoneNumber: string | null;
     stripeCustomerId: string | null;
     settings: {
