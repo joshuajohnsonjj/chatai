@@ -91,8 +91,24 @@
                         </div>
 
                         <div class="d-flex justify-end mt-4">
-                            <v-btn variant="plain" color="secondary" min-width="200">Cancel</v-btn>
-                            <v-btn color="blue" variant="tonal" min-width="200">save</v-btn>
+                            <v-btn
+                                variant="plain"
+                                color="secondary"
+                                min-width="200"
+                                :disabled="!profileDetailsChanged"
+                                @click="resetProfileDetails"
+                            >
+                                Cancel
+                            </v-btn>
+                            <v-btn
+                                color="blue"
+                                variant="tonal"
+                                min-width="200"
+                                :disabled="!profileDetailsChanged"
+                                @click="saveProfileDetails"
+                            >
+                                save
+                            </v-btn>
                         </div>
                     </div>
                 </v-col>
@@ -204,7 +220,7 @@
 </template>
 
 <script setup lang="ts">
-    import { onMounted, ref } from 'vue';
+    import { computed, onMounted, ref } from 'vue';
     import { useUserStore } from '../../stores/user';
     import { storeToRefs } from 'pinia';
     import { SETTINGS_STORAGE_KEY } from '../../constants';
@@ -220,6 +236,13 @@
         email: '',
         phoneNumber: '',
     });
+    const profileDetailsChanged = computed(
+        () =>
+            profileDetails.value.firstName !== userData.value?.firstName ||
+            profileDetails.value.lastName !== userData.value?.lastName ||
+            profileDetails.value.email !== userData.value?.email ||
+            (profileDetails.value.phoneNumber !== userData.value?.phoneNumber && !!profileDetails.value.phoneNumber),
+    );
 
     const password = ref({
         new: '',
@@ -234,15 +257,21 @@
     const darkMode = ref(true);
 
     onMounted(() => {
+        resetProfileDetails();
+
+        userImage.value = userData.value?.photoUrl ?? '';
+
+        darkMode.value = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}')?.darkMode !== '0';
+    });
+
+    const resetProfileDetails = () => {
         profileDetails.value = {
             firstName: userData.value?.firstName ?? '',
             lastName: userData.value?.lastName ?? '',
             email: userData.value?.email ?? '',
             phoneNumber: userData.value?.phoneNumber ?? '',
         };
+    };
 
-        userImage.value = userData.value?.photoUrl ?? '';
-
-        darkMode.value = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}')?.darkMode !== '0';
-    });
+    const saveProfileDetails = () => {};
 </script>

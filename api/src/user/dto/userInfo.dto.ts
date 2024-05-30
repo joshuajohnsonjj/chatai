@@ -1,6 +1,18 @@
 import { ChatTone, DataSyncInterval, UserType } from '@prisma/client';
 import { Transform } from 'class-transformer';
-import { IsBooleanString, IsOptional } from 'class-validator';
+import {
+    IsBoolean,
+    IsBooleanString,
+    IsEmail,
+    IsEnum,
+    IsNumber,
+    IsOptional,
+    IsPhoneNumber,
+    IsString,
+    Max,
+    MaxLength,
+    Min,
+} from 'class-validator';
 
 export class GetUserInfoRequestDto {
     @IsBooleanString()
@@ -17,6 +29,67 @@ export class GetUserInfoRequestDto {
     @IsOptional()
     @Transform(({ value }) => value === 'true')
     includeSettings: boolean;
+}
+
+export class UpdateUserInfoRequestDto {
+    @IsString()
+    @IsOptional()
+    @MaxLength(20)
+    firstName?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(20)
+    lastName?: string;
+
+    @IsEmail()
+    @IsOptional()
+    @MaxLength(40)
+    email?: string;
+
+    @IsPhoneNumber()
+    @IsOptional()
+    phoneNumber?: string;
+}
+
+export class UpdateUserSettingsRequestDto {
+    @IsBoolean()
+    @IsOptional()
+    newsletterNotification?: boolean;
+
+    @IsBoolean()
+    @IsOptional()
+    usageNotification?: boolean;
+
+    @IsNumber()
+    @Max(9)
+    @Min(1)
+    @IsOptional()
+    chatCreativity?: number;
+
+    @IsNumber()
+    @Max(9)
+    @Min(1)
+    @IsOptional()
+    chatMinConfidence?: number;
+
+    @IsEnum(ChatTone)
+    @IsOptional()
+    chatTone?: ChatTone;
+
+    @IsString()
+    @MaxLength(240)
+    baseInstructions?: string;
+}
+
+export class SetProfileImageRequestDto {
+    @IsString()
+    @MaxLength(20)
+    imageBase64: string;
+}
+
+export class SetProfileImageResponseDto {
+    imageUrl: string;
 }
 
 export class GetUserInfoResponseDto {
