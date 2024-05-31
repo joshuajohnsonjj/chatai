@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
-    CreateDataSourceResponseDto,
     CreateDataSourceQueryDto,
     TestDataSourceResponseDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     UpdateDataSourceQueryDto,
     CompletedImportsRequestDto,
+    DataSourceConnectionDto,
 } from './dto/dataSource.dto';
 import { DataSource, DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
@@ -41,8 +41,8 @@ export class DataSourceService {
     async createDataSource(
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
-    ): Promise<CreateDataSourceResponseDto> {
-        this.logger.log('Creating new data source', 'DataSource');
+    ): Promise<DataSourceConnectionDto> {
+        this.logger.log(`Creating new data source for ${params.userType} - ${params.ownerEntityId}`, 'DataSource');
 
         if (params.userType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
@@ -59,8 +59,8 @@ export class DataSourceService {
                 requiredCredentialTypes: true,
             },
         });
-
-        this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
+        // TODO: not sure if this is really needed... need to see more data source integration
+        // this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
 
         const { isValid, message } = await testDataSourceConnection(
             this.configService.get<string>('BASE_API_GATEWAY_URL')!,
@@ -77,6 +77,8 @@ export class DataSourceService {
             throw new BadCredentialsError(message);
         }
 
+        await this.validateRequestedSyncInterval(params.selectedSyncInterval, params.userType, params.ownerEntityId);
+
         try {
             const dataSource = await this.prisma.dataSource.create({
                 data: {
@@ -87,22 +89,25 @@ export class DataSourceService {
                             ? EntityType.ORGANIZATION
                             : EntityType.INDIVIDUAL,
                     secret: params.secret,
-                    isSyncing: false,
                     externalId: params.externalId,
-                },
-                select: {
-                    id: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    lastSync: true,
-                    dataSourceTypeId: true,
-                    ownerEntityId: true,
+                    selectedSyncInterval: params.selectedSyncInterval,
                 },
             });
 
-            this.syncDataSource(dataSource.id, user);
+            if (params.backfillHistorical) {
+                this.syncDataSource(dataSource.id, user);
+            } else {
+                await this.handleImportsCompleted(
+                    { completed: [{ dataSourceId: dataSource.id, bytesDelta: 0 }] },
+                    '',
+                    true,
+                );
+            }
 
-            return dataSource;
+            return {
+                ...omit(dataSource, ['secret', 'isSyncing']),
+                isSyncing: params.backfillHistorical,
+            };
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
                 throw new BadRequestError('Data source already exists for entity');
@@ -135,25 +140,8 @@ export class DataSourceService {
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
-        const validateRequestedIntervalChange = async (requested: DataSyncInterval): Promise<void> => {
-            const intervalLevels = [
-                DataSyncInterval.WEEKLY,
-                DataSyncInterval.DAILY,
-                DataSyncInterval.SEMI_DAILY,
-                DataSyncInterval.INSTANT,
-            ];
-            const planInterval = await this.getAccountPlanSyncInterval(
-                params.userType === UserType.ORGANIZATION_MEMBER,
-                dataSource.ownerEntityId,
-            );
-
-            if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
-                throw new BadRequestError('Current plan does not allow this indexing interval');
-            }
-        };
-
         if ('syncInterval' in params) {
-            await validateRequestedIntervalChange(params.syncInterval!);
+            await this.validateRequestedSyncInterval(params.syncInterval!, params.userType, dataSource.ownerEntityId);
             updates.selectedSyncInterval = params.syncInterval;
         }
 
@@ -378,8 +366,15 @@ export class DataSourceService {
     }
 
     // TODO: in addition to handling completion, need to handle error state out of either lambda...
-    async handleImportsCompleted(data: CompletedImportsRequestDto, apiKey: string): Promise<void> {
-        await this.validateInternalAPIKey(apiKey);
+    // TODO: create google drive webhook conn if userId present in payload
+    async handleImportsCompleted(
+        data: CompletedImportsRequestDto,
+        apiKey: string,
+        isInternalCall = false,
+    ): Promise<void> {
+        if (!isInternalCall) {
+            await this.validateInternalAPIKey(apiKey);
+        }
 
         const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
             if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
@@ -465,7 +460,7 @@ export class DataSourceService {
     }
 
     private async validateInternalAPIKey(apiKey: string): Promise<void> {
-        const keyRes = await this.prisma.internalAPIKey.findUnique({
+        const keyRes = await this.prisma.internalAPIKey.count({
             where: {
                 key: apiKey,
                 isDisabled: false,
@@ -473,10 +468,9 @@ export class DataSourceService {
                     hasSome: [InternalAPIKeyScope.ALL, InternalAPIKeyScope.DATA_SOURCE],
                 },
             },
-            select: { key: true },
         });
 
-        if (!keyRes) {
+        if (keyRes !== 1) {
             throw new AccessDeniedError('Valid API key not provided');
         }
     }
@@ -487,7 +481,7 @@ export class DataSourceService {
             reqOrgId !== userOrgId
         ) {
             this.logger.error('User is not an admin of the specified org', 'DataSource');
-            throw new AccessDeniedError();
+            throw new AccessDeniedError('Must be an organization admin to preform this action.');
         }
     }
 
@@ -502,7 +496,7 @@ export class DataSourceService {
         });
     }
 
-    private async getAccountPlanSyncInterval(
+    private async getAccountPlanMaxSyncInterval(
         isOrganization: boolean,
         id: string,
     ): Promise<DataSyncInterval | undefined> {
@@ -518,5 +512,26 @@ export class DataSourceService {
             select: { plan: { select: { dataSyncInterval: true } } },
         });
         return res?.plan?.dataSyncInterval;
+    }
+
+    private async validateRequestedSyncInterval(
+        requested: DataSyncInterval,
+        userType: UserType,
+        ownerEntityId: string,
+    ): Promise<void> {
+        const intervalLevels = [
+            DataSyncInterval.WEEKLY,
+            DataSyncInterval.DAILY,
+            DataSyncInterval.SEMI_DAILY,
+            DataSyncInterval.INSTANT,
+        ];
+        const planInterval = await this.getAccountPlanMaxSyncInterval(
+            userType === UserType.ORGANIZATION_MEMBER,
+            ownerEntityId,
+        );
+
+        if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
+            throw new BadRequestError('Current plan does not allow this indexing interval');
+        }
     }
 }

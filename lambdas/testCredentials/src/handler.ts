@@ -1,7 +1,7 @@
 import type { Handler } from 'aws-lambda';
 import * as dotenv from 'dotenv';
 import { type TestCredentialsRequestData } from '../../lib/types';
-import { decryptData } from '../../lib/descryption';
+import { decryptData } from '../../lib/decryption';
 import { NotionWrapper } from '../../lib/dataSources/notion';
 import { GoogleDriveService } from '../../lib/dataSources/googleDrive';
 import { SlackWrapper } from '../../lib/dataSources/slack';

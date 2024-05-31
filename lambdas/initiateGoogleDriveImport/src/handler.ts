@@ -1,5 +1,6 @@
 import type { Handler } from 'aws-lambda';
-import { decryptData } from '../../lib/descryption';
+import { decryptData } from '../../lib/decryption';
+import { InternalAPIEndpoints } from '../../lib/constants';
 import { v4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import moment from 'moment';
@@ -7,6 +8,7 @@ import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
 import { InitiateImportRequestData } from '../../lib/types';
 import { GoogleDriveSQSMessageBody, GoogleDriveService } from '../../lib/dataSources/googleDrive';
+import axios from 'axios';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
@@ -18,6 +20,16 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
     const googleDriveService = new GoogleDriveService(decryptedSecret);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+
+    await axios({
+        method: 'patch',
+        baseURL: process.env.INTERNAL_BASE_API_HOST!,
+        url: InternalAPIEndpoints.STARTING_IMPORTS,
+        data: { dataSourceId: messageData.dataSourceId },
+        headers: {
+            'api-key': process.env.INTERNAL_API_KEY!,
+        },
+    });
 
     let isComplete = false;
     let nextCursor: string | null = null;
@@ -42,6 +54,7 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
                         modifiedDate: file.modifiedTime,
                         authorName: file.lastModifyingUser?.displayName,
                         authorEmail: file.lastModifyingUser?.emailAddress,
+                        userId: messageData.userId,
                     } as GoogleDriveSQSMessageBody),
                     MessageGroupId: messageGroupId,
                 });

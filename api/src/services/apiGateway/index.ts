@@ -19,9 +19,7 @@ export const initiateDataSourceImport = async (
         url: snakeCase(dataSourceType),
         method: 'post',
         data: { body: data },
-        headers: {
-            'x-api-key': apiKey,
-        },
+        headers: { 'x-api-key': apiKey },
     });
 };
 
@@ -66,8 +64,6 @@ export const modifyGoogleDriveWebhookConnection = async (
         url: APIGatewayEndpoints.GOOGLE_DRIVE_WEBHOOK,
         method: isCreate ? 'post' : 'delete',
         data: { body: data },
-        headers: {
-            'x-api-key': apiKey,
-        },
+        headers: { 'x-api-key': apiKey },
     });
 };

@@ -4,6 +4,7 @@ import type {
     NotionBlockDetailResponse,
     NotionTable,
     NotionAuthorAttribution,
+    NotionSQSMessageBody,
 } from '../../lib/dataSources/notion';
 import type { Handler, SQSEvent } from 'aws-lambda';
 import {
@@ -11,21 +12,20 @@ import {
     getTextFromBlock,
     getTextFromTable,
     isNewLineBlock,
-    isValidMessageBody,
     publishBlockData,
     shouldConnectToCurrentBlockGroup,
 } from './utility';
-import { decryptData } from '../../lib/descryption';
+import { decryptData } from '../../lib/decryption';
 import * as dotenv from 'dotenv';
 import axios from 'axios';
-import { COMPLETE_DATA_SOURCE_SYNC_ENDPOINT } from './constants';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { type CachedUser } from './types';
+import { InternalAPIEndpoints } from '../../lib/constants';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
-const entityStorageUsageMap: { [dataSourceId: string]: number } = {};
+let storageUsageMapCache: { [dataSourceId: string]: number };
 
 const notionAuthors: { [notionUserId: string]: CachedUser } = {};
 
@@ -92,7 +92,7 @@ const processBlockList = async (
                 pageUrl,
                 entityId,
                 author,
-                entityStorageUsageMap,
+                storageUsageMapCache,
                 dataSourceId,
             );
             builtBlocksTextString = '';
@@ -110,7 +110,7 @@ const processBlockList = async (
                 pageUrl,
                 entityId,
                 author,
-                entityStorageUsageMap,
+                storageUsageMapCache,
                 dataSourceId,
             );
             builtBlocksTextString = '';
@@ -131,7 +131,7 @@ const processBlockList = async (
                 pageUrl,
                 entityId,
                 null,
-                entityStorageUsageMap,
+                storageUsageMapCache,
                 dataSourceId,
             );
         } else if (parentBlock.type === NotionBlockType.COLUMN_LIST) {
@@ -152,7 +152,7 @@ const processBlockList = async (
                         pageUrl,
                         entityId,
                         author,
-                        entityStorageUsageMap,
+                        storageUsageMapCache,
                         dataSourceId,
                     );
                 }),
@@ -176,7 +176,7 @@ const processBlockList = async (
             pageUrl,
             entityId,
             author,
-            entityStorageUsageMap,
+            storageUsageMapCache,
             dataSourceId,
         );
     }
@@ -229,13 +229,13 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
 
     console.log(`Processing ${event.Records.length} messages`);
 
-    for (const record of event.Records) {
-        const messageBody = JSON.parse(record.body);
+    if (!storageUsageMapCache) {
+        console.log('Initializing storage map cache');
+        storageUsageMapCache = {};
+    }
 
-        if (!isValidMessageBody(messageBody)) {
-            console.error('Skipping invalid message', messageBody);
-            continue;
-        }
+    for (const record of event.Records) {
+        const messageBody: NotionSQSMessageBody = JSON.parse(record.body);
 
         if (messageBody.isFinal) {
             completedDataSources.push(messageBody.dataSourceId);
@@ -265,11 +265,11 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
         await axios({
             method: 'patch',
             baseURL: process.env.INTERNAL_BASE_API_HOST!,
-            url: COMPLETE_DATA_SOURCE_SYNC_ENDPOINT,
+            url: InternalAPIEndpoints.COMPLETED_IMPORTS,
             data: {
                 completed: completedDataSources.map((id) => ({
                     dataSourceId: id,
-                    bytesDelta: entityStorageUsageMap[id] ?? 0,
+                    bytesDelta: storageUsageMapCache[id] ?? 0,
                 })),
             },
             headers: {

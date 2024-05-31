@@ -7,7 +7,9 @@ import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
 import { type InitiateImportRequestData } from '../../lib/types';
 import { v4 } from 'uuid';
-import { decryptData } from '../../lib/descryption';
+import { decryptData } from '../../lib/decryption';
+import { InternalAPIEndpoints } from '../../lib/constants';
+import axios from 'axios';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
@@ -22,6 +24,16 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
     const notionService = new NotionWrapper(decryptedSecret);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
+
+    await axios({
+        method: 'patch',
+        baseURL: process.env.INTERNAL_BASE_API_HOST!,
+        url: InternalAPIEndpoints.STARTING_IMPORTS,
+        data: { dataSourceId: data.dataSourceId },
+        headers: {
+            'api-key': process.env.INTERNAL_API_KEY!,
+        },
+    });
 
     let isComplete = false;
     let nextCursor: string | null = null;

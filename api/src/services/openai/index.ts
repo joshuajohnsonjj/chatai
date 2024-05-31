@@ -11,7 +11,7 @@ export class OpenAIService {
         this.client = new OpenAI({ apiKey: secretKey });
     }
 
-    public getGptReponseFromSourceData = async (
+    public getGptReponseStreamWithSourceData = async (
         userId: string,
         userPrompt: string,
         sourceData: string,

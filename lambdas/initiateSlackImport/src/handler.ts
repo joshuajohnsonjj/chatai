@@ -1,5 +1,5 @@
 import type { APIGatewayEvent, Handler } from 'aws-lambda';
-import { decryptData } from '../../lib/descryption';
+import { decryptData } from '../../lib/decryption';
 import { PrismaClient } from '@prisma/client';
 import { v4 } from 'uuid';
 import * as dotenv from 'dotenv';

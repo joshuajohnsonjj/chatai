@@ -6,7 +6,6 @@ import type {
     NotionEquation,
     NotionParagraph,
     NotionRichTextData,
-    NotionSQSMessageBody,
     NotionTable,
     NotionTableRow,
     NotionToDo,
@@ -17,8 +16,7 @@ import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
 import { NOTION_DATA_SOURCE_NAME } from './constants';
-import { cleanExcessWhitespace, isEmptyContent } from '../../lib/helper';
-import { EMBEDDING_SIZE_IN_BYTES } from '../../lib/constants';
+import { cleanExcessWhitespace, getDocumentSizeEstimate, isEmptyContent } from '../../lib/helper';
 import { CachedUser } from './types';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
@@ -122,12 +120,11 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
 };
 
 const updateUserStorageTracker = (
-    entityId: string,
-    entityStorageUsageMap: { [id: string]: number },
+    dataSourceId: string,
+    storageUsageMapCache: { [id: string]: number },
     textLen: number,
 ): void => {
-    const addedBytes = EMBEDDING_SIZE_IN_BYTES + textLen * 2;
-    entityStorageUsageMap[entityId] = entityStorageUsageMap[entityId] ?? 0 + addedBytes;
+    storageUsageMapCache[dataSourceId] = storageUsageMapCache[dataSourceId] ?? 0 + getDocumentSizeEstimate(textLen);
 };
 
 /**
@@ -141,7 +138,7 @@ export const publishBlockData = async (
     pageUrl: string,
     entityId: string,
     author: CachedUser | null,
-    entityStorageUsageMap: { [id: string]: number },
+    storageUsageMapCache: { [id: string]: number },
     dataSourceId: string,
 ): Promise<void> => {
     if (!aggregatedBlockText || !aggregatedBlockText.length) {
@@ -184,22 +181,7 @@ export const publishBlockData = async (
         }),
     ]);
 
-    updateUserStorageTracker(dataSourceId, entityStorageUsageMap, cleanedAggregatedText.length);
-};
-
-export const isValidMessageBody = (body: NotionSQSMessageBody): boolean => {
-    if (
-        typeof body.pageId === 'string' &&
-        typeof body.pageUrl === 'string' &&
-        typeof body.ownerEntityId === 'string' &&
-        typeof body.pageTitle === 'string' &&
-        typeof body.secret === 'string' &&
-        typeof body.dataSourceId === 'string' &&
-        typeof body.isFinal === 'boolean'
-    ) {
-        return true;
-    }
-    return false;
+    updateUserStorageTracker(dataSourceId, storageUsageMapCache, cleanedAggregatedText.length);
 };
 
 export const isNewLineBlock = (block: NotionBlock): boolean =>

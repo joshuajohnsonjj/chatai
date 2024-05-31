@@ -92,7 +92,7 @@ export class ChatService {
 
         this.logger.log(`Start chat response for chat ${chatId} with settings ${JSON.stringify(chatSettings)}`, 'Chat');
 
-        const stream = await this.openai.getGptReponseFromSourceData(
+        const stream = await this.openai.getGptReponseStreamWithSourceData(
             user.idUser,
             params.userPromptText,
             matchedDataText,

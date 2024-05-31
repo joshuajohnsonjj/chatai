@@ -5,7 +5,7 @@ import { UseGuards } from '@nestjs/common/decorators';
 import type {
     CompletedImportsRequestDto,
     CreateDataSourceQueryDto,
-    CreateDataSourceResponseDto,
+    DataSourceConnectionDto,
     DeleteGoogleDriveWebookQueryDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
@@ -30,7 +30,7 @@ export class DataSourceController {
     async createDataSource(
         @Body() body: CreateDataSourceQueryDto,
         @Req() req: Request,
-    ): Promise<CreateDataSourceResponseDto> {
+    ): Promise<DataSourceConnectionDto> {
         return await this.service.createDataSource(body, req.user as DecodedUserTokenDto);
     }
 
