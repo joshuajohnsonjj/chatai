@@ -387,9 +387,9 @@ export class DataSourceService {
     async handleImportsCompleted(
         data: CompletedImportsRequestDto,
         apiKey: string,
-        isInternalCall = false,
+        ignoreAPIKey = false,
     ): Promise<void> {
-        if (!isInternalCall) {
+        if (!ignoreAPIKey) {
             await this.validateInternalAPIKey(apiKey);
         }
 
