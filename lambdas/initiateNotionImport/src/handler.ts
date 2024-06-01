@@ -49,7 +49,9 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
             if (!data.lastSync || moment(data.lastSync).isBefore(moment(page.last_edited_time))) {
                 const pageTitle = getPageTitle(page);
 
-                if (!pageTitle) { return; }
+                if (!pageTitle) {
+                    return;
+                }
 
                 messageBatchEntries.push({
                     Id: page.id,

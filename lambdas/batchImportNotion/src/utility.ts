@@ -13,7 +13,7 @@ import type {
 } from '../../lib/dataSources/notion';
 import { ImportableBlockTypes, JoinableBlockTypes, NotionBlockType, getBlockUrl } from '../../lib/dataSources/notion';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
-import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
+import type { DataElementInsertSummary, MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
 import { NOTION_DATA_SOURCE_NAME } from './constants';
 import { cleanExcessWhitespace, getDocumentSizeEstimate, isEmptyContent } from '../../lib/helper';
@@ -90,9 +90,6 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
     const allChildren: NotionBlock[] = [rootBlock];
 
     const collectChildren = async (block: NotionBlock): Promise<void> => {
-        // TODO: remove this log.. not useful, creates alot of noise
-        console.log(`collecting children for ${block.id}`);
-
         if (block.has_children) {
             const children: NotionBlock[] = [];
             let isComplete = false;
@@ -122,9 +119,10 @@ export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: Noti
 const updateUserStorageTracker = (
     dataSourceId: string,
     storageUsageMapCache: { [id: string]: number },
-    textLen: number,
+    insertSumary: DataElementInsertSummary,
 ): void => {
-    storageUsageMapCache[dataSourceId] = storageUsageMapCache[dataSourceId] ?? 0 + getDocumentSizeEstimate(textLen);
+    storageUsageMapCache[dataSourceId] =
+        storageUsageMapCache[dataSourceId] ?? 0 + getDocumentSizeEstimate(insertSumary.lengthDiff, insertSumary.isNew);
 };
 
 /**
@@ -158,15 +156,7 @@ export const publishBlockData = async (
     ]);
     const annotationLabels = [...annotations.categories, ...annotations.entities];
 
-    await Promise.all([
-        author
-            ? mongo.writeAuthors({
-                  name: author.name,
-                  email: author.email,
-                  entityId,
-              })
-            : Promise.resolve(),
-        mongo.writeLabels(annotationLabels, entityId),
+    const [dataElementInsertSummary] = await Promise.all([
         mongo.writeDataElements({
             _id: parentBlock.id,
             ownerEntityId: entityId,
@@ -179,9 +169,17 @@ export const publishBlockData = async (
             dataSourceType: NOTION_DATA_SOURCE_NAME,
             author: author ?? undefined,
         }),
+        author
+            ? mongo.writeAuthors({
+                  name: author.name,
+                  email: author.email,
+                  entityId,
+              })
+            : Promise.resolve(),
+        mongo.writeLabels(annotationLabels, entityId),
     ]);
 
-    updateUserStorageTracker(dataSourceId, storageUsageMapCache, cleanedAggregatedText.length);
+    updateUserStorageTracker(dataSourceId, storageUsageMapCache, dataElementInsertSummary);
 };
 
 export const isNewLineBlock = (block: NotionBlock): boolean =>

@@ -187,13 +187,13 @@ export class MongoDBService {
 
     /**
      * Performs an upsert operation based on the _id property
-     * 
+     *
      * @returns
      * An insert summary containing text length and an indication of whether
      * document was inserted or updated.
-     * 
+     *
      * isNew: true if inserted, false if updated
-     * 
+     *
      * lengthDiff: the diff in saved data element text length. If inserting
      * new document returns text length of new document.
      */

@@ -98,22 +98,15 @@ export class DataSourceService {
                     secret: params.secret,
                     externalId: params.externalId,
                     selectedSyncInterval: params.selectedSyncInterval,
+                    lastSync: params.backfillHistoricalStartDate,
                 },
             });
 
-            if (params.backfillHistorical) {
-                this.syncDataSource(dataSource.id, user);
-            } else {
-                await this.handleImportsCompleted(
-                    { completed: [{ dataSourceId: dataSource.id, bytesDelta: 0 }] },
-                    '',
-                    true,
-                );
-            }
+            this.syncDataSource(dataSource.id, user);
 
             return {
                 ...omit(dataSource, ['secret', 'isSyncing']),
-                isSyncing: params.backfillHistorical,
+                isSyncing: true,
             };
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
@@ -371,8 +364,13 @@ export class DataSourceService {
         });
     }
 
-    async handleImportInitiated(dataSourceId: string, apiKey: string): Promise<void> {
-        await this.validateInternalAPIKey(apiKey);
+    async handleImportInitiated(dataSourceId: string, apiKey: string, ignoreAPIKey = false): Promise<void> {
+        if (!ignoreAPIKey) {
+            await this.validateInternalAPIKey(apiKey);
+        }
+
+        this.logger.log(`handling import initiated for datasource ${dataSourceId}`, LoggerContext.DATA_SOURCE);
+
         await this.prisma.dataSource.update({
             where: { id: dataSourceId },
             data: {

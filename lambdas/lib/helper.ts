@@ -24,5 +24,5 @@ export const cleanExcessWhitespace = (str: string): string => str.replace(/(\n{2
  *
  * @param textContentLength
  */
-export const getDocumentSizeEstimate = (textContentLength: number): number =>
-    EMBEDDING_SIZE_IN_BYTES + textContentLength * 2;
+export const getDocumentSizeEstimate = (textContentLength: number, isNewDocumentInsert: boolean): number =>
+    (isNewDocumentInsert ? EMBEDDING_SIZE_IN_BYTES : 0) + textContentLength * 2;

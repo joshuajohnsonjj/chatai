@@ -76,7 +76,9 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
         }
     }
 
-    console.log(`Done getting pages for for data source ${messageData.dataSourceId}, publishing sqs message batches...`);
+    console.log(
+        `Done getting pages for for data source ${messageData.dataSourceId}, publishing sqs message batches...`,
+    );
 
     // Set is final true on last message entry for job completion handling
     messageBatchEntries[messageBatchEntries.length - 1].MessageBody = JSON.stringify({

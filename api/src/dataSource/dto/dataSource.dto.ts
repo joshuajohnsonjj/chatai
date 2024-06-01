@@ -1,6 +1,6 @@
 import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType, UserType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -15,8 +15,9 @@ export class CreateDataSourceQueryDto {
     @IsString()
     secret: string;
 
-    @IsBoolean()
-    backfillHistorical: boolean;
+    @IsDateString()
+    @IsOptional()
+    backfillHistoricalStartDate?: string;
 
     @IsEnum(DataSyncInterval)
     selectedSyncInterval: DataSyncInterval;
