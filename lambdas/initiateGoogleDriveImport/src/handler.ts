@@ -22,15 +22,20 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
-    await axios({
-        method: 'patch',
-        baseURL: process.env.INTERNAL_BASE_API_HOST!,
-        url: InternalAPIEndpoints.STARTING_IMPORTS,
-        data: { dataSourceId: messageData.dataSourceId },
-        headers: {
-            'api-key': process.env.INTERNAL_API_KEY!,
-        },
-    });
+    try {
+        await axios({
+            method: 'patch',
+            baseURL: process.env.INTERNAL_BASE_API_HOST!,
+            url: InternalAPIEndpoints.STARTING_IMPORTS,
+            data: { dataSourceId: messageData.dataSourceId },
+            headers: {
+                'api-key': process.env.INTERNAL_API_KEY!,
+            },
+        });
+    } catch (e) {
+        console.warn(e);
+        return { success: false };
+    }
 
     let isComplete = false;
     let nextCursor: string | null = null;

@@ -369,6 +369,15 @@ export class DataSourceService {
             await this.validateInternalAPIKey(apiKey);
         }
 
+        const dataSource = await this.prisma.dataSource.findUnique({
+            where: { id: dataSourceId },
+            select: { isSyncing: true },
+        });
+
+        if (dataSource?.isSyncing) {
+            throw new BadRequestError('Data source sync already in progress');
+        }
+
         this.logger.log(`handling import initiated for datasource ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         await this.prisma.dataSource.update({
@@ -398,7 +407,7 @@ export class DataSourceService {
 
             switch (interval) {
                 case DataSyncInterval.INSTANT:
-                    return moment().add(30, 'm').toDate();
+                    return moment().add(15, 'm').toDate();
                 case DataSyncInterval.SEMI_DAILY:
                     return moment().add(12, 'h').toDate();
                 case DataSyncInterval.DAILY:
@@ -469,7 +478,6 @@ export class DataSourceService {
                             isSyncing: false,
                             nextScheduledSync,
                             mbStorageEstimate: {
-                                // TODO: figure out how to handle overwrites...
                                 increment: completed.bytesDelta / BYTES_IN_MB,
                             },
                             updatedAt: new Date(),

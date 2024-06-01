@@ -38,7 +38,7 @@ export const createEventBridgeScheduledExecution = async (
                 Input: JSON.stringify(payload),
                 RoleArn: 'arn:aws:iam::353643225333:role/EventBridgeSchedulerRole',
                 RetryPolicy: {
-                    MaximumEventAgeInSeconds: 1800, // 30 mins
+                    MaximumEventAgeInSeconds: 600,
                     MaximumRetryAttempts: 20,
                 },
             },
