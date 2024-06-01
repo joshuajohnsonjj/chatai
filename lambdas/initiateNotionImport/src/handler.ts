@@ -47,13 +47,17 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
         resp.results.forEach((page) => {
             // Only process pages created/edited since last sync
             if (!data.lastSync || moment(data.lastSync).isBefore(moment(page.last_edited_time))) {
+                const pageTitle = getPageTitle(page);
+
+                if (!pageTitle) { return; }
+
                 messageBatchEntries.push({
                     Id: page.id,
                     MessageBody: JSON.stringify({
                         pageId: page.id,
                         pageUrl: page.url,
                         ownerEntityId: data.ownerEntityId,
-                        pageTitle: getPageTitle(page),
+                        pageTitle,
                         secret: data.secret,
                         dataSourceId: data.dataSourceId,
                         isFinal: false,
