@@ -186,9 +186,19 @@ export class MongoDBService {
 
     /**
      * Performs an upsert operation based on the _id property
+     * 
+     * @returns
+     * the diff in saved data element text length. If inserting
+     * new document returns text length of new document.
      */
-    public async writeDataElements(data: MongoDataElementCollectionDoc): Promise<void> {
+    public async writeDataElements(data: MongoDataElementCollectionDoc): Promise<number> {
+        const originalDoc = await this.getDataElementById(data._id, data.ownerEntityId);
         await this.elementCollConnection.replaceOne({ _id: data._id }, data, { upsert: true });
+
+        if (originalDoc) {
+            return data.text.length - originalDoc.text.length;
+        }
+        return data.text.length;
     }
 
     /**
