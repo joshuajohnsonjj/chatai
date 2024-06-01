@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './exceptions/handler';
 import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-winston';
@@ -39,8 +40,12 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule, {
         logger: process.env.NODE_ENV === 'dev' ? localLogger : cloudwatchLogger,
     });
+
     app.useGlobalFilters(new GlobalExceptionFilter());
+    app.useGlobalPipes(new ValidationPipe());
+
     app.enableCors();
+
     await app.listen(process.env.PORT || 3001);
 }
 bootstrap();

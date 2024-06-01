@@ -9,8 +9,8 @@ export class CreateDataSourceQueryDto {
     @IsUUID()
     ownerEntityId: string;
 
-    @IsString()
-    userType: UserType;
+    @IsEnum(UserType)
+    ownerEntityType: UserType;
 
     @IsString()
     secret: string;
@@ -28,7 +28,7 @@ export class CreateDataSourceQueryDto {
 
 export class UpdateDataSourceQueryDto {
     @IsString()
-    userType: UserType;
+    ownerEntityType: UserType;
 
     @IsEnum(DataSyncInterval)
     @IsOptional()

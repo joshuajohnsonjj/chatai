@@ -21,6 +21,7 @@ import * as moment from 'moment';
 import { PrismaError } from 'src/types';
 import { ChatMessage } from '@prisma/client';
 import { type OpenAIMessageHistory, OpenAIService } from 'src/services/openai';
+import { LoggerContext } from 'src/constants';
 
 @Injectable()
 export class ChatService {
@@ -38,7 +39,7 @@ export class ChatService {
     ) {}
 
     async generateResponse(chatId: string, params: GetChatResponseQueryDto, user: DecodedUserTokenDto) {
-        this.logger.log(`Start generate response for chat ${chatId}`, 'Chat');
+        this.logger.log(`Start generate response for chat ${chatId}`, LoggerContext.CHAT);
 
         const chat = await this.prisma.chat.findUniqueOrThrow({
             where: { id: chatId },
@@ -54,7 +55,7 @@ export class ChatService {
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
 
-        this.logger.log(`Embedding prompt: ${params.userPromptText}`, 'Chat');
+        this.logger.log(`Embedding prompt: ${params.userPromptText}`, LoggerContext.CHAT);
         const userPromptEmbedding = await this.gemini.getTextEmbedding(params.userPromptText);
         const matchedDataResult = await this.mongo.queryDataElementsByVector(
             {
@@ -74,7 +75,10 @@ export class ChatService {
 
         let chatHistory: OpenAIMessageHistory | undefined;
         if (params.isReplyMessage) {
-            this.logger.log(`Retrieving thread ${params.threadId} history for response continuation`, 'Chat');
+            this.logger.log(
+                `Retrieving thread ${params.threadId} history for response continuation`,
+                LoggerContext.CHAT,
+            );
 
             const queryRes = await this.prisma.chatMessage.findMany({
                 where: { chatId, threadId: params.threadId },
@@ -90,7 +94,10 @@ export class ChatService {
             chatTone: params.toneSetting,
         };
 
-        this.logger.log(`Start chat response for chat ${chatId} with settings ${JSON.stringify(chatSettings)}`, 'Chat');
+        this.logger.log(
+            `Start chat response for chat ${chatId} with settings ${JSON.stringify(chatSettings)}`,
+            LoggerContext.CHAT,
+        );
 
         const stream = await this.openai.getGptReponseStreamWithSourceData(
             user.idUser,
@@ -113,7 +120,7 @@ export class ChatService {
         systemResponseMessageId: string,
         matchedInformers: (MongoDataElementCollectionDoc & { score: number })[],
     ): Promise<GetChatResponseResponseDto> {
-        this.logger.log(`Chat generation complete. Writing thread ${threadId} data to db.`, 'Chat');
+        this.logger.log(`Chat generation complete. Writing thread ${threadId} data to db.`, LoggerContext.CHAT);
 
         if (!isReply) {
             await this.prisma.chatMessageThread.create({
@@ -184,7 +191,7 @@ export class ChatService {
         updates: UpdateChatDetailRequestDto,
         user: DecodedUserTokenDto,
     ): Promise<ChatResponseDto> {
-        this.logger.log(`Patching updates ${JSON.stringify(updates)} to chat ${chatId}`, 'Chat');
+        this.logger.log(`Patching updates ${JSON.stringify(updates)} to chat ${chatId}`, LoggerContext.CHAT);
 
         try {
             return await this.prisma.chat.update({
@@ -236,12 +243,16 @@ export class ChatService {
         });
 
         if (!chat) {
-            this.logger.error(`Chat ${chatId} does not exist`, undefined, 'Chat');
-            throw new ResourceNotFoundError(chatId, 'Chat');
+            this.logger.error(`Chat ${chatId} does not exist`, undefined, LoggerContext.CHAT);
+            throw new ResourceNotFoundError(chatId, LoggerContext.CHAT);
         }
 
         if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
-            this.logger.error(`Blocked user ${user.idUser} from interacting with chat ${chatId}`, undefined, 'Chat');
+            this.logger.error(
+                `Blocked user ${user.idUser} from interacting with chat ${chatId}`,
+                undefined,
+                LoggerContext.CHAT,
+            );
             throw new AccessDeniedError('User unauthorized to read this data');
         }
 

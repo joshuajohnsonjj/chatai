@@ -7,6 +7,7 @@ import { SearchQueryRequestDto, SearchQueryResponseDto, SearchResultResponseDto 
 import { AccessDeniedError } from 'src/exceptions';
 import { omit } from 'lodash';
 import { SearchQueryParamType, SuggestionsQueryDto, SuggestionsResponseDto } from './dto/suggestions.dto';
+import { LoggerContext } from 'src/constants';
 
 @Injectable()
 export class SearchService {
@@ -23,7 +24,7 @@ export class SearchService {
     async executeQuery(params: SearchQueryRequestDto, user: DecodedUserTokenDto): Promise<SearchQueryResponseDto> {
         this.validateUserAccess(params.entityId, user.idUser, user.organization);
 
-        this.logger.log('Executing search query ' + JSON.stringify(params), 'Search');
+        this.logger.log('Executing search query ' + JSON.stringify(params), LoggerContext.SEARCH);
 
         if (params.queryText) {
             const vectorizedQuery = await this.ai.getTextEmbedding(params.queryText);
@@ -47,7 +48,7 @@ export class SearchService {
 
     async getDataItemById(resultId: string, user: DecodedUserTokenDto): Promise<SearchResultResponseDto | null> {
         const entityId = user.organization || user.idUser;
-        this.logger.log(`Retrieving result ${resultId} for entity ${entityId}`);
+        this.logger.log(`Retrieving result ${resultId} for entity ${entityId}`, LoggerContext.SEARCH);
         return await this.mongo.getDataElementById(resultId, entityId);
     }
 

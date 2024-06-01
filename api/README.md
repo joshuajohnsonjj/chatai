@@ -39,15 +39,15 @@ $ yarn run test:cov
 ## prisma
 
 To make schema changes
+
 1. make updates in `schema.prisma`
 1. run `npx prisma generate` generate based on schema file
 1. run `npx prisma migrate dev --name [name]`
 
-* to apply unapplied migrations run `npx prisma migrate dev`
-* to seed db run `npx prisma db seed`
-* to update schema file based on current db run `npx prisma db pull` 
-* to wipe db and run all migrations run `npx prisma migrate reset` 
-
+-   to apply unapplied migrations run `npx prisma migrate deploy`
+-   to seed db run `npx prisma db seed`
+-   to update schema file based on current db run `npx prisma db pull`
+-   to wipe db and run all migrations run `npx prisma migrate reset`
 
 ## Heroku deploys (manual, temp)
 

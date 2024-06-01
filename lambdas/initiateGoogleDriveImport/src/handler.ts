@@ -14,6 +14,7 @@ dotenv.config({ path: __dirname + '/../../../../.env' });
 
 export const handler: Handler = async (event): Promise<{ success: boolean }> => {
     const messageData: InitiateImportRequestData = event.body;
+
     console.log(`Retreiving data source ${messageData.dataSourceId} Google Drive documents`);
 
     const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, messageData.secret);
@@ -33,9 +34,15 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
 
     let isComplete = false;
     let nextCursor: string | null = null;
+    let ndx = 0;
+
     while (!isComplete) {
         const resp = await googleDriveService.listFiles(nextCursor);
+
+        console.log(`Retrieved page batch ${ndx++} of results for data source ${messageData.dataSourceId}`);
+
         resp.files.forEach((file) => {
+            // TODO: eventually can we handle other types of documents?
             if (!file.webViewLink.startsWith('https://docs.google.com/document')) {
                 return;
             }
@@ -69,7 +76,13 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
         }
     }
 
-    // TODO: add is final message
+    console.log(`Done getting pages for for data source ${messageData.dataSourceId}, publishing sqs message batches...`);
+
+    // Set is final true on last message entry for job completion handling
+    messageBatchEntries[messageBatchEntries.length - 1].MessageBody = JSON.stringify({
+        ...JSON.parse(messageBatchEntries[messageBatchEntries.length - 1].MessageBody as string),
+        isFinal: true,
+    });
 
     await sendSqsMessageBatches(messageBatchEntries, process.env.GOOGLE_DRIVE_QUEUE_URL as string);
 

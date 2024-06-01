@@ -28,7 +28,7 @@ import {
 } from 'src/services/apiGateway';
 import * as moment from 'moment';
 import { createEventBridgeScheduledExecution } from 'src/services/eventBridge';
-import { BYTES_IN_MB } from 'src/constants';
+import { BYTES_IN_MB, LoggerContext } from 'src/constants';
 
 @Injectable()
 export class DataSourceService {
@@ -42,9 +42,12 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<DataSourceConnectionDto> {
-        this.logger.log(`Creating new data source for ${params.userType} - ${params.ownerEntityId}`, 'DataSource');
+        this.logger.log(
+            `Creating new data source for ${params.ownerEntityType} - ${params.ownerEntityId}`,
+            LoggerContext.DATA_SOURCE,
+        );
 
-        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
@@ -73,11 +76,15 @@ export class DataSourceService {
         );
 
         if (!isValid) {
-            this.logger.error('Invalid data source credential', 'DataSource');
+            this.logger.error('Invalid data source credential', LoggerContext.DATA_SOURCE);
             throw new BadCredentialsError(message);
         }
 
-        await this.validateRequestedSyncInterval(params.selectedSyncInterval, params.userType, params.ownerEntityId);
+        await this.validateRequestedSyncInterval(
+            params.selectedSyncInterval,
+            params.ownerEntityType,
+            params.ownerEntityId,
+        );
 
         try {
             const dataSource = await this.prisma.dataSource.create({
@@ -85,7 +92,7 @@ export class DataSourceService {
                     dataSourceTypeId: params.dataSourceTypeId,
                     ownerEntityId: params.ownerEntityId,
                     ownerEntityType:
-                        params.userType === UserType.ORGANIZATION_MEMBER
+                        params.ownerEntityType === UserType.ORGANIZATION_MEMBER
                             ? EntityType.ORGANIZATION
                             : EntityType.INDIVIDUAL,
                     secret: params.secret,
@@ -110,8 +117,15 @@ export class DataSourceService {
             };
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
+                this.logger.error(
+                    'Failed unique constraint - couldn\'t create datasource',
+                    undefined,
+                    LoggerContext.DATA_SOURCE,
+                );
                 throw new BadRequestError('Data source already exists for entity');
             }
+
+            this.logger.error(e.message, e.stack, LoggerContext.DATA_SOURCE);
             throw new InternalError();
         }
     }
@@ -121,11 +135,11 @@ export class DataSourceService {
         params: UpdateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<void> {
-        this.logger.log(`Updating new data source ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Updating new data source ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const updates: Partial<DataSource> = {};
 
-        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(user.organization, user.organization, user.oganizationUserRole);
         }
 
@@ -141,7 +155,11 @@ export class DataSourceService {
         }
 
         if ('syncInterval' in params) {
-            await this.validateRequestedSyncInterval(params.syncInterval!, params.userType, dataSource.ownerEntityId);
+            await this.validateRequestedSyncInterval(
+                params.syncInterval!,
+                params.ownerEntityType,
+                dataSource.ownerEntityId,
+            );
             updates.selectedSyncInterval = params.syncInterval;
         }
 
@@ -155,9 +173,9 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<TestDataSourceResponseDto> {
-        this.logger.log(`Testing data source credential for entity ${params.ownerEntityId}`, 'DataSource');
+        this.logger.log(`Testing data source credential for entity ${params.ownerEntityId}`, LoggerContext.DATA_SOURCE);
 
-        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
@@ -184,7 +202,7 @@ export class DataSourceService {
     }
 
     async killGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const dataSource = await this.prisma.dataSource.findUnique({
             where: { id: dataSourceId },
@@ -203,7 +221,7 @@ export class DataSourceService {
         });
 
         if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
         }
 
         if (!dataSource.googleDriveConnection) {
@@ -231,7 +249,7 @@ export class DataSourceService {
     }
 
     async createGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const dataSource = await this.prisma.dataSource.findUnique({
             where: { id: dataSourceId },
@@ -247,7 +265,7 @@ export class DataSourceService {
         });
 
         if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
         }
 
         if (dataSource.googleDriveConnection) {
@@ -304,7 +322,7 @@ export class DataSourceService {
     }
 
     async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
-        this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         await this.prisma.$transaction(async (tx) => {
             const dataSource = await tx.dataSource.findUnique({
@@ -319,8 +337,8 @@ export class DataSourceService {
             });
 
             if (!dataSource) {
-                this.logger.error(`Data source ${dataSourceId} not found`, 'DataSource');
-                throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+                this.logger.error(`Data source ${dataSourceId} not found`, LoggerContext.DATA_SOURCE);
+                throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
             }
 
             if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
@@ -328,7 +346,7 @@ export class DataSourceService {
             }
 
             if (dataSource.isSyncing) {
-                this.logger.error(`Data source ${dataSourceId} already syncing`, 'DataSource');
+                this.logger.error(`Data source ${dataSourceId} already syncing`, LoggerContext.DATA_SOURCE);
                 throw new BadRequestError('Data source sync already in progress');
             }
 
@@ -353,7 +371,6 @@ export class DataSourceService {
         });
     }
 
-    // TODO: call this from initiate import lambdas
     async handleImportInitiated(dataSourceId: string, apiKey: string): Promise<void> {
         await this.validateInternalAPIKey(apiKey);
         await this.prisma.dataSource.update({
@@ -396,7 +413,10 @@ export class DataSourceService {
 
         await Promise.all(
             data.completed.map(async (completed) => {
-                this.logger.log(`Updating data sources for completed import ${completed.dataSourceId}`, 'DataSource');
+                this.logger.log(
+                    `Updating data source for completed import ${completed.dataSourceId}`,
+                    LoggerContext.DATA_SOURCE,
+                );
 
                 const queryRes = await this.prisma.dataSource.findUnique({
                     where: { id: completed.dataSourceId },
@@ -416,7 +436,10 @@ export class DataSourceService {
                 });
 
                 if (!queryRes) {
-                    this.logger.warn(`Query returned no results for ${completed.dataSourceId}`, 'DataSource');
+                    this.logger.warn(
+                        `Query returned no results for ${completed.dataSourceId}`,
+                        LoggerContext.DATA_SOURCE,
+                    );
                     return;
                 }
 
@@ -470,8 +493,8 @@ export class DataSourceService {
             },
         });
 
-        if (keyRes !== 1) {
-            throw new AccessDeniedError('Valid API key not provided');
+        if (!apiKey || keyRes !== 1) {
+            throw new AccessDeniedError('Valid API key not provided in `api-key` header');
         }
     }
 
@@ -480,7 +503,7 @@ export class DataSourceService {
             ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role as OganizationUserRole) ||
             reqOrgId !== userOrgId
         ) {
-            this.logger.error('User is not an admin of the specified org', 'DataSource');
+            this.logger.error('User is not an admin of the specified org', LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('Must be an organization admin to preform this action.');
         }
     }
