@@ -1,12 +1,16 @@
 import { defineStore } from 'pinia';
-import { getUserInfo, loginUser } from '../requests';
+import { getUserInfo, loginUser, uploadAvatarToS3 } from '../requests';
 import { AccountPlan, OrgInfo, UserInfo, UserType } from '../types/user-store';
 import { computed, ref } from 'vue';
 import { omit } from 'lodash';
 import { TOKEN_STORAGE_KEY } from '../constants';
 
 export const useUserStore = defineStore('user', () => {
-    const isLoading = ref(false);
+    const isLoading = ref({
+        authentication: false,
+        imageUpload: false,
+        userInfo: false,
+    });
 
     const userData = ref<UserInfo>();
 
@@ -32,11 +36,11 @@ export const useUserStore = defineStore('user', () => {
     });
 
     const login = async (email: string, password: string): Promise<boolean> => {
-        isLoading.value = true;
+        isLoading.value.authentication = true;
         const resp = await loginUser(email, password);
 
         if (!resp) {
-            isLoading.value = false;
+            isLoading.value.authentication = false;
             return false;
         }
 
@@ -44,16 +48,16 @@ export const useUserStore = defineStore('user', () => {
 
         await setCurrentUser();
 
-        isLoading.value = false;
+        isLoading.value.authentication = false;
         return true;
     };
 
     const setCurrentUser = async () => {
-        isLoading.value = true;
+        isLoading.value.userInfo = true;
         const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
 
         if (!tokenData.userId) {
-            isLoading.value = false;
+            isLoading.value.userInfo = false;
             return;
         }
 
@@ -72,7 +76,25 @@ export const useUserStore = defineStore('user', () => {
             planData.value = resp.plan;
         }
 
-        isLoading.value = false;
+        isLoading.value.userInfo = false;
+    };
+
+    const setNewProfileImage = async (imageBase64: string, type: string): Promise<{ success: boolean }> => {
+        let success = true;
+
+        isLoading.value.imageUpload = true;
+
+        const resp = await uploadAvatarToS3(imageBase64, type);
+
+        if (resp?.imageUrl) {
+            userData.value!.photoUrl = resp.imageUrl;
+        } else {
+            success = false;
+        }
+
+        isLoading.value.imageUpload = false;
+
+        return { success };
     };
 
     return {
@@ -83,5 +105,6 @@ export const useUserStore = defineStore('user', () => {
         planData,
         login,
         setCurrentUser,
+        setNewProfileImage,
     };
 });

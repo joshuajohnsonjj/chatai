@@ -5,14 +5,14 @@
                 <v-icon icon="mdi-cloud-upload-outline" size="x-large"></v-icon>
             </div>
             <p class="text-body-1 font-weight-bold text-center text-primary">Click to upload</p>
-            <p class="text-body-2 text-center text-primary">JPG or PNG file formats accepted</p>
+            <p class="text-body-2 text-center text-primary">JPG, PNG, or GIF file formats accepted</p>
         </div>
         <input
             type="file"
             id="upload"
             ref="uploadInput"
             style="display: none"
-            accept="image/jpg, image/jpeg, image/png"
+            accept="image/jpg, image/jpeg, image/png, image/gif"
             @change="selectFile"
         />
     </label>
@@ -81,7 +81,7 @@
 
         // Convert to dataURL and pass to the cropper component
         const file = files[0];
-        console.log(file);
+
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => {
@@ -107,8 +107,7 @@
             fileName: 'test',
         });
 
-        console.log({ base64, blob, file });
-        emit('imageCropped', base64);
+        emit('imageCropped', base64, file!.type);
 
         result.dataURL = base64;
         result.blobURL = URL.createObjectURL(blob);

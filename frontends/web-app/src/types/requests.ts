@@ -1,7 +1,8 @@
 export enum APIEndpoints {
     LOGIN = '/v1/userAuth/login',
     REFRESH = '/v1/userAuth/refresh',
-    USER_INFO = '/v1/user',
+    USER = '/v1/user',
+    USER_IMAGE = '/v1/user/image',
     CHATS = '/v1/chat',
     CHAT = '/v1/chat/:chatId',
     CHAT_MESSAGES = '/v1/chat/:chatId/message',

@@ -84,12 +84,10 @@ export class UpdateUserSettingsRequestDto {
 
 export class SetProfileImageRequestDto {
     @IsString()
-    @MaxLength(20)
     imageBase64: string;
-}
 
-export class SetProfileImageResponseDto {
-    imageUrl: string;
+    @IsString()
+    fileType: string;
 }
 
 export class GetUserInfoResponseDto {

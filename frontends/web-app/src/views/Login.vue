@@ -32,7 +32,7 @@
                 </div>
 
                 <div class="w-100 px-5 rounded login-button button-hover mb-12" @click="login">
-                    <div v-if="!isLoading" class="d-flex justify-space-between">
+                    <div v-if="!isLoading.authentication" class="d-flex justify-space-between">
                         <p class="line-height-60">Log in to Apoio</p>
                         <v-icon class="line-height-60" style="height: 60px" icon="mdi-arrow-right"></v-icon>
                     </div>
@@ -78,7 +78,7 @@
     const rememberMe = ref(!!localStorage.getItem(EMAIL_STORAGE_KEY));
 
     async function login() {
-        if (isLoading.value) {
+        if (isLoading.value.authentication) {
             return;
         }
 

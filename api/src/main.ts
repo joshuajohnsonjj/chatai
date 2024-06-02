@@ -42,6 +42,8 @@ async function bootstrap() {
     });
 
     app.useGlobalFilters(new GlobalExceptionFilter());
+
+    // FIXME: figure out why this isnt working!!!
     app.useGlobalPipes(new ValidationPipe());
 
     app.enableCors();

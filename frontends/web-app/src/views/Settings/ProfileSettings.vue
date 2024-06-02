@@ -24,11 +24,32 @@
                             ></v-avatar>
 
                             <div class="w-100">
-                                <PhotoPicker @image-cropped="(fileBase64Url: string) => (userImage = fileBase64Url)" />
+                                <PhotoPicker
+                                    @image-cropped="
+                                        (fileBase64Url: string, type: string) => setImage(fileBase64Url, type)
+                                    "
+                                />
 
                                 <div class="d-flex justify-end mt-4">
-                                    <v-btn variant="plain" color="secondary" min-width="200">Cancel</v-btn>
-                                    <v-btn color="blue" variant="tonal" min-width="200">save</v-btn>
+                                    <v-btn
+                                        variant="plain"
+                                        color="secondary"
+                                        min-width="200"
+                                        :disabled="!userImageChaged"
+                                        @click="resetUserImage"
+                                    >
+                                        Cancel
+                                    </v-btn>
+                                    <v-btn
+                                        color="blue"
+                                        variant="tonal"
+                                        min-width="200"
+                                        :disabled="!userImageChaged"
+                                        :loading="isLoading.imageUpload"
+                                        @click="saveUserImage"
+                                    >
+                                        save
+                                    </v-btn>
                                 </div>
                             </div>
                         </div>
@@ -224,11 +245,17 @@
     import { useUserStore } from '../../stores/user';
     import { storeToRefs } from 'pinia';
     import { SETTINGS_STORAGE_KEY } from '../../constants';
+    import { useToast } from 'vue-toastification';
 
     const userStore = useUserStore();
-    const { userData } = storeToRefs(userStore);
+    const { userData, isLoading } = storeToRefs(userStore);
+
+    const toast = useToast();
 
     const userImage = ref('');
+    const userImageType = ref('');
+
+    const userImageChaged = computed(() => userImage.value !== userData.value?.photoUrl);
 
     const profileDetails = ref({
         firstName: '',
@@ -236,6 +263,7 @@
         email: '',
         phoneNumber: '',
     });
+
     const profileDetailsChanged = computed(
         () =>
             profileDetails.value.firstName !== userData.value?.firstName ||
@@ -264,6 +292,11 @@
         darkMode.value = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}')?.darkMode !== '0';
     });
 
+    const setImage = (fileBase64Url: string, type: string) => {
+        userImage.value = fileBase64Url;
+        userImageType.value = type;
+    };
+
     const resetProfileDetails = () => {
         profileDetails.value = {
             firstName: userData.value?.firstName ?? '',
@@ -274,4 +307,21 @@
     };
 
     const saveProfileDetails = () => {};
+
+    const resetUserImage = () => {
+        userImage.value = userData.value?.photoUrl ?? '';
+        userImageType.value = '';
+    };
+
+    const saveUserImage = async () => {
+        if (!userImage.value.length || !userImageType.value.length) {
+            return toast.warning('No image chosen.');
+        }
+
+        const { success } = await userStore.setNewProfileImage(userImage.value, userImageType.value);
+
+        if (success) {
+            toast.success('Profile image update succeeded!');
+        }
+    };
 </script>
