@@ -126,6 +126,7 @@
                                 variant="tonal"
                                 min-width="200"
                                 :disabled="!profileDetailsChanged"
+                                :loading="isLoading.infoUpdate"
                                 @click="saveProfileDetails"
                             >
                                 save
@@ -148,9 +149,11 @@
                                 prepend-inner-icon="mdi-lock"
                                 density="compact"
                                 variant="outlined"
-                                type="password"
                                 placeholder="***************"
                                 v-model="password.current"
+                                :append-inner-icon="oldPasswordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+                                :type="oldPasswordVisible ? 'text' : 'password'"
+                                @click:append-inner="oldPasswordVisible = !oldPasswordVisible"
                             ></v-text-field>
                         </div>
 
@@ -160,15 +163,32 @@
                                 prepend-inner-icon="mdi-lock"
                                 density="compact"
                                 variant="outlined"
-                                type="password"
                                 placeholder="***************"
                                 v-model="password.new"
+                                :append-inner-icon="newPasswordVisible ? 'mdi-eye-off' : 'mdi-eye'"
+                                :type="newPasswordVisible ? 'text' : 'password'"
+                                @click:append-inner="newPasswordVisible = !newPasswordVisible"
                             ></v-text-field>
                         </div>
 
                         <div class="d-flex justify-end mt-4">
-                            <v-btn variant="plain" color="secondary" min-width="200">Cancel</v-btn>
-                            <v-btn color="blue" variant="tonal" min-width="200">save</v-btn>
+                            <v-btn
+                                variant="plain"
+                                color="secondary"
+                                min-width="200"
+                                :disabled="!passowrdChanged"
+                                @click="password = { new: '', current: '' }"
+                                >Cancel</v-btn
+                            >
+                            <v-btn
+                                color="blue"
+                                variant="tonal"
+                                min-width="200"
+                                :disabled="!passowrdChanged"
+                                @click="updatePassowrd"
+                                :loading="isLoading.passwordUpdate"
+                                >save</v-btn
+                            >
                         </div>
                     </div>
                 </v-col>
@@ -212,8 +232,23 @@
                         </v-row>
 
                         <div class="d-flex justify-end mt-4">
-                            <v-btn variant="plain" color="secondary" min-width="200">Cancel</v-btn>
-                            <v-btn color="blue" variant="tonal" min-width="200">save</v-btn>
+                            <v-btn
+                                variant="plain"
+                                color="secondary"
+                                min-width="200"
+                                :disabled="!notificationsChanged"
+                                @click="resetNotifications"
+                                >Cancel</v-btn
+                            >
+                            <v-btn
+                                color="blue"
+                                variant="tonal"
+                                min-width="200"
+                                :disabled="!notificationsChanged"
+                                :loading="isLoading.settingsUpdate"
+                                @click="saveNotifications"
+                                >save</v-btn
+                            >
                         </div>
                     </div>
                 </v-col>
@@ -230,8 +265,8 @@
                         <ThemeSelector :dark-mode="false" :is-selected="!darkMode" @click="darkMode = false" />
 
                         <div class="d-flex justify-end mt-4">
-                            <v-btn variant="plain" color="secondary" min-width="200">Cancel</v-btn>
-                            <v-btn color="blue" variant="tonal" min-width="200">save</v-btn>
+                            <v-btn variant="plain" color="secondary" min-width="200" :disabled="true">Cancel</v-btn>
+                            <v-btn color="blue" variant="tonal" min-width="200" :disabled="true">save</v-btn>
                         </div>
                     </div>
                 </v-col>
@@ -276,16 +311,27 @@
         new: '',
         current: '',
     });
+    const newPasswordVisible = ref(false);
+    const oldPasswordVisible = ref(false);
+
+    const passowrdChanged = computed(() => password.value.new.length > 5 && password.value.current.length > 5);
 
     const notifications = ref({
         usage: true,
         newsletter: true,
     });
 
+    const notificationsChanged = computed(
+        () =>
+            userData.value?.settings.usageNotification !== notifications.value.usage ||
+            userData.value?.settings.newsletterNotification !== notifications.value.newsletter,
+    );
+
     const darkMode = ref(true);
 
     onMounted(() => {
         resetProfileDetails();
+        resetNotifications();
 
         userImage.value = userData.value?.photoUrl ?? '';
 
@@ -306,7 +352,27 @@
         };
     };
 
-    const saveProfileDetails = () => {};
+    const saveProfileDetails = async () => {
+        const { success } = await userStore.commitProfileDetailUpdate(
+            profileDetails.value.firstName,
+            profileDetails.value.lastName,
+            profileDetails.value.email,
+            profileDetails.value.phoneNumber,
+        );
+
+        if (success) {
+            toast.success('Profile detail updated!');
+        }
+    };
+
+    const updatePassowrd = async () => {
+        const { success } = await userStore.updateUserPassowrd(password.value.new, password.value.current);
+
+        if (success) {
+            toast.success('Password updated!');
+            password.value = { new: '', current: '' };
+        }
+    };
 
     const resetUserImage = () => {
         userImage.value = userData.value?.photoUrl ?? '';
@@ -322,6 +388,24 @@
 
         if (success) {
             toast.success('Profile image update succeeded!');
+        }
+    };
+
+    const resetNotifications = () => {
+        notifications.value = {
+            newsletter: userData.value?.settings.newsletterNotification ?? true,
+            usage: userData.value?.settings.usageNotification ?? true,
+        };
+    };
+
+    const saveNotifications = async () => {
+        const { success } = await userStore.updateUserSettings({
+            newsletterNotification: notifications.value.newsletter,
+            usageNotification: notifications.value.usage,
+        });
+
+        if (success) {
+            toast.success('Notification preferences updated!');
         }
     };
 </script>

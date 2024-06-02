@@ -1,8 +1,10 @@
 export enum APIEndpoints {
     LOGIN = '/v1/userAuth/login',
     REFRESH = '/v1/userAuth/refresh',
+    PASSWORD_CHANGE = '/v1/userAuth/password/change',
     USER = '/v1/user',
     USER_IMAGE = '/v1/user/image',
+    USER_SETTINGS = '/v1/user/settings',
     CHATS = '/v1/chat',
     CHAT = '/v1/chat/:chatId',
     CHAT_MESSAGES = '/v1/chat/:chatId/message',
@@ -22,4 +24,12 @@ export enum APIMethods {
     POST = 'post',
     PATCH = 'patch',
     DELETE = 'delete',
+}
+
+export interface UpdateUserDetailRequest {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phoneNumber?: string;
+    accessToken: string;
 }

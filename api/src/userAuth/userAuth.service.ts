@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
     AdminUpdateUserAttributesCommand,
     AuthFlowType,
+    ChangePasswordCommand,
     CognitoIdentityProviderClient,
     ConfirmForgotPasswordCommand,
     ConfirmSignUpCommand,
@@ -9,6 +10,7 @@ import {
     InitiateAuthCommand,
     ResendConfirmationCodeCommand,
     SignUpCommand,
+    UpdateUserAttributesCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { type RegisterRequestDto } from './dto/register.request.dto';
@@ -161,6 +163,44 @@ export class UserAuthService {
         await this.identityClient.send(new AdminUpdateUserAttributesCommand(input));
 
         this.logger.log(`Attributes updated for ${email}`);
+    }
+
+    async updatePassword(accessToken: string, oldPassword: string, newPassword): Promise<void> {
+        this.logger.log('Attempting to update user password', LoggerContext.USER_AUTH);
+
+        try {
+            await this.identityClient.send(
+                new ChangePasswordCommand({
+                    AccessToken: accessToken,
+                    PreviousPassword: oldPassword,
+                    ProposedPassword: newPassword,
+                }),
+            );
+
+            this.logger.log('Password updated', LoggerContext.USER_AUTH);
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(e.message);
+        }
+    }
+
+    async updateEmail(accessToken: string, newEmail: string): Promise<void> {
+        try {
+            const command = new UpdateUserAttributesCommand({
+                AccessToken: accessToken,
+                UserAttributes: [
+                    {
+                        Name: 'preferred_username',
+                        Value: newEmail,
+                    },
+                ],
+            });
+            await this.identityClient.send(command);
+            this.logger.log(`Email changed successfully ${newEmail}`, LoggerContext.USER_AUTH);
+        } catch (error) {
+            this.logger.error(error.message, error.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(error.message);
+        }
     }
 
     async authenticate(user: AuthenticateRequestDto): Promise<AuthenticateResponseDto> {

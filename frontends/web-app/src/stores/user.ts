@@ -1,15 +1,20 @@
 import { defineStore } from 'pinia';
-import { getUserInfo, loginUser, uploadAvatarToS3 } from '../requests';
-import { AccountPlan, OrgInfo, UserInfo, UserType } from '../types/user-store';
+import { getUserInfo, loginUser, updateDetails, updatePassowrd, updateSettings, uploadAvatarToS3 } from '../requests';
+import type { AccountPlan, OrgInfo, UserInfo, UserSettings } from '../types/user-store';
+import { UserType } from '../types/user-store';
 import { computed, ref } from 'vue';
-import { omit } from 'lodash';
+import omit from 'lodash/omit';
 import { TOKEN_STORAGE_KEY } from '../constants';
+import { UpdateUserDetailRequest } from '../types/requests';
 
 export const useUserStore = defineStore('user', () => {
     const isLoading = ref({
         authentication: false,
         imageUpload: false,
         userInfo: false,
+        infoUpdate: false,
+        passwordUpdate: false,
+        settingsUpdate: false,
     });
 
     const userData = ref<UserInfo>();
@@ -97,6 +102,85 @@ export const useUserStore = defineStore('user', () => {
         return { success };
     };
 
+    const commitProfileDetailUpdate = async (
+        firstName: string,
+        lastName: string,
+        email: string,
+        phoneNumber: string,
+    ): Promise<{ success: boolean }> => {
+        const accessToken = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}').accessToken as string;
+
+        isLoading.value.infoUpdate = true;
+
+        let success = true;
+
+        const updatePayload: UpdateUserDetailRequest = {
+            accessToken,
+        };
+
+        if (firstName && firstName !== userData.value?.firstName) updatePayload.firstName = firstName;
+        if (lastName && lastName !== userData.value?.lastName) updatePayload.lastName = lastName;
+        if (email && email !== userData.value?.email) updatePayload.email = email;
+        if (phoneNumber && phoneNumber !== userData.value?.phoneNumber) updatePayload.phoneNumber = phoneNumber;
+
+        try {
+            await updateDetails(updatePayload);
+
+            userData.value = {
+                ...userData.value!,
+                ...omit(updatePayload, ['accessToken']),
+            };
+        } catch (e) {
+            success = false;
+            isLoading.value.infoUpdate = false;
+        }
+
+        isLoading.value.infoUpdate = false;
+
+        return { success };
+    };
+
+    const updateUserPassowrd = async (newPassword: string, oldPassword: string): Promise<{ success: boolean }> => {
+        const accessToken = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}').accessToken as string;
+
+        isLoading.value.passwordUpdate = true;
+
+        let success = true;
+
+        try {
+            await updatePassowrd(oldPassword, newPassword, accessToken);
+        } catch (e) {
+            success = false;
+            isLoading.value.passwordUpdate = false;
+        }
+
+        isLoading.value.passwordUpdate = false;
+
+        return { success };
+    };
+
+    const updateUserSettings = async (updates: Partial<UserSettings>): Promise<{ success: boolean }> => {
+        isLoading.value.settingsUpdate = true;
+
+        let success = true;
+
+        try {
+            await updateSettings(updates);
+
+            userData.value!.settings = {
+                ...userData.value!.settings,
+                ...updates,
+            };
+        } catch (e) {
+            success = false;
+            isLoading.value.settingsUpdate = false;
+        }
+
+        isLoading.value.settingsUpdate = false;
+
+        return { success };
+    };
+
     return {
         userData,
         userOrgData,
@@ -106,5 +190,8 @@ export const useUserStore = defineStore('user', () => {
         login,
         setCurrentUser,
         setNewProfileImage,
+        commitProfileDetailUpdate,
+        updateUserPassowrd,
+        updateUserSettings,
     };
 });

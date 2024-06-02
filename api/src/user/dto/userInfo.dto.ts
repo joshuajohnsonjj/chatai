@@ -50,6 +50,9 @@ export class UpdateUserInfoRequestDto {
     @IsPhoneNumber()
     @IsOptional()
     phoneNumber?: string;
+
+    @IsString()
+    accessToken: string;
 }
 
 export class UpdateUserSettingsRequestDto {
@@ -79,6 +82,7 @@ export class UpdateUserSettingsRequestDto {
 
     @IsString()
     @MaxLength(240)
+    @IsOptional()
     baseInstructions?: string;
 }
 

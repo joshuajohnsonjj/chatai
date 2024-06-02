@@ -48,9 +48,10 @@ export const sendAPIRequest = async (req: AxiosRequestConfig, withAuthRetry = tr
             window.location.pathname = '/login';
         } else if (e.response.data?.error?.code >= 400 && e.response.data?.error?.code < 500) {
             toast.error(e.response.data.error.message);
+            throw Error(e);
         } else {
-            console.error(e);
             toast.error('An internal error has occured. Contact support if the issue continues.');
+            throw Error(e);
         }
     }
 };

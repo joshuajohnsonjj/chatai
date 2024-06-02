@@ -1,13 +1,13 @@
 import { Body, Controller, Get, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserAuthService } from './userAuth.service';
-import { AuthenticateRequestDto } from './dto/authenticate.request.dto';
-import { ConfirmUserRequestDto } from './dto/confirm.request.dto';
-import { ForgetRequestDto } from './dto/forget.request.dto';
-import { RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
-import { RegisterRequestDto } from './dto/register.request.dto';
-import { ResetRequestDto } from './dto/reset.request.dto';
-import { BadRequestError } from 'src/exceptions';
+import type { AuthenticateRequestDto } from './dto/authenticate.request.dto';
+import type { ConfirmUserRequestDto } from './dto/confirm.request.dto';
+import type { ForgetRequestDto } from './dto/forget.request.dto';
+import type { RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
+import type { RegisterRequestDto } from './dto/register.request.dto';
+import type { ChangeRequestDto, ResetRequestDto } from './dto/reset.request.dto';
 import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
+import { BadRequestError } from 'src/exceptions';
 
 @Controller('v1/userAuth')
 export class UserAuthController {
@@ -59,6 +59,15 @@ export class UserAuthController {
     async reset(@Body() resetRequest: ResetRequestDto) {
         try {
             return await this.authService.reset(resetRequest);
+        } catch (e) {
+            throw new BadRequestError(e.message);
+        }
+    }
+
+    @Post('/password/change')
+    async updatePassword(@Body() data: ChangeRequestDto) {
+        try {
+            return await this.authService.updatePassword(data.accessToken, data.oldPassword, data.newPassword);
         } catch (e) {
             throw new BadRequestError(e.message);
         }

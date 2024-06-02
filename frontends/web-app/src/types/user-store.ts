@@ -11,6 +11,15 @@ export enum EntityType {
     ORGANIZATION = 'ORGANIZATION',
 }
 
+export interface UserSettings {
+    newsletterNotification: boolean;
+    usageNotification: boolean;
+    chatCreativity: number;
+    chatMinConfidence: number;
+    chatTone: ChatResponseTone;
+    baseInstructions: string | null;
+}
+
 export interface UserInfo {
     id: string;
     type: UserType;
@@ -22,14 +31,7 @@ export interface UserInfo {
     photoUrl: string | null;
     phoneNumber: string | null;
     stripeCustomerId: string | null;
-    settings: {
-        newsletterNotification: boolean;
-        usageNotification: boolean;
-        chatCreativity: number;
-        chatMinConfidence: number;
-        chatTone: ChatResponseTone;
-        baseInstructions: string | null;
-    };
+    settings: UserSettings;
 }
 
 export interface OrgInfo {

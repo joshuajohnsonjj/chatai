@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { StripeService } from 'src/services/stripe';
@@ -13,9 +13,14 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Buffer } from 'buffer';
 import { LoggerContext } from 'src/constants';
 import { InternalError } from 'src/exceptions';
+import { UserAuthService } from 'src/userAuth/userAuth.service';
+import { omit } from 'lodash';
 
 @Injectable()
 export class UserService {
+    @Inject(UserAuthService)
+    private readonly userAuthService: UserAuthService;
+
     private readonly stripeService = new StripeService(this.configService.get<string>('STRIPE_KEY')!);
 
     constructor(
@@ -25,6 +30,8 @@ export class UserService {
     ) {}
 
     async getUserInfo(options: GetUserInfoRequestDto, user: DecodedUserTokenDto): Promise<GetUserInfoResponseDto> {
+        this.logger.log(`Retreiving info for user ${user.idUser}`, LoggerContext.USER);
+
         const userData = this.prisma.user.findUniqueOrThrow({
             where: { id: user.idUser },
             include: {
@@ -38,14 +45,26 @@ export class UserService {
     }
 
     async updateUserData(payload: UpdateUserInfoRequestDto, user: DecodedUserTokenDto): Promise<void> {
-        await this.prisma.$transaction(async (tx) => {
-            await tx.user.update({
-                where: { id: user.idUser },
-                data: payload,
-            });
+        this.logger.log(
+            `Updating data for user ${user.idUser}: ${JSON.stringify(omit(payload, ['accessToken']))}`,
+            LoggerContext.USER,
+        );
 
-            // TODO: update cognito
-        });
+        try {
+            await this.prisma.$transaction(async (tx) => {
+                await tx.user.update({
+                    where: { id: user.idUser },
+                    data: omit(payload, ['accessToken']),
+                });
+
+                if (payload.email) {
+                    await this.userAuthService.updateEmail(payload.accessToken, payload.email);
+                }
+            });
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.USER);
+            throw new InternalError(e.message);
+        }
     }
 
     async uploadUserImage(
@@ -88,6 +107,8 @@ export class UserService {
     }
 
     async updateUserSettings(payload: UpdateUserSettingsRequestDto, user: DecodedUserTokenDto): Promise<void> {
+        this.logger.log(`Updating settings for user ${user.idUser}: ${JSON.stringify(payload)}`, LoggerContext.USER);
+
         await this.prisma.entitySettings.update({
             where: { associatedUserId: user.idUser },
             data: payload,
