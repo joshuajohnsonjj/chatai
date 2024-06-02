@@ -12,7 +12,6 @@ import { AccessDeniedError, BadRequestError, ResourceNotFoundError } from 'src/e
 import { EmailSubject, Mailer, OrganizationInvite, TemplateIds } from '@joshuajohnsonjj38/mailer';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { UserAuthService } from 'src/userAuth/userAuth.service';
-import { CognitoUserAttribute } from 'amazon-cognito-identity-js';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { ConfigService } from '@nestjs/config';
 import { DataSourceService } from 'src/dataSource/dataSource.service';
@@ -56,11 +55,11 @@ export class OrganizationService {
         });
 
         this.userAuthService.updateAttributes(user.email, [
-            new CognitoUserAttribute({
+            {
                 Name: CognitoAttribute.ORG_USER_ROLE,
                 Value: OganizationUserRole.ORG_OWNER,
-            }),
-            new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: organization.id }),
+            },
+            { Name: CognitoAttribute.ORG, Value: organization.id },
         ]);
 
         return {
@@ -218,8 +217,8 @@ export class OrganizationService {
                 },
             }),
             this.userAuthService.updateAttributes(userToRemove.email, [
-                new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' }),
-                new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: '' }),
+                { Name: CognitoAttribute.ORG_USER_ROLE, Value: '' },
+                { Name: CognitoAttribute.ORG, Value: '' },
             ]),
         ]);
     }

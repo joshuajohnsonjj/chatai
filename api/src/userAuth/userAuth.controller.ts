@@ -7,6 +7,7 @@ import { RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
 import { RegisterRequestDto } from './dto/register.request.dto';
 import { ResetRequestDto } from './dto/reset.request.dto';
 import { BadRequestError } from 'src/exceptions';
+import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
 
 @Controller('v1/userAuth')
 export class UserAuthController {
@@ -16,7 +17,7 @@ export class UserAuthController {
 
     @Post('register')
     @UsePipes(ValidationPipe)
-    async register(@Body() registerRequest: RegisterRequestDto) {
+    async register(@Body() registerRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
         try {
             return await this.authService.register(registerRequest);
         } catch (e) {
@@ -25,7 +26,10 @@ export class UserAuthController {
     }
 
     @Post('invite/:invitationId/accept')
-    async acceptInvite(@Param() invitationId: string, @Body() registerRequest: RegisterRequestDto) {
+    async acceptInvite(
+        @Param() invitationId: string,
+        @Body() registerRequest: RegisterRequestDto,
+    ): Promise<RegisterResponseDto> {
         try {
             return await this.authService.acceptInvite(invitationId, registerRequest);
         } catch (e) {
@@ -34,7 +38,7 @@ export class UserAuthController {
     }
 
     @Post('login')
-    async authenticate(@Body() authenticateRequest: AuthenticateRequestDto) {
+    async authenticate(@Body() authenticateRequest: AuthenticateRequestDto): Promise<AuthenticateResponseDto> {
         try {
             return await this.authService.authenticate(authenticateRequest);
         } catch (e) {
@@ -79,7 +83,9 @@ export class UserAuthController {
     }
 
     @Post('refresh')
-    async refreshSession(@Body() refreshSessionRequest: RefreshUserSessionRequestDto) {
+    async refreshSession(
+        @Body() refreshSessionRequest: RefreshUserSessionRequestDto,
+    ): Promise<AuthenticateResponseDto> {
         try {
             return await this.authService.refreshUserSession(refreshSessionRequest);
         } catch (e) {

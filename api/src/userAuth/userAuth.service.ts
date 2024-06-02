@@ -1,11 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
-    AuthenticationDetails,
-    CognitoRefreshToken,
-    CognitoUser,
-    CognitoUserAttribute,
-    CognitoUserPool,
-} from 'amazon-cognito-identity-js';
+    AdminUpdateUserAttributesCommand,
+    AuthFlowType,
+    CognitoIdentityProviderClient,
+    ConfirmForgotPasswordCommand,
+    ConfirmSignUpCommand,
+    ForgotPasswordCommand,
+    InitiateAuthCommand,
+    ResendConfirmationCodeCommand,
+    SignUpCommand,
+} from '@aws-sdk/client-cognito-identity-provider';
 import { ConfigService } from '@nestjs/config';
 import { type RegisterRequestDto } from './dto/register.request.dto';
 import { type AuthenticateRequestDto } from './dto/authenticate.request.dto';
@@ -18,74 +22,78 @@ import { STRIPE_PRODUCTS } from 'src/constants/stripe';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { UserInviteType, UserType } from '@prisma/client';
 import { StripeService } from 'src/services/stripe';
+import { type JwtPayload, decode } from 'jsonwebtoken';
+import { LoggerContext } from 'src/constants';
+import { BadRequestError } from 'src/exceptions';
+import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
 
 @Injectable()
 export class UserAuthService {
-    private readonly userPool: CognitoUserPool;
+    private readonly identityClient = new CognitoIdentityProviderClient({
+        region: this.configService.get<string>('AWS_REGION')!,
+    });
 
     private readonly stripeService = new StripeService(this.configService.get<string>('STRIPE_KEY')!);
 
     constructor(
         private readonly configService: ConfigService,
         private readonly prisma: PrismaService,
-    ) {
-        this.userPool = new CognitoUserPool({
-            UserPoolId: this.configService.get<string>('AWS_COGNITO_USER_POOL_ID')!,
-            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
-        });
-    }
+        private readonly logger: Logger,
+    ) {}
 
     // TODO: encrypt password for transit
-    async register(authRegisterRequest: RegisterRequestDto) {
-        const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
-        return await new Promise((resolve, reject) => {
-            this.userPool.signUp(
-                email,
-                password,
-                [
-                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: '' }),
-                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG_USER_ROLE, Value: '' }),
-                ],
-                [],
-                async (err, result) => {
-                    if (!result) {
-                        reject(err);
-                    } else {
-                        const userId = result.userSub;
+    async register(authRegisterRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
+        const { firstName, lastName, email, password } = authRegisterRequest;
 
-                        const [accountPlan, stripeCustomer] = await Promise.all([
-                            this.prisma.accountPlan.findUniqueOrThrow({
-                                where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
-                            }),
-                            this.stripeService.createCustomer(`${firstName} ${lastName}`, email),
-                        ]);
-
-                        await this.prisma.user.create({
-                            data: {
-                                id: userId,
-                                firstName,
-                                lastName,
-                                email,
-                                phoneNumber,
-                                stripeCustomerId: stripeCustomer.id,
-                                type: UserType.INDIVIDUAL,
-                                planId: accountPlan.id,
-                            },
-                        });
-
-                        resolve({
-                            uuid: userId,
-                            userConfirmed: result.userConfirmed,
-                            success: true,
-                        });
-                    }
+        const signupInput = {
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
+            Username: email,
+            Password: password,
+            UserAttributes: [
+                {
+                    Name: CognitoAttribute.ORG,
+                    Value: '',
                 },
-            );
+                {
+                    Name: CognitoAttribute.ORG_USER_ROLE,
+                    Value: '',
+                },
+            ],
+        };
+
+        const signupResponse = await this.identityClient.send(new SignUpCommand(signupInput));
+
+        const userId = signupResponse.UserSub as string;
+
+        const [accountPlan, stripeCustomer] = await Promise.all([
+            this.prisma.accountPlan.findUniqueOrThrow({
+                where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
+            }),
+            this.stripeService.createCustomer(`${firstName} ${lastName}`, email),
+        ]);
+
+        await this.prisma.user.create({
+            data: {
+                id: userId,
+                firstName,
+                lastName,
+                email,
+                stripeCustomerId: stripeCustomer.id,
+                type: UserType.INDIVIDUAL,
+                planId: accountPlan.id,
+            },
         });
+
+        return {
+            uuid: userId,
+            userConfirmed: signupResponse.UserConfirmed ?? false,
+        };
     }
 
-    async acceptInvite(inviteId: string, authRegisterRequest: RegisterRequestDto) {
-        const { firstName, lastName, email, password, phoneNumber } = authRegisterRequest;
+    async acceptInvite(inviteId: string, authRegisterRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
+        const { firstName, lastName, email, password } = authRegisterRequest;
+
+        this.logger.log(`Accepting invite ${inviteId} for ${email}`, LoggerContext.USER_AUTH);
 
         const userInvite = await this.prisma.userInvite.update({
             where: { id: inviteId },
@@ -93,194 +101,208 @@ export class UserAuthService {
             select: { type: true, organizationId: true },
         });
 
-        return await new Promise((resolve, reject) => {
-            this.userPool.signUp(
-                email,
-                password,
-                [
-                    new CognitoUserAttribute({ Name: CognitoAttribute.ORG, Value: userInvite.organizationId }),
-                    new CognitoUserAttribute({
-                        Name: CognitoAttribute.ORG_USER_ROLE,
-                        Value:
-                            userInvite.type === UserInviteType.ADMIN
-                                ? OganizationUserRole.ORG_ADMIN
-                                : OganizationUserRole.ORG_MEMBER,
-                    }),
-                ],
-                [],
-                async (err, result) => {
-                    if (!result) {
-                        reject(err);
-                    } else {
-                        const userId = result.userSub;
-
-                        const stripeCustomer = await this.stripeService.createCustomer(
-                            `${firstName} ${lastName}`,
-                            email,
-                        );
-
-                        await this.prisma.user.create({
-                            data: {
-                                id: userId,
-                                firstName,
-                                lastName,
-                                phoneNumber,
-                                email,
-                                stripeCustomerId: stripeCustomer.id,
-                                type: UserType.ORGANIZATION_MEMBER,
-                                organizationId: userInvite.organizationId,
-                            },
-                        });
-
-                        resolve({
-                            uuid: userId,
-                            userConfirmed: result.userConfirmed,
-                            success: true,
-                        });
-                    }
-                },
-            );
-        });
-    }
-
-    async updateAttributes(email: string, updates: CognitoUserAttribute[]): Promise<void> {
-        const user = new CognitoUser({
+        const signupInput = {
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
             Username: email,
-            Pool: this.userPool,
-        });
-
-        await new Promise((resolve, reject) => {
-            user.updateAttributes(updates, async (err, result) => {
-                if (!result) {
-                    reject(err);
-                } else {
-                    resolve({});
-                }
-            });
-        });
-    }
-
-    async authenticate(user: AuthenticateRequestDto) {
-        const { username, password } = user;
-        const authenticationDetails = new AuthenticationDetails({
-            Username: username,
             Password: password,
-        });
-        const userData = {
-            Username: username,
-            Pool: this.userPool,
+            UserAttributes: [
+                {
+                    Name: CognitoAttribute.ORG,
+                    Value: userInvite.organizationId,
+                },
+                {
+                    Name: CognitoAttribute.ORG_USER_ROLE,
+                    Value:
+                        userInvite.type === UserInviteType.ADMIN
+                            ? OganizationUserRole.ORG_ADMIN
+                            : OganizationUserRole.ORG_MEMBER,
+                },
+            ],
         };
-        const newUser = new CognitoUser(userData);
-        return await new Promise((resolve, reject) => {
-            newUser.authenticateUser(authenticationDetails, {
-                onSuccess: (result) => {
-                    resolve({
-                        accessToken: result.getIdToken().getJwtToken(),
-                        refreshToken: result.getRefreshToken().getToken(),
-                        userId: result.getIdToken().payload.sub,
-                        email: result.getIdToken().payload.email,
-                        name: result.getIdToken().payload.name,
-                    });
-                },
-                onFailure: (err) => {
-                    reject(err);
-                },
-            });
+
+        const signupResponse = await this.identityClient.send(new SignUpCommand(signupInput));
+
+        const userId = signupResponse.UserSub as string;
+
+        const stripeCustomer = await this.stripeService.createCustomer(`${firstName} ${lastName}`, email);
+
+        await this.prisma.user.create({
+            data: {
+                id: userId,
+                firstName,
+                lastName,
+                email,
+                stripeCustomerId: stripeCustomer.id,
+                type: UserType.ORGANIZATION_MEMBER,
+                organizationId: userInvite.organizationId,
+            },
         });
+
+        this.logger.log(`invite ${inviteId} accepted for ${email}, created user ${userId}`, LoggerContext.USER_AUTH);
+
+        return {
+            uuid: userId,
+            userConfirmed: signupResponse.UserConfirmed ?? false,
+        };
     }
 
-    async confirmUser(userData: ConfirmUserRequestDto) {
-        const user = new CognitoUser({
-            Username: userData.username,
-            Pool: this.userPool,
-        });
-        return await new Promise((resolve, reject) => {
-            user.confirmRegistration(userData.code, false, (err, result) => {
-                if (!result) {
-                    reject(err);
-                } else {
-                    resolve({ success: true });
-                }
-            });
-        });
-    }
+    async updateAttributes(email: string, updates: { Name: string; Value: string }[]): Promise<void> {
+        this.logger.log(
+            `Attempting to update attributes for ${email}:  ${JSON.stringify(updates)}`,
+            LoggerContext.USER_AUTH,
+        );
 
-    // TODO: upgrade to v3 sdk
-    async resendConfirmEmail(email: string) {
-        const user = new CognitoUser({
+        const input = {
+            UserPoolId: this.configService.get<string>('AWS_COGNITO_USER_POOL_ID')!,
             Username: email,
-            Pool: this.userPool,
-        });
-        // return await new Promise((resolve, reject) => {
-        //     user.resendConfirmationCode({
-        //         onSuccess: () => {
-        //             resolve({ success: true });
-        //         },
-        //         onFailure: (err) => {
-        //             reject(err);
-        //         },
-        //     });
-        // });
+            UserAttributes: updates,
+        };
+
+        await this.identityClient.send(new AdminUpdateUserAttributesCommand(input));
+
+        this.logger.log(`Attributes updated for ${email}`);
     }
 
-    async forget(forgetPasswordRequest: ForgetRequestDto) {
+    async authenticate(user: AuthenticateRequestDto): Promise<AuthenticateResponseDto> {
+        const { username, password } = user;
+
+        this.logger.log(`Attempting to authenticate user ${username}`, LoggerContext.USER_AUTH);
+
+        const params = {
+            AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
+            AuthParameters: {
+                USERNAME: username,
+                PASSWORD: password,
+            },
+        };
+
+        try {
+            const response = await this.identityClient.send(new InitiateAuthCommand(params));
+            const decodedIdToken = decode(response.AuthenticationResult!.IdToken!) as JwtPayload;
+
+            this.logger.log(`Authentication of user ${username} succeeded`, LoggerContext.USER_AUTH);
+
+            return {
+                accessToken: response.AuthenticationResult!.AccessToken!,
+                refreshToken: response.AuthenticationResult!.RefreshToken!,
+                userId: decodedIdToken.sub!,
+                email: decodedIdToken.email,
+                name: decodedIdToken.name,
+            };
+        } catch (error) {
+            this.logger.error(error.message, error.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(error.message);
+        }
+    }
+
+    async confirmUser(userData: ConfirmUserRequestDto): Promise<void> {
+        this.logger.log(`Confirming signup for user ${userData.username}`, LoggerContext.USER_AUTH);
+
+        const confirmInput = {
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
+            Username: userData.username,
+            ConfirmationCode: userData.code,
+        };
+
+        try {
+            await this.identityClient.send(new ConfirmSignUpCommand(confirmInput));
+
+            this.logger.log(`signup confirmed for user ${userData.username}`, LoggerContext.USER_AUTH);
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(e.message);
+        }
+    }
+
+    async resendConfirmEmail(email: string): Promise<void> {
+        this.logger.log(`attempting to resend confirmation email for user ${email}`, LoggerContext.USER_AUTH);
+
+        const resendInput = {
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
+            Username: email,
+        };
+
+        try {
+            await this.identityClient.send(new ResendConfirmationCodeCommand(resendInput));
+
+            this.logger.log(`email sent for user ${email}`, LoggerContext.USER_AUTH);
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(e.message);
+        }
+    }
+
+    async forget(forgetPasswordRequest: ForgetRequestDto): Promise<void> {
         const { email } = forgetPasswordRequest;
-        const user = new CognitoUser({
+
+        this.logger.log(`Initiating forgot password flow for user ${email}`, LoggerContext.USER_AUTH);
+
+        const forgotInput = {
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
             Username: email,
-            Pool: this.userPool,
-        });
-        return await new Promise((resolve, reject) => {
-            user.forgotPassword({
-                onSuccess: () => {
-                    resolve({ success: true });
-                },
-                onFailure: (err) => {
-                    reject(err);
-                },
-            });
-        });
+        };
+
+        try {
+            await this.identityClient.send(new ForgotPasswordCommand(forgotInput));
+
+            this.logger.log(`forgot password flow for user ${email} initiated successfuly`, LoggerContext.USER_AUTH);
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(e.message);
+        }
     }
 
-    async reset(resetPasswordRequest: ResetRequestDto) {
+    async reset(resetPasswordRequest: ResetRequestDto): Promise<void> {
         const { email, password, code } = resetPasswordRequest;
-        const user = new CognitoUser({
+
+        this.logger.log(`Attepmting to reset passowrd for user ${email}`, LoggerContext.USER_AUTH);
+
+        const resetInput = {
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
             Username: email,
-            Pool: this.userPool,
-        });
-        return await new Promise((resolve, reject) => {
-            user.confirmPassword(code, password, {
-                onSuccess: () => {
-                    resolve({ success: true });
-                },
-                onFailure: (err) => {
-                    reject(err);
-                },
-            });
-        });
+            ConfirmationCode: code,
+            Password: password,
+        };
+
+        try {
+            await this.identityClient.send(new ConfirmForgotPasswordCommand(resetInput));
+
+            this.logger.log(`reset passowrd for user ${email} succeeded`, LoggerContext.USER_AUTH);
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(e.message);
+        }
     }
 
-    async refreshUserSession(userData: RefreshUserSessionRequestDto) {
-        const user = new CognitoUser({
-            Username: userData.username,
-            Pool: this.userPool,
-        });
-        return await new Promise((resolve, reject) => {
-            const refreshToken = new CognitoRefreshToken({
-                RefreshToken: userData.refreshToken,
-            });
-            user.refreshSession(refreshToken, (err, result) => {
-                if (!result) {
-                    reject(err);
-                } else {
-                    resolve({
-                        refreshToken: result.getRefreshToken().getToken(),
-                        accessToken: result.getIdToken().getJwtToken(),
-                        userId: result.getIdToken().payload.sub,
-                        email: result.getIdToken().payload.email,
-                        name: result.getIdToken().payload.name,
-                    });
-                }
-            });
-        });
+    async refreshUserSession(userData: RefreshUserSessionRequestDto): Promise<AuthenticateResponseDto> {
+        this.logger.log(`Attepmting to refresh session for user ${userData.username}`, LoggerContext.USER_AUTH);
+
+        const refreshInput = {
+            AuthFlow: AuthFlowType.REFRESH_TOKEN_AUTH,
+            ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
+            AuthParameters: {
+                REFRESH_TOKEN: userData.refreshToken,
+                USERNAME: userData.username,
+            },
+        };
+
+        try {
+            const response = await this.identityClient.send(new InitiateAuthCommand(refreshInput));
+            const decodedIdToken = decode(response.AuthenticationResult!.IdToken!) as JwtPayload;
+
+            this.logger.log(`Refresh session for user ${userData.username} succeeded`, LoggerContext.USER_AUTH);
+
+            return {
+                accessToken: response.AuthenticationResult!.AccessToken!,
+                refreshToken: response.AuthenticationResult!.RefreshToken!,
+                userId: decodedIdToken.sub!,
+                email: decodedIdToken.email,
+                name: decodedIdToken.name,
+            };
+        } catch (error) {
+            this.logger.error(error.message, error.stack, LoggerContext.USER_AUTH);
+            throw new BadRequestError(error.message);
+        }
     }
 }
