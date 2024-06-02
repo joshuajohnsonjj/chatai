@@ -36,8 +36,11 @@
             </div>
             <HorizontalLine thinkness="3px" />
 
-            <div v-if="!searchResults.length && isLoading.searchResults" class="d-flex justify-center mt-14">
-                <v-progress-circular color="secondary" :size="80" indeterminate></v-progress-circular>
+            <div v-if="!searchResults.length && isLoading.searchResults" class="mt-14">
+                <div class="d-flex justify-center">
+                    <v-progress-circular color="secondary" :size="80" indeterminate></v-progress-circular>
+                </div>
+                <div class="text-secondary text-body-1 text-center my-2">Loading results...</div>
             </div>
 
             <div style="height: 78.8vh; overflow-y: scroll" ref="searchResultScrollContainer">

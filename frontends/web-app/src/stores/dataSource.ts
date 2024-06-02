@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type {
     DataSourceConnectionsResponse,
     DataSourceTypesResponse,
@@ -9,10 +9,16 @@ import type {
 import {
     listDataSourceConnections,
     listDataSourceOptions,
+    manualSyncDataSource,
     testConnection,
     updateDataSourceConnection,
 } from '../requests';
 import { UserType } from '../types/user-store';
+import { googleSignIn, initGoogleClient } from '../services/googleAuth';
+import { encrypt } from '../utility/encryption';
+import { useToast } from 'vue-toastification';
+
+const toast = useToast();
 
 export const useDataSourceStore = defineStore('dataSource', () => {
     const connections = ref<DataSourceConnectionsResponse[]>([]);
@@ -23,7 +29,12 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         dataSourceOptions: false,
         connectionTest: false,
         indexingIntervalUpdate: false,
+        indexNowInvocation: false,
     });
+
+    const dataSourceStorageUsageSum = computed(() =>
+        connections.value.reduce((prev, curr) => prev + curr.mbStorageEstimate, 0),
+    );
 
     const retreiveConnections = async () => {
         isLoading.value.dataSourceConnections = true;
@@ -61,13 +72,12 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         secret: string,
     ): Promise<TestDataSourceConnectionResponse> => {
         isLoading.value.connectionTest = true;
-        const res = await testConnection(dataSourceTypeId, ownerEntityId, userType, secret);
+        const encryptedSecret = await encrypt(secret);
+        const res = await testConnection(dataSourceTypeId, ownerEntityId, userType, encryptedSecret);
         isLoading.value.connectionTest = false;
-
         return res;
     };
 
-    // TODO: wrap everything with an isLoading true/false in try/catch/finally...
     const commitDataSourceConnectionUpdate = async (
         dataSourceId: string,
         userType: string,
@@ -88,14 +98,37 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         return success;
     };
 
+    const initiateGoogleDriveSync = async (dataSourceId: string) => {
+        try {
+            isLoading.value.indexNowInvocation = true;
+
+            await initGoogleClient();
+            const authResponse = await googleSignIn();
+
+            await manualSyncDataSource(dataSourceId, authResponse.id_token);
+
+            const connNdx = connections.value.findIndex((conn) => conn.id === dataSourceId);
+            connections.value[connNdx].isSyncing = true;
+
+            toast.success('Google Drive indexing successfully initiated');
+        } catch (error) {
+            console.error(error);
+            toast.error('Error signing in with Google. Indexing canceled.');
+        } finally {
+            isLoading.value.indexNowInvocation = false;
+        }
+    };
+
     return {
         connections,
         dataSourceOptions,
         dataSourceCategoryToOptionsMap,
         isLoading,
+        dataSourceStorageUsageSum,
         retreiveConnections,
         retreiveDataSourceOptions,
         testDataSourceCredential,
         commitDataSourceConnectionUpdate,
+        initiateGoogleDriveSync,
     };
 });

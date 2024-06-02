@@ -57,6 +57,7 @@ async function main() {
             {
                 id: 'ea998762-bd13-41e5-bc6c-8277bf142c1f',
                 name: DataSourceTypeName.GOOGLE_DRIVE,
+                isLiveSyncAvailable: true,
                 category: DataSourceCategory.OTHER,
                 requiredCredentialTypes: ['secret'],
             },

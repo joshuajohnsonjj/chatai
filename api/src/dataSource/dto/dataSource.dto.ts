@@ -27,6 +27,12 @@ export class CreateDataSourceQueryDto {
     externalId?: string;
 }
 
+export class SyncDataSourceQueryDto {
+    @IsString()
+    @IsOptional()
+    secret?: string;
+}
+
 export class UpdateDataSourceQueryDto {
     @IsString()
     ownerEntityType: UserType;
@@ -81,6 +87,7 @@ export class DataSourceConnectionDto {
 export class ListDataSourceConnectionsResponseDto extends DataSourceConnectionDto {
     dataSourceName: string;
     dataSourceLiveSyncAvailable: boolean;
+    dataSourceManualSyncAllowed: boolean;
     hasExternalId: boolean;
 }
 
@@ -89,4 +96,5 @@ export class ListDataSourceTypesResponseDto {
     name: DataSourceTypeName;
     category: DataSourceCategory;
     isLiveSyncAvailable: boolean;
+    isManualSyncAllowed: boolean;
 }

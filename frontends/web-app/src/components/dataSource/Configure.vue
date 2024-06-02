@@ -31,7 +31,7 @@
                         <div class="d-flex justify-start">
                             <p class="text-caption text-secondary sub-info-line-height">
                                 <v-icon icon="mdi-calendar-star" color="secondary"></v-icon>
-                                Next index {{ moment(sourceData.createdAt).format('M/D H:MM A') }}
+                                Next index {{ moment(sourceData.nextScheduledSync).format('M/D H:MM A') }}
                             </p>
                             <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
                             <p class="text-caption text-secondary sub-info-line-height">
@@ -42,18 +42,30 @@
 
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
-                            27 MB stored
+                            {{ sourceData.storage > 0 ? sourceData.storage.toFixed(2) : '0' }} MB stored
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div v-if="!isAddNew" style="max-width: 250px">
-                <v-btn class="w-100 mb-2" color="success" prepend-icon="mdi-cloud-sync" variant="tonal"
-                    >Sync data source</v-btn
+            <div v-if="!isAddNew" style="width: 250px">
+                <v-btn
+                    class="w-100 mb-2"
+                    color="info"
+                    prepend-icon="mdi-eye"
+                    variant="tonal"
+                    @click="redirectToSourceDataView"
+                    >View data</v-btn
                 >
-                <v-btn class="w-100" color="warning" prepend-icon="mdi-trash-can" variant="tonal"
-                    >Remove data source</v-btn
+                <v-btn
+                    v-if="sourceData.dataSourceManualSyncAllowed"
+                    class="w-100 mb-2"
+                    color="success"
+                    prepend-icon="mdi-cloud-sync"
+                    variant="tonal"
+                    :loading="isLoading.indexNowInvocation"
+                    @click="indexNow"
+                    >Index now</v-btn
                 >
             </div>
         </div>
@@ -84,10 +96,16 @@
                     ></v-text-field>
 
                     <div class="d-flex justify-end mt-4">
-                        <v-btn variant="plain" :loading="isLoading.connectionTest" @click="onTestConnection"
+                        <v-btn
+                            class="body-action-btn"
+                            variant="plain"
+                            :loading="isLoading.connectionTest"
+                            @click="onTestConnection"
                             >Test connection</v-btn
                         >
-                        <v-btn color="blue" variant="tonal">{{ isAddNew ? 'Set' : 'Update' }} Key</v-btn>
+                        <v-btn class="body-action-btn" color="blue" variant="tonal"
+                            >{{ isAddNew ? 'Set' : 'Update' }} Key</v-btn
+                        >
                     </div>
                 </v-sheet>
             </v-col>
@@ -126,6 +144,7 @@
                         <v-btn
                             color="blue"
                             variant="tonal"
+                            class="body-action-btn"
                             @click="commitIndexingSelection"
                             :loading="isLoading.indexingIntervalUpdate"
                             >{{ isAddNew ? 'Save' : 'Update' }} Preference</v-btn
@@ -136,7 +155,12 @@
         </v-row>
         <v-row>
             <v-col cols="12">
-                <v-sheet class="border-primary rounded pa-6"> Configurations </v-sheet>
+                <v-sheet class="border-primary rounded pa-6">
+                    <p class="text-h6 text-primary font-weight-medium">Other Configurations</p>
+                    <v-btn class="body-action-btn" color="warning" prepend-icon="mdi-trash-can" variant="tonal"
+                        >Remove integration</v-btn
+                    >
+                </v-sheet>
             </v-col>
         </v-row>
     </div>
@@ -150,31 +174,41 @@
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../../constants';
     import { formatStringStartCase } from '../../utility';
     import find from 'lodash/find';
-    import { useRoute } from 'vue-router';
+    import { useRoute, useRouter } from 'vue-router';
     import moment from 'moment';
     import { useToast } from 'vue-toastification';
     import { KnowledgeBaseMap } from '../../constants/knowledgeBase';
-    import { encrypt } from '../../utility/encryption';
     import { IndexingIntervalOptions, DataSyncInterval } from '../../constants/dataSourceConfiguration';
+    import { RouteName } from '../../types/router';
+    import { SearchQueryParamType } from '../../types/search-store';
+    import { useSearchStore } from '../../stores/search';
+    import { DataSourceTypeName } from '../../types/responses';
 
     const props = defineProps<{
         isAddNew: boolean;
     }>();
 
     const route = useRoute();
+    const router = useRouter();
     const toast = useToast();
 
     const dataSourceStore = useDataSourceStore();
     const { connections, dataSourceOptions, isLoading } = storeToRefs(dataSourceStore);
+
     const userStore = useUserStore();
     const { userData, userEntityId, planData } = storeToRefs(userStore);
+
+    const searchStore = useSearchStore();
 
     const apiKeyInput = ref<string>('');
     const selectedIndexingOption = ref<DataSyncInterval>();
 
     onBeforeMount(async () => {
-        if (!props.isAddNew && !connections.value.length) {
-            await dataSourceStore.retreiveConnections();
+        if (!props.isAddNew) {
+            if (!connections.value.length) {
+                await dataSourceStore.retreiveConnections();
+            }
+
             const source = find(connections.value, (option) => option.id === route.params.dataSourceId);
             selectedIndexingOption.value = source!.selectedSyncInterval;
         } else if (props.isAddNew && !dataSourceOptions.value.length) {
@@ -196,12 +230,33 @@
         } else {
             const source = find(connections.value, (option) => option.id === route.params.dataSourceId);
             return {
+                id: source?.id,
                 name: source?.dataSourceName,
                 createdAt: source?.createdAt,
                 dataSourceTypeId: source?.dataSourceTypeId,
+                storage: source?.mbStorageEstimate,
+                nextScheduledSync: source?.nextScheduledSync,
+                dataSourceManualSyncAllowed: source?.dataSourceManualSyncAllowed,
             };
         }
     });
+
+    const indexNow = async () => {
+        switch (sourceData.value.name) {
+            case DataSourceTypeName.GOOGLE_DRIVE:
+                return await dataSourceStore.initiateGoogleDriveSync(sourceData.value.id!);
+            default:
+                toast.error('Manual indexing not allowed for this integration');
+        }
+    };
+
+    const redirectToSourceDataView = () => {
+        searchStore.clearQueryParams();
+        searchStore.addQueryParam(SearchQueryParamType.SOURCE, sourceData.value.name!);
+        searchStore.executeSearchQuery(userEntityId.value);
+
+        router.push({ name: RouteName.SEARCH });
+    };
 
     const onIndexingIntervalSelection = (value: DataSyncInterval) => {
         if (maxPlanIntervalLevel.value < IndexingIntervalOptions[value].level) {
@@ -230,13 +285,11 @@
             return;
         }
 
-        const encryptedSecret = await encrypt(apiKeyInput.value);
-
         const result = await dataSourceStore.testDataSourceCredential(
             sourceData.value.dataSourceTypeId as string,
             userEntityId.value,
             userData.value!.type,
-            encryptedSecret,
+            apiKeyInput.value,
         );
 
         if (result.isValid) {
@@ -261,5 +314,9 @@
         filter: brightness(100%) !important;
         cursor: not-allowed !important;
         color: rgb(var(--v-theme-secondary)) !important;
+    }
+
+    .body-action-btn {
+        width: 200px;
     }
 </style>

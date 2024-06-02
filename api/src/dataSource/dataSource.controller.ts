@@ -9,6 +9,7 @@ import type {
     DeleteGoogleDriveWebookQueryDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
+    SyncDataSourceQueryDto,
     TestDataSourceResponseDto,
     UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
@@ -58,9 +59,10 @@ export class DataSourceController {
     @UseGuards(AuthGuard('jwt'))
     async syncDataSource(
         @Param('dataSourceId') dataSourceId: string,
+        @Body() body: SyncDataSourceQueryDto,
         @Req() req: Request,
     ): Promise<{ success: boolean }> {
-        await this.service.syncDataSource(dataSourceId, req.user as DecodedUserTokenDto);
+        await this.service.syncDataSource(dataSourceId, req.user as DecodedUserTokenDto, body.secret);
         return { success: true };
     }
 

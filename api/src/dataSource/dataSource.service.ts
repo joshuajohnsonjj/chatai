@@ -111,7 +111,7 @@ export class DataSourceService {
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
                 this.logger.error(
-                    'Failed unique constraint - couldn\'t create datasource',
+                    "Failed unique constraint - couldn't create datasource",
                     undefined,
                     LoggerContext.DATA_SOURCE,
                 );
@@ -292,6 +292,7 @@ export class DataSourceService {
                 name: true,
                 category: true,
                 isLiveSyncAvailable: true,
+                isManualSyncAllowed: true,
             },
         });
 
@@ -311,10 +312,11 @@ export class DataSourceService {
             hasExternalId: !!item.externalId,
             dataSourceName: item.type.name,
             dataSourceLiveSyncAvailable: item.type.isLiveSyncAvailable,
+            dataSourceManualSyncAllowed: item.type.isManualSyncAllowed,
         }));
     }
 
-    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
+    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto, temporarySecret?: string): Promise<void> {
         this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         await this.prisma.$transaction(async (tx) => {
@@ -356,7 +358,7 @@ export class DataSourceService {
                     dataSourceId,
                     userId: user.idUser,
                     dataSourceType: dataSource.type.name,
-                    secret: dataSource.secret,
+                    secret: temporarySecret || dataSource.secret,
                     ownerEntityId: user.organization || user.idUser,
                     lastSync: dataSource.lastSync?.toISOString() ?? null,
                 },

@@ -13,7 +13,7 @@ export const loginUser = async (email: string, password: string): Promise<LoginU
             headers: {
                 'Content-Type': 'application/json',
             },
-            baseURL: import.meta.env.VITE_API_BASE_URL,
+            baseURL: (import.meta as any).env.VITE_API_BASE_URL,
             url: APIEndpoints.LOGIN,
         },
         false,

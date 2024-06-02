@@ -1,5 +1,4 @@
 import type { Handler, SQSEvent } from 'aws-lambda';
-import { decryptData } from '../../lib/decryption';
 import { InternalAPIEndpoints } from '../../lib/constants';
 import * as dotenv from 'dotenv';
 import {
@@ -112,8 +111,7 @@ export const handler: Handler = async (event: SQSEvent) => {
             completedDataSources.push(messageBody);
         }
 
-        const googleKey = decryptData(process.env.RSA_PRIVATE_KEY!, messageBody.secret);
-        const googleAPI = new GoogleDriveService(googleKey);
+        const googleAPI = new GoogleDriveService(messageBody.secret);
 
         processingFilePromises.push(processFile(mongo, googleAPI, messageBody));
     }
