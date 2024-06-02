@@ -13,7 +13,7 @@ export const executeQuery = async (
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: APIEndpoints.SEARCH,
         data: {
             entityId,
@@ -31,7 +31,7 @@ export const getTopicSuggestions = async (entityId: string, text?: string): Prom
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.TOPIC_SUGGESTIONS}?${query}`,
     });
     return resp as SearchSuggestionsResponse;
@@ -43,7 +43,7 @@ export const getSearchResultById = async (resultId: string): Promise<SearchResul
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: APIEndpoints.SEARCH_RESULT.replace(':resultId', resultId),
     });
     return resp as SearchResult | null;

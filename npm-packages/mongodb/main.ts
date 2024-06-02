@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
 import {
+    type DataElementInsertSummary,
     IndexName,
     type DataElementQueryInput,
     type DataElementVectorInput,
@@ -186,9 +187,31 @@ export class MongoDBService {
 
     /**
      * Performs an upsert operation based on the _id property
+     *
+     * @returns
+     * An insert summary containing text length and an indication of whether
+     * document was inserted or updated.
+     *
+     * isNew: true if inserted, false if updated
+     *
+     * lengthDiff: the diff in saved data element text length. If inserting
+     * new document returns text length of new document.
      */
-    public async writeDataElements(data: MongoDataElementCollectionDoc): Promise<void> {
+    public async writeDataElements(data: MongoDataElementCollectionDoc): Promise<DataElementInsertSummary> {
+        const originalDoc = await this.getDataElementById(data._id, data.ownerEntityId);
         await this.elementCollConnection.replaceOne({ _id: data._id }, data, { upsert: true });
+
+        if (originalDoc) {
+            return {
+                lengthDiff: data.text.length - originalDoc.text.length,
+                isNew: false,
+            };
+        }
+
+        return {
+            lengthDiff: data.text.length,
+            isNew: false,
+        };
     }
 
     /**

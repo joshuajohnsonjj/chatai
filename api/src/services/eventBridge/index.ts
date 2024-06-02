@@ -1,11 +1,14 @@
-import {
-    EventBridgeClient,
-    PutRuleCommand,
-    type PutRuleCommandInput,
-    PutTargetsCommand,
-} from '@aws-sdk/client-eventbridge';
 import { Logger } from '@nestjs/common';
+import { LoggerContext } from 'src/constants';
+import { InternalError } from 'src/exceptions';
 import type { APIGatewayInitiateImportParams } from 'src/types';
+import {
+    FlexibleTimeWindowMode,
+    ScheduleState,
+    SchedulerClient,
+    CreateScheduleCommand,
+    ActionAfterCompletion,
+} from '@aws-sdk/client-scheduler';
 
 const dateToCron = (date: Date): string => {
     const minutes = date.getUTCMinutes();
@@ -24,33 +27,41 @@ export const createEventBridgeScheduledExecution = async (
     executionDate: Date,
     payload: APIGatewayInitiateImportParams,
 ): Promise<void> => {
-    const eventBridgeClient = new EventBridgeClient({ region });
+    const schedulerClient = new SchedulerClient({ region });
 
     try {
-        const ruleName = `rule-${Date.now()}`;
-        const ruleParams: PutRuleCommandInput = {
-            Name: ruleName,
+        const createScheduleCommand = new CreateScheduleCommand({
+            Name: `schedule-${payload.dataSourceId}-${Date.now()}`,
             ScheduleExpression: `cron(${dateToCron(executionDate)})`,
-            State: 'ENABLED',
-        };
-
-        const ruleResponse = await eventBridgeClient.send(new PutRuleCommand(ruleParams));
-        logger.log(`Added scheduler rule ${ruleResponse.RuleArn} for execution on ${executionDate.toISOString()}`);
-
-        const targetParams = {
-            Rule: ruleName,
-            Targets: [
-                {
-                    Id: `${payload.dataSourceType}EventBridgeTarget-${process.env.NODE_ENV}`,
-                    Arn: lambdaArn,
-                    Input: JSON.stringify(payload),
+            Target: {
+                Arn: lambdaArn,
+                Input: JSON.stringify(payload),
+                RoleArn: 'arn:aws:iam::353643225333:role/EventBridgeSchedulerRole',
+                RetryPolicy: {
+                    MaximumEventAgeInSeconds: 600,
+                    MaximumRetryAttempts: 20,
                 },
-            ],
-        };
+            },
+            State: ScheduleState.ENABLED,
+            FlexibleTimeWindow: {
+                Mode: FlexibleTimeWindowMode.FLEXIBLE,
+                MaximumWindowInMinutes: 15,
+            },
+            ActionAfterCompletion: ActionAfterCompletion.DELETE,
+        });
 
-        await eventBridgeClient.send(new PutTargetsCommand(targetParams));
-        logger.log('Target added.');
+        const ruleResponse = await schedulerClient.send(createScheduleCommand);
+
+        logger.log(
+            `Added scheduler ${ruleResponse.ScheduleArn} to sync datasource ${payload.dataSourceId} on ${executionDate.toISOString()}`,
+            LoggerContext.DATA_SOURCE,
+        );
     } catch (error) {
-        logger.error('Error creating EventBridge schedule:', error);
+        logger.error(
+            `Error creating EventBridge schedule for datasource ${payload.dataSourceId}`,
+            error.stack,
+            LoggerContext.DATA_SOURCE,
+        );
+        throw new InternalError(error.message);
     }
 };

@@ -1,21 +1,55 @@
 <template>
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
-        <div class="bg-background w-100 pa-6 rounded d-flex justify-start mb-6">
-            <v-avatar image="@/assets/companyLogo.jpg" size="60"></v-avatar>
-            <div class="ml-4">
-                <p class="text-h5 text-primary mb-1">ABC Technology's Data Sources</p>
-                <div class="d-flex justify-start">
-                    <p class="text-caption text-secondary sub-info-line-height">
-                        <HubOutline style="width: 16px; height: 16px; margin-bottom: -3px" class="icon-secondary" />
-                        {{ dataSources.length }}
-                        {{ planData.maxDataSources ? `of ${planData.maxDataSources}` : '' }} Data sources connected
-                    </p>
-                    <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
-                    <p class="text-caption text-secondary sub-info-line-height">
-                        <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
-                        <!-- TODO: figure out how to calculate storage -->
-                        52 of {{ planData.maxStorageMegaBytes }} MB used
-                    </p>
+        <div class="bg-background w-100 pa-6 rounded d-flex justify-space-between mb-6">
+            <div class="d-flex justify-start">
+                <v-avatar image="@/assets/companyLogo.jpg" size="60"></v-avatar>
+
+                <div class="ml-4">
+                    <p class="text-h5 text-primary mb-1">ABC Technology's Data Integrations</p>
+
+                    <div class="d-flex justify-start">
+                        <p class="text-caption text-secondary sub-info-line-height">
+                            <HubOutline style="width: 16px; height: 16px; margin-bottom: -3px" class="icon-secondary" />
+                            {{ dataSources.length }}
+                            {{ planData.maxDataSources ? `of ${planData.maxDataSources}` : '' }} Integrations connected
+                        </p>
+                        <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
+                        <p class="text-caption text-secondary sub-info-line-height">
+                            <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
+                            {{ dataSourceStorageUsageSum > 0 ? dataSourceStorageUsageSum.toFixed(2) : '0' }} MB of
+                            {{ planData.maxStorageMegaBytes }} MB used
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-end">
+                <div class="px-6">
+                    <div class="d-flex justify-center">
+                        <v-progress-circular
+                            :model-value="dataSourceConnectionCountPercentage"
+                            :size="50"
+                            :width="5"
+                            :color="usageGraphColor(dataSourceConnectionCountPercentage)"
+                        >
+                            <template v-slot:default> {{ dataSourceConnectionCountPercentage }} % </template>
+                        </v-progress-circular>
+                    </div>
+                    <div class="text-primary text-center text-caption mt-2">Integrations</div>
+                </div>
+
+                <div class="px-6">
+                    <div class="d-flex justify-center">
+                        <v-progress-circular
+                            :model-value="dataSourceStoragePercentage"
+                            :size="50"
+                            :width="5"
+                            :color="usageGraphColor(dataSourceStoragePercentage)"
+                        >
+                            <template v-slot:default> {{ dataSourceStoragePercentage }} % </template>
+                        </v-progress-circular>
+                    </div>
+                    <div class="text-primary text-center text-caption mt-2">Storage</div>
                 </div>
             </div>
         </div>
@@ -31,22 +65,21 @@
                 v-for="dataSource in dataSources"
                 :key="dataSource.id"
                 class="bg-background rounded pa-6 ma-2 grow-hover"
-                style="min-width: 234px; position: relative"
+                style="width: 300px; position: relative"
                 @click="$router.push({ name: RouteName.DATA_SOURCE_CONFIG, params: { dataSourceId: dataSource.id } })"
             >
-                <div
-                    v-if="dataSource.isLiveSync"
-                    class="rounded live-sync text-warning text-caption px-2 absolute"
-                    style="right: 12px; top: 12px"
-                >
-                    Real-time
-                </div>
-                <div
-                    v-else-if="dataSource.isSyncing"
-                    class="rounded syncing text-caption text-info px-2 absolute"
-                    style="right: 12px; top: 12px"
-                >
-                    Indexing
+                <div v-if="dataSource.isSyncing" class="px-2 absolute" style="right: 12px; top: 12px">
+                    <v-tooltip text="Indexing in progress" location="top" max-width="300">
+                        <template v-slot:activator="{ props }">
+                            <v-icon
+                                class="syncing-icon"
+                                icon="mdi-sync"
+                                size="large"
+                                color="info"
+                                v-bind="props"
+                            ></v-icon>
+                        </template>
+                    </v-tooltip>
                 </div>
 
                 <div class="d-flex justify-start mb-4">
@@ -60,11 +93,19 @@
                 </div>
                 <p class="text-caption text-secondary mb-1">
                     <v-icon icon="mdi-clock-outline"></v-icon>
-                    {{ dataSource.lastSync ? `Synced ${dateToString(dataSource.lastSync)}` : 'Not synced' }}
+                    {{ dataSource.lastSync ? `Indexed ${dateToString(dataSource.lastSync)}` : 'Never indexed' }}
                 </p>
-                <p class="text-caption text-secondary">
+                <p v-if="dataSource.nextScheduledSync" class="text-caption text-secondary">
                     <v-icon icon="mdi-calendar-star"></v-icon>
-                    Next Index: 4/22 11:30PM
+                    Next Indexing: {{ moment(dataSource.nextScheduledSync).format('M/D H:MM A') }}
+                </p>
+                <p v-else-if="dataSource.dataSourceLiveSyncAvailable" class="text-caption text-secondary">
+                    <v-icon icon="mdi-lightning-bolt"></v-icon>
+                    Real-time indexing
+                </p>
+                <p v-else-if="dataSource.dataSourceManualSyncAllowed" class="text-caption text-secondary">
+                    <v-icon icon="mdi-cursor-default-click"></v-icon>
+                    Manual indexing only
                 </p>
             </div>
         </div>
@@ -81,16 +122,17 @@
 </template>
 
 <script lang="ts" setup>
-    import { onBeforeMount } from 'vue';
+    import { computed, onBeforeMount } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useDataSourceStore } from '../stores/dataSource';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
     import { dateToString, formatStringStartCase } from '../utility';
     import { RouteName } from '../types/router';
     import { useUserStore } from '../stores/user';
+    import moment from 'moment';
 
     const dataSourceStore = useDataSourceStore();
-    const { connections: dataSources, isLoading } = storeToRefs(dataSourceStore);
+    const { connections: dataSources, isLoading, dataSourceStorageUsageSum } = storeToRefs(dataSourceStore);
 
     const userStore = useUserStore();
     const { planData } = storeToRefs(userStore);
@@ -100,6 +142,20 @@
             await dataSourceStore.retreiveConnections();
         }
     });
+
+    const dataSourceConnectionCountPercentage = computed(() =>
+        planData.value?.maxDataSources ? (dataSources.value.length / planData.value.maxDataSources) * 100 : null,
+    );
+
+    const dataSourceStoragePercentage = computed(() =>
+        planData.value ? Math.ceil((dataSourceStorageUsageSum.value / planData.value.maxStorageMegaBytes) * 100) : 0,
+    );
+
+    const usageGraphColor = (percentage: number): string => {
+        if (percentage > 85) return 'error';
+        if (percentage > 70) return 'warning';
+        return 'success';
+    };
 </script>
 
 <style scoped>
@@ -107,15 +163,26 @@
         line-height: 23px;
     }
 
-    .live-sync {
-        background: rgba(var(--v-theme-warning), 0.25);
+    .syncing-icon {
+        -webkit-animation: spin 3s linear infinite;
+        -moz-animation: spin 3s linear infinite;
+        animation: spin 3s linear infinite;
     }
 
-    .syncing {
-        background: rgba(var(--v-theme-info), 0.25);
+    @-moz-keyframes spin {
+        100% {
+            -moz-transform: rotate(-360deg);
+        }
     }
-
-    .sync-now {
-        background: rgba(var(--v-theme-success), 0.25);
+    @-webkit-keyframes spin {
+        100% {
+            -webkit-transform: rotate(-360deg);
+        }
+    }
+    @keyframes spin {
+        100% {
+            -webkit-transform: rotate(-360deg);
+            transform: rotate(-360deg);
+        }
     }
 </style>

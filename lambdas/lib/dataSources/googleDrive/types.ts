@@ -95,10 +95,7 @@ export interface GoogleDriveChangeEvent {
  * SQS types
  *
  */
-
-export type GoogleDriveSQSMessageBody = GoogleDriveSQSBaseBody | GoogleDriveSQSFinalBody;
-
-export interface GoogleDriveSQSBaseBody {
+export interface GoogleDriveSQSMessageBody {
     fileId: string;
     fileUrl: string;
     ownerEntityId: string;
@@ -106,13 +103,8 @@ export interface GoogleDriveSQSBaseBody {
     secret: string;
     dataSourceId: string;
     modifiedDate: string;
-}
-
-export interface GoogleDriveSQSFinalBody {
-    isFinal: true;
-    dataSourceId: string;
-    secret: string;
-    ownerEntityId: string;
     userId: string;
-    shouldInitiateWebhook: boolean;
+    authorName?: string;
+    authorEmail?: string;
+    isFinal: string;
 }

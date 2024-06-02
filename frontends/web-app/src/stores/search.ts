@@ -137,6 +137,11 @@ export const useSearchStore = defineStore('search', () => {
         }
     };
 
+    const clearQueryParams = () => {
+        activeQueryParams.value = [];
+        resetSearchResults();
+    };
+
     return {
         activeQueryParams,
         selectedSearchResult,
@@ -157,5 +162,6 @@ export const useSearchStore = defineStore('search', () => {
         loadSearchResult,
         getFilterTopicOptions,
         getFilterAuthorOptions,
+        clearQueryParams,
     };
 });

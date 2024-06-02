@@ -1,69 +1,10 @@
 {
-  "version": "2.0",
-  "routeKey": "$default",
-  "rawPath": "/path/to/resource",
-  "rawQueryString": "parameter1=value1&parameter1=value2&parameter2=value",
-  "cookies": [
-    "cookie1",
-    "cookie2"
-  ],
-  "headers": {
-    "Header1": "value1",
-    "Header2": "value1,value2"
-  },
-  "queryStringParameters": {
-    "parameter1": "value1,value2",
-    "parameter2": "value"
-  },
-  "requestContext": {
-    "accountId": "123456789012",
-    "apiId": "api-id",
-    "authentication": {
-      "clientCert": {
-        "clientCertPem": "CERT_CONTENT",
-        "subjectDN": "www.example.com",
-        "issuerDN": "Example issuer",
-        "serialNumber": "a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1:a1",
-        "validity": {
-          "notBefore": "May 28 12:30:02 2019 GMT",
-          "notAfter": "Aug  5 09:36:04 2021 GMT"
-        }
-      }
-    },
-    "authorizer": {
-      "jwt": {
-        "claims": {
-          "claim1": "value1",
-          "claim2": "value2"
-        },
-        "scopes": [
-          "scope1",
-          "scope2"
-        ]
-      }
-    },
-    "domainName": "id.execute-api.us-east-1.amazonaws.com",
-    "domainPrefix": "id",
-    "http": {
-      "method": "POST",
-      "path": "/path/to/resource",
-      "protocol": "HTTP/1.1",
-      "sourceIp": "192.168.0.1/32",
-      "userAgent": "agent"
-    },
-    "requestId": "id",
-    "routeKey": "$default",
-    "stage": "$default",
-    "time": "12/Mar/2020:19:03:58 +0000",
-    "timeEpoch": 1583348638390
-  },
-  "body": "{\"dataSourceId\": \"f0967a92-d948-4334-8751-cf586856a149\", \"dataSourceType\":\"NOTION\", \"userId\":\"74284498-0011-7023-fc9c-67ab0f1e0a90\", \"ownerEntityId\":\"74284498-0011-7023-fc9c-67ab0f1e0a90\", \"secret\":\"RbpMDiBN38ZFvT3QV7hrLTG1VGTF6RTJOAthw/9hd1B8yDVV0h34qyH2oQ6rMZRrAUDiSo7CNlanK/5aOuaYaAXxMF/+wZMfWGwpWlckGlF4uM8mq6YszuU9rx6LCUvFPWy4rGnKKqI0cbhJPKF8XWt6LnggPA0ppyF4uG4gDfCfDFnqUthP/PI8hmbl/eKWK3WclwzVMwO1IaP0GSTo6VUi3v6ODCSDWCHZ6KQSL2hoZGMBCp8XabmTaQXd+OVAPlz6JGh7f3fSz+ywVgzuEUWjw8sYNBNlJMaz920x+1YsWe4fk0lOrNtK6+MxBY5CgUBW1W/KiRhjZ489kjFGtQ==\"}",
-  "pathParameters": {
-    "parameter1": "value1"
-  },
-  "isBase64Encoded": true,
-  "stageVariables": {
-    "stageVariable1": "value1",
-    "stageVariable2": "value2"
+  "body": {
+    "dataSourceId": "f0967a92-d948-4334-8751-cf586856a149",
+    "dataSourceType": "NOTION",
+    "userId": "74284498-0011-7023-fc9c-67ab0f1e0a90",
+    "ownerEntityId": "74284498-0011-7023-fc9c-67ab0f1e0a90",
+    "secret": "NXNgH63/+KUG944nLbaoq14z7XxyU8TD9COHZeSfFOwMWsvx03cKk6Ko5wfNYjPmR9mOBZtDPdV0CV/6oJGzGRLUQ5PI/q1lKaUnTNZwi5lzGlp16N1EzRMUr/2fYDBx4ZF9FzI1JYxPCPZyXb4ZgQSQpinugc3ZlwEFpkIUYl/ZD7m4EcDZVlslZGRQqvbEp8oMnc0HBeckfV3sssq6YD6ivHM66sfY6BLv2iuHilUDpq9Ccobz8BBGWKj6DoFfnaSLOJMyTQtfAYXUHQcIVxnPmhQ5FRcSjZvhMA2icsxOTQFWoMJfbEWGzEq+iVEeOwxEZzfs6xteB3AHzNSVWg==",
+    "lastSync": "2024-05-15T23:40:28.618Z"
   }
 }

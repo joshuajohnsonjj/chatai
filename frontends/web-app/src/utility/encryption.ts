@@ -1,12 +1,10 @@
 async function importPublicKey(pem) {
-    // Remove the PEM header and footer
     const pemHeader = '-----BEGIN PUBLIC KEY-----';
     const pemFooter = '-----END PUBLIC KEY-----';
     const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
     const binaryDerString = window.atob(pemContents);
     const binaryDer = str2ab(binaryDerString);
 
-    // Import the public key
     const publicKey = await crypto.subtle.importKey(
         'spki',
         binaryDer,
@@ -14,7 +12,7 @@ async function importPublicKey(pem) {
             name: 'RSA-OAEP',
             hash: { name: 'SHA-256' },
         },
-        true, // extractable
+        true,
         ['encrypt'],
     );
     return publicKey;
@@ -32,7 +30,6 @@ function str2ab(str) {
 async function encryptWithImportedKey(publicKey, message) {
     const encoder = new TextEncoder();
     const data = encoder.encode(message);
-
     const encrypted = await crypto.subtle.encrypt(
         {
             name: 'RSA-OAEP',
@@ -55,10 +52,8 @@ function arrayBufferToBase64(buffer) {
 }
 
 export async function encrypt(secretMessage: string): Promise<string> {
-    // Import the public key
-    const publicKey = await importPublicKey(import.meta.env.VITE_RSA_PUBLIC_KEY);
+    const publicKey = await importPublicKey((import.meta as any).env.VITE_RSA_PUBLIC_KEY);
     const encryptedData = await encryptWithImportedKey(publicKey, secretMessage);
     const encryptedBase64 = arrayBufferToBase64(encryptedData);
-
     return encryptedBase64;
 }

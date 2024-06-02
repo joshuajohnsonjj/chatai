@@ -9,6 +9,7 @@ export enum APIEndpoints {
     DATA_SOURCE_CONNECTIONS = '/v1/dataSource/connections',
     DATA_SOURCE_CONNECTION = '/v1/dataSource/connections/:dataSourceId',
     DATA_SOURCE = '/v1/dataSource',
+    DATA_SOURCE_SYNC = '/v1/dataSource/connections/:dataSourceId/sync',
     TEST_DATA_SOURCE = '/v1/dataSource/connections/test',
     SEARCH = '/v1/search',
     TOPIC_SUGGESTIONS = '/v1/search/suggestions/topics',

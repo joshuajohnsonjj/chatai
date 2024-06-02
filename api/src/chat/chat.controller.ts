@@ -15,6 +15,7 @@ import type {
 import { Request, Response } from 'express';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { LoggerContext } from 'src/constants';
 
 @Controller('v1/chat')
 @UseGuards(AuthGuard('jwt'))
@@ -55,7 +56,7 @@ export class ChatController {
         try {
             const data = await this.service.generateResponse(chatId, params, req.user as DecodedUserTokenDto);
 
-            this.logger.log('Chunking response content', 'Chat');
+            this.logger.log('Chunking response content', LoggerContext.CHAT);
             let generatedResponse = '';
             for await (const chunk of data.stream) {
                 const chunkText = chunk.choices[0]?.delta?.content;
@@ -67,7 +68,7 @@ export class ChatController {
                 generatedResponse += chunkText;
                 res.write(chunkText);
             }
-            this.logger.log('Chunking response content finished', 'Chat');
+            this.logger.log('Chunking response content finished', LoggerContext.CHAT);
 
             await this.service.handleChatResponseCompletion(
                 params.userPromptMessageId,
@@ -80,7 +81,7 @@ export class ChatController {
                 data.matchedDataResult,
             );
         } catch (e) {
-            this.logger.error(e.message, e.stack, 'Chat');
+            this.logger.error(e.message, e.stack, LoggerContext.CHAT);
         } finally {
             res.end();
         }

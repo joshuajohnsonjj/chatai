@@ -1,3 +1,5 @@
+import { EMBEDDING_SIZE_IN_BYTES } from './constants';
+
 /**
  * Returns whether a given string consists of only whitespace
  *
@@ -15,3 +17,12 @@ export const isEmptyContent = (str: string): boolean => {
  * @param str
  */
 export const cleanExcessWhitespace = (str: string): string => str.replace(/(\n{2,})/g, '\n');
+
+/**
+ * Returns an estimated document size in bytes based on 768 length
+ * vector array plus 2x text content length
+ *
+ * @param textContentLength
+ */
+export const getDocumentSizeEstimate = (textContentLength: number, isNewDocumentInsert: boolean): number =>
+    (isNewDocumentInsert ? EMBEDDING_SIZE_IN_BYTES : 0) + textContentLength * 2;

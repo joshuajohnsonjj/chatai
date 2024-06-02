@@ -11,7 +11,7 @@ export const listChats = async (): Promise<ListChatsResponse> => {
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHATS}?${new URLSearchParams({ page: '0' })}`,
     });
     return resp as ListChatsResponse;
@@ -24,7 +24,7 @@ export const updateChatDetail = async (chatId: string, chatUpdates: UpdateChatPa
             'Content-Type': 'application/json',
         },
         data: chatUpdates,
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHAT.replace(':chatId', chatId)}`,
     });
     return resp as ChatResponse;
@@ -36,7 +36,7 @@ export const getChatHistory = async (chatId: string, page: number): Promise<List
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}?${new URLSearchParams({ page: page.toString() })}`,
     });
     return resp as ListChatHistoryResponse;
@@ -46,7 +46,7 @@ export const getChatHistory = async (chatId: string, page: number): Promise<List
 export const sendChatMessage = async (chatId: string, params: SendMessageParams): Promise<any> => {
     const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
     const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}`,
+        `${(import.meta as any).env.VITE_API_BASE_URL}${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}`,
         {
             headers: {
                 Authorization: `Bearer ${tokenData.accessToken}`,
@@ -66,7 +66,7 @@ export const retrieveChatMessage = async (chatId: string, messageId: string): Pr
         headers: {
             'Content-Type': 'application/json',
         },
-        baseURL: import.meta.env.VITE_API_BASE_URL,
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHAT_MESSAGE.replace(':chatId', chatId).replace(':messageId', messageId)}`,
     });
     return resp as ChatMessageResponse;

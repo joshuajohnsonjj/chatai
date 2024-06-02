@@ -1,4 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+export interface DataElementInsertSummary {
+    isNew: boolean;
+    lengthDiff: number;
+}
+
 export interface MongoDataElementCollectionDoc {
     // common fields
     _id: string;

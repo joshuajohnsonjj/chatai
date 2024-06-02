@@ -18,7 +18,7 @@ const refreshTokenRequest = async (email: string, refreshToken: string) => {
                 username: email,
                 refreshToken,
             },
-            baseURL: import.meta.env.VITE_API_BASE_URL,
+            baseURL: (import.meta as any).env.VITE_API_BASE_URL,
             url: APIEndpoints.REFRESH,
         },
         false,

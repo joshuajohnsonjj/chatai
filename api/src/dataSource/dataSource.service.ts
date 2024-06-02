@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import type {
-    CreateDataSourceResponseDto,
     CreateDataSourceQueryDto,
     TestDataSourceResponseDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     UpdateDataSourceQueryDto,
     CompletedImportsRequestDto,
+    DataSourceConnectionDto,
 } from './dto/dataSource.dto';
 import { DataSource, DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
@@ -28,7 +28,7 @@ import {
 } from 'src/services/apiGateway';
 import * as moment from 'moment';
 import { createEventBridgeScheduledExecution } from 'src/services/eventBridge';
-import { BYTES_IN_MB } from 'src/constants';
+import { BYTES_IN_MB, LoggerContext } from 'src/constants';
 
 @Injectable()
 export class DataSourceService {
@@ -41,10 +41,13 @@ export class DataSourceService {
     async createDataSource(
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
-    ): Promise<CreateDataSourceResponseDto> {
-        this.logger.log('Creating new data source', 'DataSource');
+    ): Promise<DataSourceConnectionDto> {
+        this.logger.log(
+            `Creating new data source for ${params.ownerEntityType} - ${params.ownerEntityId}`,
+            LoggerContext.DATA_SOURCE,
+        );
 
-        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
@@ -59,8 +62,8 @@ export class DataSourceService {
                 requiredCredentialTypes: true,
             },
         });
-
-        this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
+        // TODO: not sure if this is really needed... need to see more data source integration
+        // this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
 
         const { isValid, message } = await testDataSourceConnection(
             this.configService.get<string>('BASE_API_GATEWAY_URL')!,
@@ -73,9 +76,15 @@ export class DataSourceService {
         );
 
         if (!isValid) {
-            this.logger.error('Invalid data source credential', 'DataSource');
+            this.logger.error('Invalid data source credential', LoggerContext.DATA_SOURCE);
             throw new BadCredentialsError(message);
         }
+
+        await this.validateRequestedSyncInterval(
+            params.selectedSyncInterval,
+            params.ownerEntityType,
+            params.ownerEntityId,
+        );
 
         try {
             const dataSource = await this.prisma.dataSource.create({
@@ -83,30 +92,33 @@ export class DataSourceService {
                     dataSourceTypeId: params.dataSourceTypeId,
                     ownerEntityId: params.ownerEntityId,
                     ownerEntityType:
-                        params.userType === UserType.ORGANIZATION_MEMBER
+                        params.ownerEntityType === UserType.ORGANIZATION_MEMBER
                             ? EntityType.ORGANIZATION
                             : EntityType.INDIVIDUAL,
                     secret: params.secret,
-                    isSyncing: false,
                     externalId: params.externalId,
-                },
-                select: {
-                    id: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    lastSync: true,
-                    dataSourceTypeId: true,
-                    ownerEntityId: true,
+                    selectedSyncInterval: params.selectedSyncInterval,
+                    lastSync: params.backfillHistoricalStartDate,
                 },
             });
 
             this.syncDataSource(dataSource.id, user);
 
-            return dataSource;
+            return {
+                ...omit(dataSource, ['secret', 'isSyncing']),
+                isSyncing: true,
+            };
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
+                this.logger.error(
+                    "Failed unique constraint - couldn't create datasource",
+                    undefined,
+                    LoggerContext.DATA_SOURCE,
+                );
                 throw new BadRequestError('Data source already exists for entity');
             }
+
+            this.logger.error(e.message, e.stack, LoggerContext.DATA_SOURCE);
             throw new InternalError();
         }
     }
@@ -116,11 +128,11 @@ export class DataSourceService {
         params: UpdateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<void> {
-        this.logger.log(`Updating new data source ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Updating new data source ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const updates: Partial<DataSource> = {};
 
-        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(user.organization, user.organization, user.oganizationUserRole);
         }
 
@@ -135,25 +147,12 @@ export class DataSourceService {
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
-        const validateRequestedIntervalChange = async (requested: DataSyncInterval): Promise<void> => {
-            const intervalLevels = [
-                DataSyncInterval.WEEKLY,
-                DataSyncInterval.DAILY,
-                DataSyncInterval.SEMI_DAILY,
-                DataSyncInterval.INSTANT,
-            ];
-            const planInterval = await this.getAccountPlanSyncInterval(
-                params.userType === UserType.ORGANIZATION_MEMBER,
+        if ('syncInterval' in params) {
+            await this.validateRequestedSyncInterval(
+                params.syncInterval!,
+                params.ownerEntityType,
                 dataSource.ownerEntityId,
             );
-
-            if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
-                throw new BadRequestError('Current plan does not allow this indexing interval');
-            }
-        };
-
-        if ('syncInterval' in params) {
-            await validateRequestedIntervalChange(params.syncInterval!);
             updates.selectedSyncInterval = params.syncInterval;
         }
 
@@ -167,9 +166,9 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<TestDataSourceResponseDto> {
-        this.logger.log(`Testing data source credential for entity ${params.ownerEntityId}`, 'DataSource');
+        this.logger.log(`Testing data source credential for entity ${params.ownerEntityId}`, LoggerContext.DATA_SOURCE);
 
-        if (params.userType === UserType.ORGANIZATION_MEMBER) {
+        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
@@ -196,7 +195,7 @@ export class DataSourceService {
     }
 
     async killGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const dataSource = await this.prisma.dataSource.findUnique({
             where: { id: dataSourceId },
@@ -215,7 +214,7 @@ export class DataSourceService {
         });
 
         if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
         }
 
         if (!dataSource.googleDriveConnection) {
@@ -243,7 +242,7 @@ export class DataSourceService {
     }
 
     async createGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, 'DataSource');
+        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const dataSource = await this.prisma.dataSource.findUnique({
             where: { id: dataSourceId },
@@ -259,7 +258,7 @@ export class DataSourceService {
         });
 
         if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
         }
 
         if (dataSource.googleDriveConnection) {
@@ -293,6 +292,7 @@ export class DataSourceService {
                 name: true,
                 category: true,
                 isLiveSyncAvailable: true,
+                isManualSyncAllowed: true,
             },
         });
 
@@ -312,11 +312,12 @@ export class DataSourceService {
             hasExternalId: !!item.externalId,
             dataSourceName: item.type.name,
             dataSourceLiveSyncAvailable: item.type.isLiveSyncAvailable,
+            dataSourceManualSyncAllowed: item.type.isManualSyncAllowed,
         }));
     }
 
-    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
-        this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, 'DataSource');
+    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto, temporarySecret?: string): Promise<void> {
+        this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         await this.prisma.$transaction(async (tx) => {
             const dataSource = await tx.dataSource.findUnique({
@@ -331,8 +332,8 @@ export class DataSourceService {
             });
 
             if (!dataSource) {
-                this.logger.error(`Data source ${dataSourceId} not found`, 'DataSource');
-                throw new ResourceNotFoundError(dataSourceId, 'DataSource');
+                this.logger.error(`Data source ${dataSourceId} not found`, LoggerContext.DATA_SOURCE);
+                throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
             }
 
             if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
@@ -340,7 +341,7 @@ export class DataSourceService {
             }
 
             if (dataSource.isSyncing) {
-                this.logger.error(`Data source ${dataSourceId} already syncing`, 'DataSource');
+                this.logger.error(`Data source ${dataSourceId} already syncing`, LoggerContext.DATA_SOURCE);
                 throw new BadRequestError('Data source sync already in progress');
             }
 
@@ -357,7 +358,7 @@ export class DataSourceService {
                     dataSourceId,
                     userId: user.idUser,
                     dataSourceType: dataSource.type.name,
-                    secret: dataSource.secret,
+                    secret: temporarySecret || dataSource.secret,
                     ownerEntityId: user.organization || user.idUser,
                     lastSync: dataSource.lastSync?.toISOString() ?? null,
                 },
@@ -365,9 +366,22 @@ export class DataSourceService {
         });
     }
 
-    // TODO: call this from initiate import lambdas
-    async handleImportInitiated(dataSourceId: string, apiKey: string): Promise<void> {
-        await this.validateInternalAPIKey(apiKey);
+    async handleImportInitiated(dataSourceId: string, apiKey: string, ignoreAPIKey = false): Promise<void> {
+        if (!ignoreAPIKey) {
+            await this.validateInternalAPIKey(apiKey);
+        }
+
+        const dataSource = await this.prisma.dataSource.findUnique({
+            where: { id: dataSourceId },
+            select: { isSyncing: true },
+        });
+
+        if (dataSource?.isSyncing) {
+            throw new BadRequestError('Data source sync already in progress');
+        }
+
+        this.logger.log(`handling import initiated for datasource ${dataSourceId}`, LoggerContext.DATA_SOURCE);
+
         await this.prisma.dataSource.update({
             where: { id: dataSourceId },
             data: {
@@ -378,8 +392,15 @@ export class DataSourceService {
     }
 
     // TODO: in addition to handling completion, need to handle error state out of either lambda...
-    async handleImportsCompleted(data: CompletedImportsRequestDto, apiKey: string): Promise<void> {
-        await this.validateInternalAPIKey(apiKey);
+    // TODO: create google drive webhook conn if userId present in payload
+    async handleImportsCompleted(
+        data: CompletedImportsRequestDto,
+        apiKey: string,
+        ignoreAPIKey = false,
+    ): Promise<void> {
+        if (!ignoreAPIKey) {
+            await this.validateInternalAPIKey(apiKey);
+        }
 
         const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
             if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
@@ -388,7 +409,7 @@ export class DataSourceService {
 
             switch (interval) {
                 case DataSyncInterval.INSTANT:
-                    return moment().add(30, 'm').toDate();
+                    return moment().add(15, 'm').toDate();
                 case DataSyncInterval.SEMI_DAILY:
                     return moment().add(12, 'h').toDate();
                 case DataSyncInterval.DAILY:
@@ -401,7 +422,10 @@ export class DataSourceService {
 
         await Promise.all(
             data.completed.map(async (completed) => {
-                this.logger.log(`Updating data sources for completed import ${completed.dataSourceId}`, 'DataSource');
+                this.logger.log(
+                    `Updating data source for completed import ${completed.dataSourceId}`,
+                    LoggerContext.DATA_SOURCE,
+                );
 
                 const queryRes = await this.prisma.dataSource.findUnique({
                     where: { id: completed.dataSourceId },
@@ -421,7 +445,10 @@ export class DataSourceService {
                 });
 
                 if (!queryRes) {
-                    this.logger.warn(`Query returned no results for ${completed.dataSourceId}`, 'DataSource');
+                    this.logger.warn(
+                        `Query returned no results for ${completed.dataSourceId}`,
+                        LoggerContext.DATA_SOURCE,
+                    );
                     return;
                 }
 
@@ -453,7 +480,6 @@ export class DataSourceService {
                             isSyncing: false,
                             nextScheduledSync,
                             mbStorageEstimate: {
-                                // TODO: figure out how to handle overwrites...
                                 increment: completed.bytesDelta / BYTES_IN_MB,
                             },
                             updatedAt: new Date(),
@@ -465,7 +491,7 @@ export class DataSourceService {
     }
 
     private async validateInternalAPIKey(apiKey: string): Promise<void> {
-        const keyRes = await this.prisma.internalAPIKey.findUnique({
+        const keyRes = await this.prisma.internalAPIKey.count({
             where: {
                 key: apiKey,
                 isDisabled: false,
@@ -473,11 +499,10 @@ export class DataSourceService {
                     hasSome: [InternalAPIKeyScope.ALL, InternalAPIKeyScope.DATA_SOURCE],
                 },
             },
-            select: { key: true },
         });
 
-        if (!keyRes) {
-            throw new AccessDeniedError('Valid API key not provided');
+        if (!apiKey || keyRes !== 1) {
+            throw new AccessDeniedError('Valid API key not provided in `api-key` header');
         }
     }
 
@@ -486,8 +511,8 @@ export class DataSourceService {
             ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role as OganizationUserRole) ||
             reqOrgId !== userOrgId
         ) {
-            this.logger.error('User is not an admin of the specified org', 'DataSource');
-            throw new AccessDeniedError();
+            this.logger.error('User is not an admin of the specified org', LoggerContext.DATA_SOURCE);
+            throw new AccessDeniedError('Must be an organization admin to preform this action.');
         }
     }
 
@@ -502,7 +527,7 @@ export class DataSourceService {
         });
     }
 
-    private async getAccountPlanSyncInterval(
+    private async getAccountPlanMaxSyncInterval(
         isOrganization: boolean,
         id: string,
     ): Promise<DataSyncInterval | undefined> {
@@ -518,5 +543,26 @@ export class DataSourceService {
             select: { plan: { select: { dataSyncInterval: true } } },
         });
         return res?.plan?.dataSyncInterval;
+    }
+
+    private async validateRequestedSyncInterval(
+        requested: DataSyncInterval,
+        userType: UserType,
+        ownerEntityId: string,
+    ): Promise<void> {
+        const intervalLevels = [
+            DataSyncInterval.WEEKLY,
+            DataSyncInterval.DAILY,
+            DataSyncInterval.SEMI_DAILY,
+            DataSyncInterval.INSTANT,
+        ];
+        const planInterval = await this.getAccountPlanMaxSyncInterval(
+            userType === UserType.ORGANIZATION_MEMBER,
+            ownerEntityId,
+        );
+
+        if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
+            throw new BadRequestError('Current plan does not allow this indexing interval');
+        }
     }
 }

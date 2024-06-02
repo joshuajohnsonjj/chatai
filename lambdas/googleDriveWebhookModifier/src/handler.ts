@@ -1,7 +1,7 @@
 import type { Handler } from 'aws-lambda';
 import * as dotenv from 'dotenv';
 import type { InitiateGoogleDriveWebhookRequestData, KillGoogleDriveWebhookRequestData } from '../../lib/types';
-import { decryptData } from '../../lib/descryption';
+import { decryptData } from '../../lib/decryption';
 import { GoogleDriveService } from '../../lib/dataSources/googleDrive';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });

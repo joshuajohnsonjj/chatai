@@ -47,6 +47,7 @@ model DataSourceType {
   name                    DataSourceTypeName @unique
   category                DataSourceCategory
   isLiveSyncAvailable     Boolean            @default(false)
+  isManualSyncAllowed     Boolean            @default(false)
   requiredCredentialTypes String[]
   linkedSources           DataSource[]
 }

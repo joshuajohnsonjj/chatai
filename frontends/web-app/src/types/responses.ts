@@ -132,15 +132,23 @@ export interface DataSourceConnectionsResponse {
     isSyncing: boolean;
     dataSourceName: string;
     dataSourceLiveSyncAvailable: boolean;
+    dataSourceManualSyncAllowed: boolean;
     selectedSyncInterval: DataSyncInterval;
+    mbStorageEstimate: number;
     nextScheduledSync: Date | null;
+}
+
+export enum DataSourceTypeName {
+    NOTION = 'NOTION',
+    GOOGLE_DRIVE = 'GOOGLE_DRIVE',
 }
 
 export interface DataSourceTypesResponse {
     id: string;
-    name: string;
+    name: DataSourceTypeName;
     category: string;
     isLiveSyncAvailable: boolean;
+    isManualSyncAllowed: boolean;
     userConnectedDataSourceId?: string;
 }
 

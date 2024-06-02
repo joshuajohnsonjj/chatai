@@ -12,6 +12,8 @@ import { BadRequestError } from 'src/exceptions';
 export class UserAuthController {
     constructor(private readonly authService: UserAuthService) {}
 
+    // TODO: fix validation pipe for other routes.. not working bc auth guard??
+
     @Post('register')
     @UsePipes(ValidationPipe)
     async register(@Body() registerRequest: RegisterRequestDto) {

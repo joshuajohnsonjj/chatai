@@ -253,7 +253,7 @@ export class OrganizationService {
             ![OganizationUserRole.ORG_ADMIN || OganizationUserRole.ORG_OWNER].includes(role as OganizationUserRole) ||
             reqOrgId !== userOrgId
         ) {
-            throw new AccessDeniedError();
+            throw new AccessDeniedError('Must be an organization admin to preform this action.');
         }
     }
 }

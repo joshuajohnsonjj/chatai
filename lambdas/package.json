@@ -14,7 +14,7 @@
     "dependencies": {
         "@aws-sdk/client-sqs": "^3.565.0",
         "@joshuajohnsonjj38/gemini": "^1.1.6",
-        "@joshuajohnsonjj38/mongodb": "^1.0.9",
+        "@joshuajohnsonjj38/mongodb": "^1.0.12",
         "aws-lambda": "^1.0.7",
         "axios": "^1.6.8",
         "dotenv": "^16.4.5",

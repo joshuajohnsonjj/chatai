@@ -1,6 +1,6 @@
 import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType, UserType } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -9,20 +9,33 @@ export class CreateDataSourceQueryDto {
     @IsUUID()
     ownerEntityId: string;
 
-    @IsString()
-    userType: UserType;
+    @IsEnum(UserType)
+    ownerEntityType: UserType;
 
     @IsString()
     secret: string;
+
+    @IsDateString()
+    @IsOptional()
+    backfillHistoricalStartDate?: string;
+
+    @IsEnum(DataSyncInterval)
+    selectedSyncInterval: DataSyncInterval;
 
     @IsString()
     @IsOptional()
     externalId?: string;
 }
 
+export class SyncDataSourceQueryDto {
+    @IsString()
+    @IsOptional()
+    secret?: string;
+}
+
 export class UpdateDataSourceQueryDto {
     @IsString()
-    userType: UserType;
+    ownerEntityType: UserType;
 
     @IsEnum(DataSyncInterval)
     @IsOptional()
@@ -30,8 +43,15 @@ export class UpdateDataSourceQueryDto {
 }
 
 class CompletedImport {
+    @IsUUID()
     dataSourceId: string;
+
+    @IsNumber()
     bytesDelta: number;
+
+    @IsUUID()
+    @IsOptional()
+    userId?: string;
 }
 
 export class CompletedImportsRequestDto {
@@ -46,21 +66,12 @@ export class DeleteGoogleDriveWebookQueryDto {
     dataSourceId: string;
 }
 
-export class CreateDataSourceResponseDto {
-    id: string;
-    createdAt: Date;
-    updatedAt: Date;
-    lastSync: Date | null;
-    dataSourceTypeId: string;
-    ownerEntityId: string;
-}
-
 export class TestDataSourceResponseDto {
     isValid: boolean;
     message: string;
 }
 
-export class ListDataSourceConnectionsResponseDto {
+export class DataSourceConnectionDto {
     id: string;
     createdAt: Date;
     updatedAt: Date;
@@ -68,12 +79,16 @@ export class ListDataSourceConnectionsResponseDto {
     dataSourceTypeId: string;
     ownerEntityId: string;
     ownerEntityType: EntityType;
-    hasExternalId: boolean;
     isSyncing: boolean;
-    dataSourceName: string;
     selectedSyncInterval: DataSyncInterval;
     nextScheduledSync: Date | null;
+}
+
+export class ListDataSourceConnectionsResponseDto extends DataSourceConnectionDto {
+    dataSourceName: string;
     dataSourceLiveSyncAvailable: boolean;
+    dataSourceManualSyncAllowed: boolean;
+    hasExternalId: boolean;
 }
 
 export class ListDataSourceTypesResponseDto {
@@ -81,4 +96,5 @@ export class ListDataSourceTypesResponseDto {
     name: DataSourceTypeName;
     category: DataSourceCategory;
     isLiveSyncAvailable: boolean;
+    isManualSyncAllowed: boolean;
 }
