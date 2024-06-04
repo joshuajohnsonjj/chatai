@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Post, UsePipes, ValidationPipe } from '@nestjs/common';
 import { UserAuthService } from './userAuth.service';
 import type { AuthenticateRequestDto } from './dto/authenticate.request.dto';
 import type { ConfirmUserRequestDto } from './dto/confirm.request.dto';
@@ -82,7 +82,7 @@ export class UserAuthController {
         }
     }
 
-    @Get('confirm')
+    @Patch('confirm')
     async resendConfirmEmail(@Body() params: ForgetRequestDto) {
         try {
             return await this.authService.resendConfirmEmail(params.email);

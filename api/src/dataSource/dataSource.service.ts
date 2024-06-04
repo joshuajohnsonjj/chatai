@@ -332,7 +332,7 @@ export class DataSourceService {
             });
 
             if (!dataSource) {
-                this.logger.error(`Data source ${dataSourceId} not found`, LoggerContext.DATA_SOURCE);
+                this.logger.error(`Data source ${dataSourceId} not found`, undefined, LoggerContext.DATA_SOURCE);
                 throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
             }
 
@@ -341,7 +341,7 @@ export class DataSourceService {
             }
 
             if (dataSource.isSyncing) {
-                this.logger.error(`Data source ${dataSourceId} already syncing`, LoggerContext.DATA_SOURCE);
+                this.logger.error(`Data source ${dataSourceId} already syncing`, undefined, LoggerContext.DATA_SOURCE);
                 throw new BadRequestError('Data source sync already in progress');
             }
 

@@ -97,6 +97,7 @@
 
     const navigate = (routeName?: RouteName, externalLink?: string) => {
         if (externalLink) {
+            console.log(window);
             window.open(externalLink, '_blank')!.focus();
         } else if (routeName === RouteName.CHAT && selectedChat.value && route.meta.type !== RouteType.CHAT) {
             router.push({ name: RouteName.MESSAGES, params: { chatId: selectedChat.value.id } });

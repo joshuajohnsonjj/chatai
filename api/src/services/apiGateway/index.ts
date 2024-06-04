@@ -16,7 +16,7 @@ export const initiateDataSourceImport = async (
 ): Promise<void> => {
     await axios({
         baseURL,
-        url: snakeCase(dataSourceType),
+        url: snakeCase(dataSourceType).replaceAll('_', '-'),
         method: 'post',
         data: { body: data },
         headers: { 'x-api-key': apiKey },

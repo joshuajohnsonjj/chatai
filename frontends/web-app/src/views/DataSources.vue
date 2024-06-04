@@ -71,13 +71,7 @@
                 <div v-if="dataSource.isSyncing" class="px-2 absolute" style="right: 12px; top: 12px">
                     <v-tooltip text="Indexing in progress" location="top" max-width="300">
                         <template v-slot:activator="{ props }">
-                            <v-icon
-                                class="syncing-icon"
-                                icon="mdi-sync"
-                                size="large"
-                                color="info"
-                                v-bind="props"
-                            ></v-icon>
+                            <v-icon class="spining" icon="mdi-sync" size="large" color="info" v-bind="props"></v-icon>
                         </template>
                     </v-tooltip>
                 </div>
@@ -161,28 +155,5 @@
 <style scoped>
     .sub-info-line-height {
         line-height: 23px;
-    }
-
-    .syncing-icon {
-        -webkit-animation: spin 3s linear infinite;
-        -moz-animation: spin 3s linear infinite;
-        animation: spin 3s linear infinite;
-    }
-
-    @-moz-keyframes spin {
-        100% {
-            -moz-transform: rotate(-360deg);
-        }
-    }
-    @-webkit-keyframes spin {
-        100% {
-            -webkit-transform: rotate(-360deg);
-        }
-    }
-    @keyframes spin {
-        100% {
-            -webkit-transform: rotate(-360deg);
-            transform: rotate(-360deg);
-        }
     }
 </style>

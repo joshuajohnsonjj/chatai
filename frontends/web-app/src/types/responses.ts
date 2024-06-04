@@ -122,9 +122,9 @@ export interface UserInfoResponse {
 
 export interface DataSourceConnectionsResponse {
     id: string;
-    createdAt: Date;
-    updatedAt: Date;
-    lastSync: Date | null;
+    createdAt: string;
+    updatedAt: string;
+    lastSync: string | null;
     dataSourceTypeId: string;
     ownerEntityId: string;
     ownerEntityType: string;
@@ -135,7 +135,7 @@ export interface DataSourceConnectionsResponse {
     dataSourceManualSyncAllowed: boolean;
     selectedSyncInterval: DataSyncInterval;
     mbStorageEstimate: number;
-    nextScheduledSync: Date | null;
+    nextScheduledSync: string | null;
 }
 
 export enum DataSourceTypeName {

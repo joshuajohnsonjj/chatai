@@ -14,7 +14,6 @@ import {
     updateDataSourceConnection,
 } from '../requests';
 import { UserType } from '../types/user-store';
-import { googleSignIn, initGoogleClient } from '../services/googleAuth';
 import { encrypt } from '../utility/encryption';
 import { useToast } from 'vue-toastification';
 
@@ -38,7 +37,9 @@ export const useDataSourceStore = defineStore('dataSource', () => {
 
     const retreiveConnections = async () => {
         isLoading.value.dataSourceConnections = true;
-        connections.value = await listDataSourceConnections();
+        const resp = await listDataSourceConnections();
+        console.log(resp);
+        connections.value = resp;
         isLoading.value.dataSourceConnections = false;
     };
 
@@ -99,12 +100,22 @@ export const useDataSourceStore = defineStore('dataSource', () => {
     };
 
     const initiateGoogleDriveSync = async (dataSourceId: string) => {
+        isLoading.value.indexNowInvocation = true;
+        let authResponse;
+
         try {
-            isLoading.value.indexNowInvocation = true;
+            console.log('FIXME');
+        } catch (error) {
+            if (error.error === 'popup_blocked_by_browser') {
+                toast.error('Pop-up blocked by browser');
+            } else {
+                toast.error('Error signing in with Google. Indexing canceled.');
+            }
+            isLoading.value.indexNowInvocation = false;
+            return;
+        }
 
-            await initGoogleClient();
-            const authResponse = await googleSignIn();
-
+        try {
             await manualSyncDataSource(dataSourceId, authResponse.id_token);
 
             const connNdx = connections.value.findIndex((conn) => conn.id === dataSourceId);
@@ -113,7 +124,6 @@ export const useDataSourceStore = defineStore('dataSource', () => {
             toast.success('Google Drive indexing successfully initiated');
         } catch (error) {
             console.error(error);
-            toast.error('Error signing in with Google. Indexing canceled.');
         } finally {
             isLoading.value.indexNowInvocation = false;
         }

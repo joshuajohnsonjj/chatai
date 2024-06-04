@@ -25,6 +25,20 @@
                             style="width: 15px"
                             @click="openDocs"
                         />
+
+                        <div v-if="sourceData.isSyncing" class="px-2">
+                            <v-tooltip text="Indexing in progress" location="top" max-width="300">
+                                <template v-slot:activator="{ props }">
+                                    <v-icon
+                                        class="spining"
+                                        icon="mdi-sync"
+                                        size="large"
+                                        color="info"
+                                        v-bind="props"
+                                    ></v-icon>
+                                </template>
+                            </v-tooltip>
+                        </div>
                     </div>
 
                     <div v-if="!isAddNew">
@@ -58,7 +72,7 @@
                     >View data</v-btn
                 >
                 <v-btn
-                    v-if="sourceData.dataSourceManualSyncAllowed"
+                    v-if="sourceData.dataSourceManualSyncAllowed && !sourceData.isSyncing"
                     class="w-100 mb-2"
                     color="success"
                     prepend-icon="mdi-cloud-sync"
@@ -237,6 +251,7 @@
                 storage: source?.mbStorageEstimate,
                 nextScheduledSync: source?.nextScheduledSync,
                 dataSourceManualSyncAllowed: source?.dataSourceManualSyncAllowed,
+                isSyncing: source?.isSyncing,
             };
         }
     });
