@@ -13,32 +13,33 @@ export class GoogleAuthController {
         private readonly configService: ConfigService,
     ) {}
 
-    @Get('')
+    @Get()
     @UseGuards(AuthGuard('google'))
     async googleAuth() {}
 
     @Get('callback')
     @UseGuards(AuthGuard('google'))
     googleAuthRedirect(@Req() req, @Res() res: Response) {
-        this.logger.log(`Handling callback for google user ${req.user.id}`, LoggerContext.GOOGLE_AUTH);
-        res.cookie('jwt', req.user.accessToken);
-        res.redirect(this.configService.get<string>('CLIENT_OAUTH_REDIRECT_URL')!); // Redirect to your frontend page
+      this.logger.log(`Handling callback for google user ${req.user.id}`, LoggerContext.GOOGLE_AUTH);
+      
+      // set cookie & redirect back to app
+      res.cookie('jwt', req.user.accessToken);
+      res.redirect(this.configService.get<string>('CLIENT_OAUTH_REDIRECT_URL')!);
     }
 
     @Get('status')
     status(@Req() req: Request) {
-        if (req.user) {
-            return req.user;
-        } else {
-            return 'Not authenticated';
-        }
+      if (req.user) {
+          return req.user;
+      } else {
+          return 'Not authenticated';
+      }
     }
 
     @Get('logout')
     logout(@Req() req, @Res() res: Response) {
-        console.log(req);
         req.logout();
         res.clearCookie('jwt');
-        res.redirect('/');
+        res.redirect(this.configService.get<string>('CLIENT_OAUTH_REDIRECT_URL')!);
     }
 }

@@ -74,12 +74,14 @@ export class GoogleDriveService {
             type: 'web_hook',
             address,
             token: `entityId:${entityId}`,
+            payload: true,
+            kind: 'api#channel',
         };
 
         const response = await this.sendHttpRequest({
             method: 'post',
             baseURL: GoogleDriveService.DriveBaseUrl,
-            url: DriveAPIEndpints.START_LISTENING,
+            url: `${DriveAPIEndpints.START_LISTENING}?includeRemoved=true`,
             data,
             headers: {
                 Authorization: `Bearer ${this.accessToken}`,

@@ -23,7 +23,6 @@ import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit } from 'lodash';
 import {
     initiateDataSourceImport,
-    modifyGoogleDriveWebhookConnection,
     testDataSourceConnection,
 } from 'src/services/apiGateway';
 import * as moment from 'moment';
@@ -111,7 +110,7 @@ export class DataSourceService {
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
                 this.logger.error(
-                    "Failed unique constraint - couldn't create datasource",
+                    'Failed unique constraint - couldn\'t create datasource',
                     undefined,
                     LoggerContext.DATA_SOURCE,
                 );
@@ -192,97 +191,6 @@ export class DataSourceService {
                 externalId: params.externalId,
             },
         );
-    }
-
-    async killGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
-
-        const dataSource = await this.prisma.dataSource.findUnique({
-            where: { id: dataSourceId },
-            select: {
-                ownerEntityId: true,
-                secret: true,
-                googleDriveConnection: {
-                    select: {
-                        id: true,
-                        connectionId: true,
-                        resourceId: true,
-                        creatorUserId: true,
-                    },
-                },
-            },
-        });
-
-        if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
-        }
-
-        if (!dataSource.googleDriveConnection) {
-            throw new BadRequestError('No open google drive webhook connection for this data source');
-        }
-
-        if (dataSource.googleDriveConnection.creatorUserId !== userId) {
-            throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
-        }
-
-        await modifyGoogleDriveWebhookConnection(
-            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
-            this.configService.get<string>('API_GATEWAY_KEY')!,
-            false,
-            {
-                secret: dataSource.secret,
-                connectionId: dataSource.googleDriveConnection.connectionId,
-                resourceId: dataSource.googleDriveConnection.resourceId,
-            },
-        );
-
-        await this.prisma.googleDriveWebhookConnection.delete({
-            where: { id: dataSource.googleDriveConnection.id },
-        });
-    }
-
-    async createGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
-
-        const dataSource = await this.prisma.dataSource.findUnique({
-            where: { id: dataSourceId },
-            select: {
-                ownerEntityId: true,
-                secret: true,
-                googleDriveConnection: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
-        });
-
-        if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
-        }
-
-        if (dataSource.googleDriveConnection) {
-            throw new BadRequestError('Connection already exists');
-        }
-
-        const response = await modifyGoogleDriveWebhookConnection(
-            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
-            this.configService.get<string>('API_GATEWAY_KEY')!,
-            false,
-            {
-                secret: dataSource.secret,
-                ownerEntityId: dataSource.ownerEntityId,
-            },
-        );
-
-        await this.prisma.googleDriveWebhookConnection.create({
-            data: {
-                connectionId: response.id,
-                resourceId: response.resourceId,
-                dataSourceId: dataSourceId,
-                creatorUserId: userId,
-            },
-        });
     }
 
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
@@ -392,7 +300,6 @@ export class DataSourceService {
     }
 
     // TODO: in addition to handling completion, need to handle error state out of either lambda...
-    // TODO: create google drive webhook conn if userId present in payload
     async handleImportsCompleted(
         data: CompletedImportsRequestDto,
         apiKey: string,

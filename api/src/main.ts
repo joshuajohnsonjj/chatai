@@ -52,7 +52,7 @@ async function bootstrap() {
 
     app.use(
         cookieSession({
-            name: 'session',
+            name: 'chat-ai-oauth-session',
             keys: ['N4AvPIFXrULNSenuKYqB'],
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
         }),
@@ -63,4 +63,5 @@ async function bootstrap() {
 
     await app.listen(process.env.PORT || 3001);
 }
+
 bootstrap();
