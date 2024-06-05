@@ -193,18 +193,6 @@ export class OrganizationService {
             select: { id: true },
         });
 
-        // if user started google drive webhook connection for org, kill it
-        const googleDriveConnection = await this.prisma.googleDriveWebhookConnection.findUnique({
-            where: { creatorUserId: reqUser.idUser },
-            select: { dataSourceId: true },
-        });
-        if (googleDriveConnection) {
-            await this.dataSourceService.killGoogleDriveWebhookConnection(
-                googleDriveConnection.dataSourceId,
-                reqUser.idUser,
-            );
-        }
-
         // downgrade user to individual free plan
         await Promise.all([
             this.prisma.user.update({
