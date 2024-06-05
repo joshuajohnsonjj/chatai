@@ -1,0 +1,15 @@
+{
+    "name": "google-drive-webhook-modifier",
+    "version": "1.0.0",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "local": "node -e \"console.log(require('./dist/googleDriveWebhookModifier/src/handler').handler(require('../testEvents/googleDriveWebhookModifier.json')));\"",
+        "lint": "eslint \"**/*.ts\" --fix; npx prettier --write .",
+        "package": "sam package --template-file ./template.yml --output-template-file ./packaged.yml --s3-bucket chat-ai-lambdas",
+        "deploy": "sam deploy --template-file packaged.yml --stack-name lambda-google-drive-webhook-modifier --capabilities CAPABILITY_IAM --region us-east-1"
+    },
+    "devDependencies": {
+        "typescript": "^5.4.5"
+    }
+}
