@@ -6,19 +6,19 @@ import * as dotenv from 'dotenv';
 import moment from 'moment';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
-import { InitiateImportRequestData } from '../../lib/types';
+import { type InitiateImportWithOAuthRequestData } from '../../lib/types';
 import { GoogleDriveSQSMessageBody, GoogleDriveService } from '../../lib/dataSources/googleDrive';
 import axios from 'axios';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
 export const handler: Handler = async (event): Promise<{ success: boolean }> => {
-    const messageData: InitiateImportRequestData = event.body;
+    const messageData: InitiateImportWithOAuthRequestData = event.body;
 
     console.log(`Retreiving data source ${messageData.dataSourceId} Google Drive documents`);
 
     const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, messageData.secret);
-    const googleDriveService = new GoogleDriveService(decryptedSecret);
+    const googleDriveService = new GoogleDriveService(decryptedSecret, messageData.refreshToken);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 

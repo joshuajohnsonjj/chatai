@@ -25,18 +25,13 @@ export class CreateDataSourceQueryDto {
     @IsString()
     @IsOptional()
     externalId?: string;
-}
 
-export class SyncDataSourceQueryDto {
     @IsString()
     @IsOptional()
-    secret?: string;
+    refreshToken?: string;
 }
 
 export class UpdateDataSourceQueryDto {
-    @IsString()
-    ownerEntityType: UserType;
-
     @IsEnum(DataSyncInterval)
     @IsOptional()
     syncInterval?: DataSyncInterval;

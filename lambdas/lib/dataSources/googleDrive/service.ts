@@ -16,10 +16,13 @@ export class GoogleDriveService {
 
     private static readonly DriveBaseUrl = 'https://www.googleapis.com/drive/v3';
 
-    private readonly accessToken: string;
+    private accessToken: string;
 
-    constructor(accessToken: string) {
+    private readonly refreshToken: string;
+
+    constructor(accessToken: string, refreshToken: string) {
         this.accessToken = accessToken;
+        this.refreshToken = refreshToken;
     }
 
     public async testConnection(): Promise<boolean> {
@@ -135,6 +138,14 @@ export class GoogleDriveService {
                     setTimeout(resolve, 3 ** attempt);
                 });
                 return await this.sendHttpRequest(req);
+            } else if (code === 401) {
+                const resp = await axios.request({
+                    method: 'get',
+                    baseURL: 'http://locahost:3001',
+                    url: `/v1/auth/google/refresh?refreshToken=${this.refreshToken}`,
+                });
+                this.accessToken = resp.data.accessToken;
+                await axios.request(req);
             }
             throw e;
         }

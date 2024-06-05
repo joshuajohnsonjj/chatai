@@ -51,7 +51,11 @@ export class GoogleAuthController {
 
             return { accessToken: newAccessToken };
         } catch (error) {
-            this.logger.error('Error refreshing access token: ' + error.message, error.stack, LoggerContext.GOOGLE_AUTH);
+            this.logger.error(
+                'Error refreshing access token: ' + error.message,
+                error.stack,
+                LoggerContext.GOOGLE_AUTH,
+            );
             throw new InternalError(error.message);
         }
     }

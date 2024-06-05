@@ -13,6 +13,7 @@ export enum RouteName {
     SETTINGS_PROFILE = 'settings-profile',
     SETTINGS_SUBSCRIPTION = 'settings-subscription',
     SETTINGS_CHAT = 'settings-chat',
+    CALLBACK = 'callback',
 }
 
 export enum RouteType {

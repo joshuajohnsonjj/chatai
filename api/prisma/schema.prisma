@@ -42,15 +42,14 @@ model GoogleDriveWebhookConnection {
 }
 
 model DataSourceType {
-  id                      String             @id @default(uuid())
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @default(now())
-  name                    DataSourceTypeName @unique
-  category                DataSourceCategory
-  isLiveSyncAvailable     Boolean            @default(false)
-  isManualSyncAllowed     Boolean            @default(false)
-  requiredCredentialTypes String[]
-  linkedSources           DataSource[]
+  id                  String             @id @default(uuid())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now())
+  name                DataSourceTypeName @unique
+  category            DataSourceCategory
+  isLiveSyncAvailable Boolean            @default(false)
+  isManualSyncAllowed Boolean            @default(false)
+  linkedSources       DataSource[]
 }
 
 model Organization {

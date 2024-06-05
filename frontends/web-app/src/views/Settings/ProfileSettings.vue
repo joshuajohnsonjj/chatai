@@ -279,7 +279,7 @@
     import { computed, onMounted, ref } from 'vue';
     import { useUserStore } from '../../stores/user';
     import { storeToRefs } from 'pinia';
-    import { SETTINGS_STORAGE_KEY } from '../../constants';
+    import { SETTINGS_STORAGE_KEY } from '../../constants/localStorageKeys';
     import { useToast } from 'vue-toastification';
 
     const userStore = useUserStore();

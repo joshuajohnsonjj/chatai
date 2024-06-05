@@ -62,7 +62,7 @@
     import { useUserStore } from '../stores/user';
     import { useToast } from 'vue-toastification';
     import { useRouter } from 'vue-router';
-    import { EMAIL_STORAGE_KEY } from '../constants';
+    import { EMAIL_STORAGE_KEY } from '../constants/localStorageKeys';
     import { storeToRefs } from 'pinia';
     import { RouteName } from '../types/router';
 

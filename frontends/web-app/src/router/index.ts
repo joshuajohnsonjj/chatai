@@ -16,6 +16,7 @@ import DataSourceConfigure from '../views/DataSourceConfigure.vue';
 import DataSourceAdd from '../views/DataSourceAdd.vue';
 import { useUserStore } from '../stores/user';
 import { RouteName, RouteType } from '../types/router';
+import { OAUTH_REDIRECT_PATH } from '../constants/localStorageKeys';
 
 const onBeforeEnter = async (
     _to: RouteLocationNormalized,
@@ -37,7 +38,7 @@ const onBeforeEnter = async (
 };
 
 const router = createRouter({
-    history: createWebHistory(import.meta.env.BASE_URL),
+    history: createWebHistory((import.meta as any).env.BASE_URL),
     routes: [
         /**
          * Chat routes
@@ -198,6 +199,21 @@ const router = createRouter({
                 sideNavEnabled: false,
             },
             component: PlanSelection,
+        },
+
+        /**
+         * Callback routes
+         */
+        {
+            path: '/callback',
+            name: RouteName.CALLBACK,
+            redirect: (to) => {
+                const path = localStorage.getItem(OAUTH_REDIRECT_PATH) ?? '/';
+                localStorage.removeItem(OAUTH_REDIRECT_PATH);
+
+                // redirect to cached path w/ accessToken & refresh token in query params
+                return { path, query: { a: to.query.a, r: to.query.r } };
+            },
         },
     ],
 });

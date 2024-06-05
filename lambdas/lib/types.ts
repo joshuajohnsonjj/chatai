@@ -7,6 +7,10 @@ export interface InitiateImportRequestData {
     userId?: string;
 }
 
+export interface InitiateImportWithOAuthRequestData extends InitiateImportRequestData {
+    refreshToken: string;
+}
+
 export interface TestCredentialsRequestData {
     dataSourceTypeName: string;
     secret: string;

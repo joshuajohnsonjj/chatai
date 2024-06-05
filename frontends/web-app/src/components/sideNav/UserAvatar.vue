@@ -40,7 +40,7 @@
 <script lang="ts" setup>
     import { storeToRefs } from 'pinia';
     import { useUserStore } from '../../stores/user';
-    import { TOKEN_STORAGE_KEY } from '../../constants';
+    import { TOKEN_STORAGE_KEY } from '../../constants/localStorageKeys';
     import { useRouter } from 'vue-router';
     import { RouteName } from '../../types/router';
 

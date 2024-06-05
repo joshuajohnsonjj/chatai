@@ -91,15 +91,11 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useUserStore } from '../stores/user';
-    import { useToast } from 'vue-toastification';
-    import { useRouter } from 'vue-router';
-    import { EMAIL_STORAGE_KEY } from '../constants';
+    import { EMAIL_STORAGE_KEY } from '../constants/localStorageKeys';
     import { storeToRefs } from 'pinia';
     import { RouteName } from '../types/router';
 
     const userStore = useUserStore();
-    const toast = useToast();
-    const router = useRouter();
 
     const { isLoading } = storeToRefs(userStore);
 

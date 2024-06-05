@@ -41,25 +41,21 @@ async function main() {
             {
                 name: DataSourceTypeName.FILE_UPLOAD,
                 category: DataSourceCategory.OTHER,
-                requiredCredentialTypes: ['secret'],
             },
             {
                 name: DataSourceTypeName.SLACK,
                 category: DataSourceCategory.COMMUNICATION,
-                requiredCredentialTypes: ['secret'],
             },
             {
                 id: '02a83623-ffce-4218-82a7-fe7d705a23c2',
                 name: DataSourceTypeName.NOTION,
                 category: DataSourceCategory.NOTE_TAKING,
-                requiredCredentialTypes: ['secret'],
             },
             {
                 id: 'ea998762-bd13-41e5-bc6c-8277bf142c1f',
                 name: DataSourceTypeName.GOOGLE_DRIVE,
                 isLiveSyncAvailable: true,
                 category: DataSourceCategory.OTHER,
-                requiredCredentialTypes: ['secret'],
             },
         ],
     });

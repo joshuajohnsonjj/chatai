@@ -2,7 +2,7 @@ import type { SendMessageParams, UpdateChatParams } from '../types/chat-store';
 import { APIEndpoints, APIMethods } from '../types/requests';
 import type { ChatMessageResponse, ChatResponse, ListChatHistoryResponse, ListChatsResponse } from '../types/responses';
 import { sendAPIRequest } from './service';
-import { TOKEN_STORAGE_KEY } from '../constants';
+import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 
 // TODO: implement pagination
 export const listChats = async (): Promise<ListChatsResponse> => {

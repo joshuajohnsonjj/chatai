@@ -59,7 +59,7 @@
     import { useRoute, useRouter } from 'vue-router';
     import { useChatStore } from '../../stores/chat';
     import { storeToRefs } from 'pinia';
-    import { SETTINGS_STORAGE_KEY } from '../../constants';
+    import { SETTINGS_STORAGE_KEY } from '../../constants/localStorageKeys';
 
     const router = useRouter();
     const route = useRoute();

@@ -130,7 +130,7 @@ export interface DataSourceConnectionsResponse {
     ownerEntityType: string;
     hasExternalId: boolean;
     isSyncing: boolean;
-    dataSourceName: string;
+    dataSourceName: DataSourceTypeName;
     dataSourceLiveSyncAvailable: boolean;
     dataSourceManualSyncAllowed: boolean;
     selectedSyncInterval: DataSyncInterval;

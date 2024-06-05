@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useToast } from 'vue-toastification';
 import { APIEndpoints, APIMethods } from '../types/requests';
 import { LoginUserResponse } from '../types/responses';
-import { TOKEN_STORAGE_KEY } from '../constants';
+import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 
 const toast = useToast();
 

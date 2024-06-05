@@ -59,11 +59,8 @@ export class DataSourceService {
             },
             select: {
                 name: true,
-                requiredCredentialTypes: true,
             },
         });
-        // TODO: not sure if this is really needed... need to see more data source integration
-        // this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
 
         const { isValid, message } = await testDataSourceConnection(
             this.configService.get<string>('BASE_API_GATEWAY_URL')!,
@@ -96,6 +93,7 @@ export class DataSourceService {
                             ? EntityType.ORGANIZATION
                             : EntityType.INDIVIDUAL,
                     secret: params.secret,
+                    refreshToken: params.refreshToken,
                     externalId: params.externalId,
                     selectedSyncInterval: params.selectedSyncInterval,
                     lastSync: params.backfillHistoricalStartDate,
@@ -111,7 +109,7 @@ export class DataSourceService {
         } catch (e) {
             if (e.code === PrismaError.FAILED_UNIQUE_CONSTRAINT) {
                 this.logger.error(
-                    'Failed unique constraint - couldn\'t create datasource',
+                    "Failed unique constraint - couldn't create datasource",
                     undefined,
                     LoggerContext.DATA_SOURCE,
                 );
@@ -130,9 +128,12 @@ export class DataSourceService {
     ): Promise<void> {
         this.logger.log(`Updating new data source ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
-        const updates: Partial<DataSource> = {};
+        const userInfo = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.idUser },
+            select: { type: true },
+        });
 
-        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
+        if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(user.organization, user.organization, user.oganizationUserRole);
         }
 
@@ -147,14 +148,14 @@ export class DataSourceService {
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
+        const updates: Partial<DataSource> = {};
+
         if ('syncInterval' in params) {
-            await this.validateRequestedSyncInterval(
-                params.syncInterval!,
-                params.ownerEntityType,
-                dataSource.ownerEntityId,
-            );
+            await this.validateRequestedSyncInterval(params.syncInterval!, userInfo.type, dataSource.ownerEntityId);
             updates.selectedSyncInterval = params.syncInterval;
         }
+
+        // TODO: test connection if updating credentials
 
         await this.prisma.dataSource.update({
             where: { id: dataSourceId },
@@ -308,7 +309,7 @@ export class DataSourceService {
         });
 
         return queryRes.map((item) => ({
-            ...omit(item, ['externalId', 'type', 'secret']),
+            ...omit(item, ['externalId', 'type', 'secret', 'refreshToken']),
             hasExternalId: !!item.externalId,
             dataSourceName: item.type.name,
             dataSourceLiveSyncAvailable: item.type.isLiveSyncAvailable,
@@ -316,7 +317,7 @@ export class DataSourceService {
         }));
     }
 
-    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto, temporarySecret?: string): Promise<void> {
+    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
         this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         await this.prisma.$transaction(async (tx) => {
@@ -326,6 +327,7 @@ export class DataSourceService {
                     isSyncing: true,
                     ownerEntityId: true,
                     secret: true,
+                    refreshToken: true,
                     lastSync: true,
                     type: { select: { name: true } },
                 },
@@ -358,7 +360,8 @@ export class DataSourceService {
                     dataSourceId,
                     userId: user.idUser,
                     dataSourceType: dataSource.type.name,
-                    secret: temporarySecret || dataSource.secret,
+                    secret: dataSource.secret,
+                    refreshToken: dataSource.refreshToken ?? undefined,
                     ownerEntityId: user.organization || user.idUser,
                     lastSync: dataSource.lastSync?.toISOString() ?? null,
                 },
@@ -514,17 +517,6 @@ export class DataSourceService {
             this.logger.error('User is not an admin of the specified org', LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('Must be an organization admin to preform this action.');
         }
-    }
-
-    private verifyRequiredCredentialTypesProvided(
-        requiredFields: string[],
-        createParams: CreateDataSourceQueryDto,
-    ): void {
-        requiredFields.forEach((field) => {
-            if (!createParams[field]) {
-                throw new BadRequestError('Missing required credentials for DataSource type');
-            }
-        });
     }
 
     private async getAccountPlanMaxSyncInterval(
