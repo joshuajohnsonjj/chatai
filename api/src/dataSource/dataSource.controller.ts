@@ -1,11 +1,12 @@
 import { Controller, Body, Post, Param, Req, Get, Patch } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
-import { UseGuards } from '@nestjs/common/decorators';
+import { Delete, UseGuards } from '@nestjs/common/decorators';
 import type {
     CompletedImportsRequestDto,
     CreateDataSourceQueryDto,
     DataSourceConnectionDto,
+    DeleteGoogleDriveWebookQueryDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     SyncDataSourceQueryDto,
@@ -69,6 +70,32 @@ export class DataSourceController {
     @UseGuards(AuthGuard('jwt'))
     async listUserDataSourceConnections(@Req() req: Request): Promise<ListDataSourceConnectionsResponseDto[]> {
         return await this.service.listUserDataSourceConnections(req.user as DecodedUserTokenDto);
+    }
+
+    @Delete('/connections/webhook/googleDrive')
+    @UseGuards(AuthGuard('jwt'))
+    async killGoogleDriveWebhookConnection(
+        @Body() body: DeleteGoogleDriveWebookQueryDto,
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.killGoogleDriveWebhookConnection(
+            body.dataSourceId,
+            (req.user as DecodedUserTokenDto).idUser,
+        );
+        return { success: true };
+    }
+
+    @Post('/connections/webhook/googleDrive')
+    @UseGuards(AuthGuard('jwt'))
+    async createGoogleDriveWebhookConnection(
+        @Body() body: DeleteGoogleDriveWebookQueryDto,
+        @Req() req: Request,
+    ): Promise<{ success: boolean }> {
+        await this.service.createGoogleDriveWebhookConnection(
+            body.dataSourceId,
+            (req.user as DecodedUserTokenDto).idUser,
+        );
+        return { success: true };
     }
 
     @Patch('internal/imports/initiate')

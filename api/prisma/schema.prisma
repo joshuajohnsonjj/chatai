@@ -25,7 +25,20 @@ model DataSource {
   mbStorageEstimate    Float            @default(0)
   selectedSyncInterval DataSyncInterval @default(WEEKLY)
 
+  googleDriveConnection GoogleDriveWebhookConnection?
+
   @@unique([ownerEntityId, dataSourceTypeId])
+}
+
+model GoogleDriveWebhookConnection {
+  id            String     @id @default(uuid())
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @default(now())
+  connectionId  String     @unique
+  resourceId    String     @unique
+  creatorUserId String     @unique
+  dataSourceId  String     @unique
+  dataSource    DataSource @relation(fields: [dataSourceId], references: [id])
 }
 
 model DataSourceType {
