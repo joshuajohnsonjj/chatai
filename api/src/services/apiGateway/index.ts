@@ -5,7 +5,6 @@ import { APIGatewayTestCredentialsParams, type APIGatewayInitiateImportParams } 
 
 enum APIGatewayEndpoints {
     TEST_CONN = 'test-credentials',
-    GOOGLE_DRIVE_WEBHOOK = 'google-drive/webhook',
 }
 
 export const initiateDataSourceImport = async (
@@ -36,34 +35,4 @@ export const testDataSourceConnection = async (
         headers: { 'x-api-key': apiKey },
     });
     return resp.data;
-};
-
-/**
- * secret always required
- *
- * for create operation ownerEntityId required
- * for delete operation connectionId, resourceId required
- */
-export const modifyGoogleDriveWebhookConnection = async (
-    baseURL: string,
-    apiKey: string,
-    isCreate: boolean,
-    data: {
-        secret: string;
-        ownerEntityId?: string;
-        connectionId?: string;
-        resourceId?: string;
-    },
-): Promise<{
-    success: boolean;
-    id: string;
-    resourceId: string;
-}> => {
-    return await axios({
-        baseURL,
-        url: APIGatewayEndpoints.GOOGLE_DRIVE_WEBHOOK,
-        method: isCreate ? 'post' : 'delete',
-        data: { body: data },
-        headers: { 'x-api-key': apiKey },
-    });
 };

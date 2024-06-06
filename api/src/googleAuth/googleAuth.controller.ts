@@ -4,7 +4,7 @@ import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { LoggerContext } from 'src/constants';
 import { OAuth2Client } from 'google-auth-library';
-import { InternalError } from 'src/exceptions';
+import { BadRequestError, InternalError } from 'src/exceptions';
 
 @Controller('v1/auth/google')
 export class GoogleAuthController {
@@ -36,7 +36,11 @@ export class GoogleAuthController {
     }
 
     @Get('refresh')
-    async refreshAccessToken(@Query('refreshToken') refreshToken: string): Promise<{ accessToken: string }> {
+    async refreshAccessToken(@Query('r') refreshToken: string): Promise<{ accessToken: string }> {
+        if (!refreshToken) {
+            throw new BadRequestError('Refresh token required');
+        }
+
         try {
             this.logger.log('Attempting to refresh access token', LoggerContext.GOOGLE_AUTH);
 

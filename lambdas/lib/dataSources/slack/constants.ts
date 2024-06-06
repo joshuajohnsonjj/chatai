@@ -18,8 +18,3 @@ export enum SlackErros {
     INVALID_APP_ID = 'invalid_app_id',
     INVALID_APP = 'invalid_app',
 }
-
-export const SlackRedisKey = {
-    USER: (id: string) => `SlackUser:${id}`,
-    CHANNEL: (id: string) => `SlackChannel:${id}`,
-};

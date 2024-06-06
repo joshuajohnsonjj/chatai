@@ -1,5 +1,4 @@
 import type { Handler, SQSEvent } from 'aws-lambda';
-import { InternalAPIEndpoints } from '../../lib/constants';
 import * as dotenv from 'dotenv';
 import {
     GoogleDriveService,
@@ -10,7 +9,7 @@ import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import { getDocumentSizeEstimate } from '../../lib/helper';
-import axios from 'axios';
+import { notifyImportsCompleted } from '../../lib/internalAPI';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -18,7 +17,30 @@ const gemini = new GeminiService(process.env.GEMINI_KEY!);
 
 let storageUsageMapCache: { [dataSourceId: string]: number };
 
-const processFile = async (mongo: MongoDBService, googleAPI: GoogleDriveService, data: GoogleDriveSQSMessageBody) => {
+/**
+ * wipe any previous entries that existed for this page which were not 
+ * overwritten by the documents that were just inserted. first retrieves
+ * them to get text len to update storage map cache
+ */
+const wipeStaleDataElementDocuments = async (mongo: MongoDBService, fileId: string, ownerEntityId: string, dataSourceId: string): Promise<void> => {
+    const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).getTime();
+    const queryCursor = mongo.elementCollConnection.find({
+        fileId,
+        ownerEntityId,
+        createdAt: { $lte: fiveMinsAgo },
+    });
+
+    const staleElements = await queryCursor.toArray();
+
+    const deletedBytes = staleElements.reduce((prev, curr) => prev + getDocumentSizeEstimate(curr.text.length, true), 0);
+    storageUsageMapCache[dataSourceId] = storageUsageMapCache[dataSourceId] ?? 0 - deletedBytes;
+
+    await mongo.elementCollConnection.deleteMany({
+        _id: { $in: staleElements.map((el) => el._id) },
+    });
+};
+
+const processFile = async (mongo: MongoDBService, googleAPI: GoogleDriveService, data: GoogleDriveSQSMessageBody): Promise<void> => {
     console.log(`Processing file ${data.fileId}, ${data.fileName}`);
 
     let textChunks: string[];
@@ -31,29 +53,14 @@ const processFile = async (mongo: MongoDBService, googleAPI: GoogleDriveService,
         return;
     }
 
-    // wipe any previous entries for this page
-    await mongo.elementCollConnection.deleteMany({
-        fileId: data.fileId,
-        ownerEntityId: data.ownerEntityId,
-    });
-
     let ndx = 0;
-
     await Promise.all(
         textChunks.map(async (chunk: string) => {
             const embedding = await gemini.getTextEmbedding(chunk);
             const annotationsResponse = await gemini.getTextAnnotation(chunk, 0.41, 0.88);
             const annotations = [...annotationsResponse.categories, ...annotationsResponse.entities];
 
-            await Promise.all([
-                data.authorName && data.authorEmail
-                    ? mongo.writeAuthors({
-                          name: data.authorName,
-                          email: data.authorEmail,
-                          entityId: data.ownerEntityId,
-                      })
-                    : Promise.resolve(),
-                mongo.writeLabels(annotations, data.ownerEntityId),
+            const [writeElementsSummary] = await Promise.all([
                 mongo.writeDataElements({
                     _id: `${data.fileId}-${ndx}`,
                     ownerEntityId: data.ownerEntityId,
@@ -61,6 +68,7 @@ const processFile = async (mongo: MongoDBService, googleAPI: GoogleDriveService,
                     title: data.fileName,
                     embedding,
                     createdAt: new Date(data.modifiedDate).getTime(),
+                    modifiedAt: new Date(data.modifiedDate).getTime(),
                     url: data.fileUrl,
                     author:
                         data.authorName && data.authorEmail
@@ -74,14 +82,24 @@ const processFile = async (mongo: MongoDBService, googleAPI: GoogleDriveService,
                     fileId: data.fileId,
                     filePartIndex: ndx,
                 }),
+                data.authorName && data.authorEmail
+                    ? mongo.writeAuthors({
+                          name: data.authorName,
+                          email: data.authorEmail,
+                          entityId: data.ownerEntityId,
+                      })
+                    : Promise.resolve(),
+                mongo.writeLabels(annotations, data.ownerEntityId),
             ]);
 
             storageUsageMapCache[data.dataSourceId] =
-                storageUsageMapCache[data.dataSourceId] ?? 0 + getDocumentSizeEstimate(chunk.length);
+                storageUsageMapCache[data.dataSourceId] ?? 0 + getDocumentSizeEstimate(writeElementsSummary.lengthDiff, writeElementsSummary.isNew);
 
             ndx += 1;
         }),
     );
+
+    await wipeStaleDataElementDocuments(mongo, data.fileId, data.ownerEntityId, data.dataSourceId);
 };
 
 /**
@@ -89,7 +107,6 @@ const processFile = async (mongo: MongoDBService, googleAPI: GoogleDriveService,
  */
 export const handler: Handler = async (event: SQSEvent) => {
     // TODO: error handling, dead letter queue?
-    const processingFilePromises: Promise<void>[] = [];
     const completedDataSources: GoogleDriveSQSMessageBody[] = [];
 
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
@@ -104,38 +121,21 @@ export const handler: Handler = async (event: SQSEvent) => {
         storageUsageMapCache = {};
     }
 
-    for (const record of event.Records) {
+    await Promise.all(event.Records.map(async (record) => {
         const messageBody: GoogleDriveSQSMessageBody = JSON.parse(record.body);
 
         if (messageBody.isFinal) {
             completedDataSources.push(messageBody);
         }
 
-        const googleAPI = new GoogleDriveService(messageBody.secret);
+        const googleAPI = new GoogleDriveService(messageBody.secret, messageBody.refreshToken);
 
-        processingFilePromises.push(processFile(mongo, googleAPI, messageBody));
-    }
-
-    await Promise.all(processingFilePromises);
+        await processFile(mongo, googleAPI, messageBody);
+    }));
 
     if (completedDataSources.length) {
         console.log('Sync completed of data source records:', completedDataSources);
-
-        await axios({
-            method: 'patch',
-            baseURL: process.env.INTERNAL_BASE_API_HOST!,
-            url: InternalAPIEndpoints.COMPLETED_IMPORTS,
-            data: {
-                completed: completedDataSources.map((message) => ({
-                    dataSourceId: message.dataSourceId,
-                    bytesDelta: storageUsageMapCache[message.dataSourceId] ?? 0,
-                    userId: message.userId,
-                })),
-            },
-            headers: {
-                'api-key': process.env.INTERNAL_API_KEY!,
-            },
-        });
+        await notifyImportsCompleted(completedDataSources, storageUsageMapCache);
     }
 
     return { success: true };

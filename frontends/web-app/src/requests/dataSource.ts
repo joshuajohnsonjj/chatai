@@ -12,7 +12,7 @@ export const updateDataSourceConnection = async (
     dataSourceId: string,
     data: {
         syncInterval?: DataSyncInterval;
-        accessToken?: string;
+        secret?: string;
         refreshToken?: string;
     },
 ): Promise<void> => {

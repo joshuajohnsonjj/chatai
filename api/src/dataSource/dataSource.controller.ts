@@ -70,32 +70,6 @@ export class DataSourceController {
         return await this.service.listUserDataSourceConnections(req.user as DecodedUserTokenDto);
     }
 
-    @Delete('/connections/webhook/googleDrive')
-    @UseGuards(AuthGuard('jwt'))
-    async killGoogleDriveWebhookConnection(
-        @Body() body: DeleteGoogleDriveWebookQueryDto,
-        @Req() req: Request,
-    ): Promise<{ success: boolean }> {
-        await this.service.killGoogleDriveWebhookConnection(
-            body.dataSourceId,
-            (req.user as DecodedUserTokenDto).idUser,
-        );
-        return { success: true };
-    }
-
-    @Post('/connections/webhook/googleDrive')
-    @UseGuards(AuthGuard('jwt'))
-    async createGoogleDriveWebhookConnection(
-        @Body() body: DeleteGoogleDriveWebookQueryDto,
-        @Req() req: Request,
-    ): Promise<{ success: boolean }> {
-        await this.service.createGoogleDriveWebhookConnection(
-            body.dataSourceId,
-            (req.user as DecodedUserTokenDto).idUser,
-        );
-        return { success: true };
-    }
-
     @Patch('internal/imports/initiate')
     async initiateImport(@Body() body: { dataSourceId: string }, @Req() req: Request): Promise<void> {
         await this.service.handleImportInitiated(body.dataSourceId, req.headers['api-key'] as string);

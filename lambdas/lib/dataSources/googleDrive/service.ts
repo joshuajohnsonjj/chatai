@@ -18,9 +18,9 @@ export class GoogleDriveService {
 
     private accessToken: string;
 
-    private readonly refreshToken: string;
+    private readonly refreshToken?: string;
 
-    constructor(accessToken: string, refreshToken: string) {
+    constructor(accessToken: string, refreshToken?: string) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
     }
@@ -94,7 +94,6 @@ export class GoogleDriveService {
         return response.data;
     }
 
-    // TODO: catch error type for wrong user and respond with appropriate message
     /**
      * Only the original creator of the connection can destroy it (google api constraint)
      */
@@ -138,7 +137,7 @@ export class GoogleDriveService {
                     setTimeout(resolve, 3 ** attempt);
                 });
                 return await this.sendHttpRequest(req);
-            } else if (code === 401) {
+            } else if (code === 401 && this.refreshToken) {
                 const resp = await axios.request({
                     method: 'get',
                     baseURL: 'http://locahost:3001',

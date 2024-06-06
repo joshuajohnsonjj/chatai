@@ -22,19 +22,19 @@ export const handler: Handler = async (req): Promise<{ isValid: boolean; message
 
     console.log(`Testing ${data.dataSourceTypeName} data source credential(s)`);
 
-    const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
-
     switch (data.dataSourceTypeName) {
         case DataSourceTypes.NOTION: {
+            const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
             const validity = await new NotionWrapper(decryptedSecret).testConnection();
             return { isValid: validity, message: validity ? '' : 'Invalid token' };
         }
         case DataSourceTypes.GOOGLE_DRIVE: {
-            const validity = await new GoogleDriveService(decryptedSecret).testConnection();
+            const validity = await new GoogleDriveService(data.secret).testConnection();
             return { isValid: validity, message: validity ? '' : 'Invalid token' };
         }
         case DataSourceTypes.SLACK: {
-            const validity = await new SlackWrapper(decryptedSecret).testConnection(data.externalId ?? '');
+            const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
+            const validity = await new SlackWrapper(decryptedSecret).testConnection(data.externalId!);
             return {
                 isValid: validity.appId && validity.token,
                 message:

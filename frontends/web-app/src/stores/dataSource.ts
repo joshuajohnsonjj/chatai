@@ -123,7 +123,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         try {
             isLoading.value.connectionTest = true;
 
-            await updateDataSourceConnection(currentConfiguring.value.id, { accessToken, refreshToken });
+            await updateDataSourceConnection(currentConfiguring.value.id, { secret: accessToken, refreshToken });
 
             toast.success('OAuth authentication succeeded!');
         } finally {

@@ -13,6 +13,7 @@ export interface MongoDataElementCollectionDoc {
     title: string;
     embedding: number[];
     createdAt: number; // Unix timestamp
+    modifiedAt: number; // Unix timestamp
     url?: string;
     author?: {
         name: string;
