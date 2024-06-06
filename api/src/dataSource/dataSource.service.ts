@@ -21,10 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit } from 'lodash';
-import {
-    initiateDataSourceImport,
-    testDataSourceConnection,
-} from 'src/services/apiGateway';
+import { initiateDataSourceImport, testDataSourceConnection } from 'src/services/apiGateway';
 import * as moment from 'moment';
 import { createEventBridgeScheduledExecution } from 'src/services/eventBridge';
 import { BYTES_IN_MB, LoggerContext } from 'src/constants';
@@ -81,11 +78,7 @@ export class DataSourceService {
             throw new BadCredentialsError(message);
         }
 
-        await this.validateRequestedSyncInterval(
-            params.selectedSyncInterval,
-            userInfo.type,
-            params.ownerEntityId,
-        );
+        await this.validateRequestedSyncInterval(params.selectedSyncInterval, userInfo.type, params.ownerEntityId);
 
         try {
             const dataSource = await this.prisma.dataSource.create({
@@ -194,7 +187,10 @@ export class DataSourceService {
             select: { type: true },
         });
 
-        this.logger.log(`Testing data source credential for ${userInfo.type} - ${params.ownerEntityId}`, LoggerContext.DATA_SOURCE);
+        this.logger.log(
+            `Testing data source credential for ${userInfo.type} - ${params.ownerEntityId}`,
+            LoggerContext.DATA_SOURCE,
+        );
 
         if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);

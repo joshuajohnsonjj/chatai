@@ -3,6 +3,7 @@ export interface InitiateImportRequestData {
     dataSourceType: string;
     secret: string;
     ownerEntityId: string;
+    externalId?: string;
     lastSync?: string | null;
     userId?: string;
 }

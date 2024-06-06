@@ -15,7 +15,10 @@ export const notifyImportStarted = async (dataSourceId: string): Promise<void> =
     });
 };
 
-export const notifyImportsCompleted = async (completed: GoogleDriveSQSMessageBody[], storageUsageMapCache: { [dataSourceId: string]: number }): Promise<void> => {
+export const notifyImportsCompleted = async (
+    completed: GoogleDriveSQSMessageBody[],
+    storageUsageMapCache: { [dataSourceId: string]: number },
+): Promise<void> => {
     await axios({
         method: 'patch',
         baseURL: process.env.INTERNAL_BASE_API_HOST!,

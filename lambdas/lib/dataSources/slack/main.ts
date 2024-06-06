@@ -16,7 +16,6 @@ import type {
 export class SlackWrapper {
     private readonly accessToken: string;
 
-
     constructor(secret: string) {
         this.accessToken = secret;
     }
