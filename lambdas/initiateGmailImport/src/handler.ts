@@ -44,7 +44,7 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
                     secret: messageData.secret,
                     refreshToken: messageData.refreshToken,
                     dataSourceId: messageData.dataSourceId,
-                    userId: messageData.userId,
+                    userEmail: messageData.externalId!,
                     isFinal: false,
                 } as GmailSQSMessageBody),
                 MessageGroupId: messageGroupId,

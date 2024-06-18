@@ -8,3 +8,9 @@ export enum GmailMessageResponseFormat {
     METADATA = 'metadata',
     MINIMAL = 'minimal',
 }
+
+export enum MimeType {
+    TEXT = 'text/plain',
+    MULTI = 'multipart/alternative',
+    HTML = 'text/html',
+}

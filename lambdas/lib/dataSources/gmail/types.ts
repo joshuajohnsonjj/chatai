@@ -6,7 +6,7 @@ export interface GmailSQSMessageBody {
     secret: string;
     refreshToken: string;
     dataSourceId: string;
-    userId: string;
+    userEmail: string;
     isFinal: boolean;
 }
 
@@ -35,29 +35,31 @@ export interface GetThreadResponse {
     id: string;
     snippet: string;
     historyId: string;
-    messages: {
-        id: string;
-        threadId: string;
-        snippet: string;
-        historyId: string;
-        internalDate: string;
-        payload: {
-            parts: {
-                partId: string;
-                mimeType: string;
-                filename: string;
-                headers: {
-                    name: string; // From, To, Subject available here
-                    value: string;
-                }[];
-                body: {
-                    attachmentId: string;
-                    size: number;
-                    data: string;
-                };
-            }[];
-        };
-        sizeEstimate: number;
-        raw: string;
-    }[];
+    messages: GmailMessagePart[];
+}
+
+export interface GmailMessagePart {
+    id: string;
+    threadId: string;
+    labelIds: string;
+    snippet: string;
+    sizeEstimate: number;
+    historyId: string;
+    internalDate: string;
+    payload: {
+        headers: {
+            name: string; // From, To, Subject available here
+            value: string;
+        }[];
+        parts: {
+            partId: string;
+            mimeType: string;
+            filename: string;
+            body: {
+                attachmentId: string;
+                size: number;
+                data: string;
+            };
+        }[];
+    };
 }

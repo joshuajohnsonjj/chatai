@@ -17,11 +17,10 @@ import {
 } from './utility';
 import { decryptData } from '../../lib/decryption';
 import * as dotenv from 'dotenv';
-import axios from 'axios';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import type { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { type CachedUser } from './types';
-import { InternalAPIEndpoints } from '../../lib/constants';
+import { notifyImportsCompleted } from '../../lib/internalAPI';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
@@ -261,21 +260,7 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
 
     if (completedDataSources.length) {
         console.log('Sync completed of data source records:', completedDataSources);
-
-        await axios({
-            method: 'patch',
-            baseURL: process.env.INTERNAL_BASE_API_HOST!,
-            url: InternalAPIEndpoints.COMPLETED_IMPORTS,
-            data: {
-                completed: completedDataSources.map((id) => ({
-                    dataSourceId: id,
-                    bytesDelta: storageUsageMapCache[id] ?? 0,
-                })),
-            },
-            headers: {
-                'api-key': process.env.INTERNAL_API_KEY!,
-            },
-        });
+        await notifyImportsCompleted(completedDataSources, storageUsageMapCache);
     }
 
     return { success: true };

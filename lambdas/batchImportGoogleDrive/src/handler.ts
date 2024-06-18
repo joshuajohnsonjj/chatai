@@ -120,7 +120,7 @@ const processFile = async (
  */
 export const handler: Handler = async (event: SQSEvent) => {
     // TODO: error handling, dead letter queue?
-    const completedDataSources: GoogleDriveSQSMessageBody[] = [];
+    const completedDataSources: string[] = [];
 
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
         process.env.MONGO_CONN_STRING as string,
@@ -139,7 +139,7 @@ export const handler: Handler = async (event: SQSEvent) => {
             const messageBody: GoogleDriveSQSMessageBody = JSON.parse(record.body);
 
             if (messageBody.isFinal) {
-                completedDataSources.push(messageBody);
+                completedDataSources.push(messageBody.dataSourceId);
             }
 
             const googleAPI = new GoogleDriveService(messageBody.secret, messageBody.refreshToken);

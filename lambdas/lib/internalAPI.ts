@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { InternalAPIEndpoints } from './constants';
 import * as dotenv from 'dotenv';
-import { GoogleDriveSQSMessageBody } from './dataSources/googleDrive';
 
 dotenv.config({ path: __dirname + '/../../../.env' });
 
@@ -16,7 +15,7 @@ export const notifyImportStarted = async (dataSourceId: string): Promise<void> =
 };
 
 export const notifyImportsCompleted = async (
-    completed: GoogleDriveSQSMessageBody[],
+    completedIds: string[],
     storageUsageMapCache: { [dataSourceId: string]: number },
 ): Promise<void> => {
     await axios({
@@ -24,10 +23,9 @@ export const notifyImportsCompleted = async (
         baseURL: process.env.INTERNAL_BASE_API_HOST!,
         url: InternalAPIEndpoints.COMPLETED_IMPORTS,
         data: {
-            completed: completed.map((message) => ({
-                dataSourceId: message.dataSourceId,
-                bytesDelta: storageUsageMapCache[message.dataSourceId] ?? 0,
-                userId: message.userId,
+            completed: completedIds.map((id) => ({
+                dataSourceId: id,
+                bytesDelta: storageUsageMapCache[id] ?? 0,
             })),
         },
         headers: { 'api-key': process.env.INTERNAL_API_KEY! },

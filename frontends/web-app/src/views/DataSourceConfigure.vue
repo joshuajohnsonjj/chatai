@@ -56,7 +56,7 @@
                     <p class="text-caption text-secondary sub-info-line-height">
                         <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
                         {{
-                            currentConfiguring?.mbStorageEstimate > 0
+                            (currentConfiguring?.mbStorageEstimate ?? 0) > 0
                                 ? currentConfiguring?.mbStorageEstimate.toFixed(2)
                                 : '0'
                         }}
@@ -145,6 +145,7 @@
 
         if (route.query.a && route.query.r) {
             await dataSourceStore.updateOAuthCredentials(route.query.a as string, route.query.r as string);
+            router.replace({ query: {} });
         }
     });
 

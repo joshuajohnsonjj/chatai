@@ -1,12 +1,11 @@
 import { Controller, Body, Post, Param, Req, Get, Patch } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
-import { Delete, UseGuards } from '@nestjs/common/decorators';
+import { UseGuards } from '@nestjs/common/decorators';
 import type {
     CompletedImportsRequestDto,
     CreateDataSourceQueryDto,
     DataSourceConnectionDto,
-    DeleteGoogleDriveWebookQueryDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
     TestDataSourceResponseDto,

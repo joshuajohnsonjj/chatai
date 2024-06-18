@@ -29,6 +29,9 @@ export interface MongoDataElementCollectionDoc {
     // google drive specific fields
     fileId?: string;
     filePartIndex?: number;
+
+    // gmail specifc fields
+    threadId?: string;
 }
 
 export interface MongoAuthorCollectionDoc {

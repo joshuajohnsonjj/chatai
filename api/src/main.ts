@@ -5,7 +5,6 @@ import { GlobalExceptionFilter } from './exceptions/handler';
 import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import * as CloudWatchTransport from 'winston-cloudwatch';
-import * as cookieSession from 'cookie-session';
 import * as passport from 'passport';
 
 const localLogger = WinstonModule.createLogger({
@@ -50,16 +49,8 @@ async function bootstrap() {
 
     app.enableCors();
 
-    app.use(
-        cookieSession({
-            name: 'chat-ai-oauth-session',
-            keys: ['N4AvPIFXrULNSenuKYqB'],
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        }),
-    );
-
     app.use(passport.initialize());
-    app.use(passport.session());
+    // app.use(passport.session());
 
     await app.listen(process.env.PORT || 3001);
 }
