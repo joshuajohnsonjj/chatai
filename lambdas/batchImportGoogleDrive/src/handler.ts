@@ -9,7 +9,7 @@ import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import { getDocumentSizeEstimate } from '../../lib/helper';
-import { notifyImportsCompleted } from '../../lib/internalAPI';
+import { notifyImportsCompleted, refreshGoogleOAuthToken } from '../../lib/internalAPI';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -121,6 +121,7 @@ const processFile = async (
 export const handler: Handler = async (event: SQSEvent) => {
     // TODO: error handling, dead letter queue?
     const completedDataSources: string[] = [];
+    const dataSourceIdToAccessTokenMap: { [id: string]: string } = {};
 
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
         process.env.MONGO_CONN_STRING as string,
@@ -134,6 +135,16 @@ export const handler: Handler = async (event: SQSEvent) => {
         storageUsageMapCache = {};
     }
 
+    for (const record of event.Records) {
+        const messageBody: GoogleDriveSQSMessageBody = JSON.parse(record.body);
+
+        if (!dataSourceIdToAccessTokenMap[messageBody.dataSourceId]) {
+            dataSourceIdToAccessTokenMap[messageBody.dataSourceId] = await refreshGoogleOAuthToken(
+                messageBody.refreshToken,
+            );
+        }
+    }
+
     await Promise.all(
         event.Records.map(async (record) => {
             const messageBody: GoogleDriveSQSMessageBody = JSON.parse(record.body);
@@ -142,7 +153,10 @@ export const handler: Handler = async (event: SQSEvent) => {
                 completedDataSources.push(messageBody.dataSourceId);
             }
 
-            const googleAPI = new GoogleDriveService(messageBody.secret, messageBody.refreshToken);
+            const googleAPI = new GoogleDriveService(
+                dataSourceIdToAccessTokenMap[messageBody.dataSourceId],
+                messageBody.refreshToken,
+            );
 
             await processFile(mongo, googleAPI, messageBody);
         }),

@@ -6,7 +6,6 @@ export interface GmailSQSMessageBody {
     secret: string;
     refreshToken: string;
     dataSourceId: string;
-    userEmail: string;
     isFinal: boolean;
 }
 

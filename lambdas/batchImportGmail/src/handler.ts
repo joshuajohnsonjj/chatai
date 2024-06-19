@@ -5,7 +5,7 @@ import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import { getDocumentSizeEstimate } from '../../lib/helper';
-import { notifyImportsCompleted } from '../../lib/internalAPI';
+import { notifyImportsCompleted, refreshGoogleOAuthToken } from '../../lib/internalAPI';
 import { MimeType } from '../../lib/dataSources/gmail/constants';
 import { getEmailMetadata, sanitizePlainTextMessageToMessageChunks } from './utility';
 import { BaseGmailMessageLink, DataSourceName } from './constants';
@@ -23,6 +23,10 @@ const processGmailMessageThread = async (
 ): Promise<void> => {
     await Promise.all(
         threadData.messages.map(async (message) => {
+            if (!message.payload.parts) {
+                return;
+            }
+
             const messageTextPart = message.payload.parts.find(
                 (messagePart) => messagePart.mimeType === MimeType.TEXT || messagePart.mimeType === MimeType.MULTI,
             );
@@ -32,12 +36,23 @@ const processGmailMessageThread = async (
             }
 
             const textChunks = sanitizePlainTextMessageToMessageChunks(messageTextPart.body.data);
+
+            if (!textChunks.length) {
+                return;
+            }
+
             const emailMeta = getEmailMetadata(message);
 
             await Promise.all(
                 textChunks.map(async (textChunk) => {
-                    const embedding = await gemini.getTextEmbedding(textChunk);
-                    const annotationsResponse = await gemini.getTextAnnotation(textChunk, 0.41, 0.88); // TODO: test values
+                    if (!textChunk.length) {
+                        return;
+                    }
+
+                    const embedding = await gemini.getTextEmbedding(
+                        `Email subject: ${emailMeta.subject}, to: ${emailMeta.receiver}, Excerpt: ${textChunk}`,
+                    );
+                    const annotationsResponse = await gemini.getTextAnnotation(textChunk, 0.41, 0.88);
                     const annotations = [...annotationsResponse.categories, ...annotationsResponse.entities];
 
                     const [writeElementsSummary] = await Promise.all([
@@ -51,20 +66,20 @@ const processGmailMessageThread = async (
                             modifiedAt: emailMeta.date,
                             url: `${BaseGmailMessageLink}${message.id}`,
                             author:
-                                emailMeta.senderName && emailMeta.senderName
+                                emailMeta.senderName && emailMeta.senderEmail
                                     ? {
                                           name: emailMeta.senderName,
-                                          email: emailMeta.senderName,
+                                          email: emailMeta.senderEmail,
                                       }
                                     : undefined,
                             annotations,
                             dataSourceType: DataSourceName,
                             threadId: threadData.id,
                         }),
-                        emailMeta.senderName && emailMeta.senderName
+                        emailMeta.senderName && emailMeta.senderEmail
                             ? mongo.writeAuthors({
                                   name: emailMeta.senderName,
-                                  email: emailMeta.senderName,
+                                  email: emailMeta.senderEmail,
                                   entityId: messageBody.ownerEntityId,
                               })
                             : Promise.resolve(),
@@ -85,6 +100,7 @@ const processGmailMessageThread = async (
  */
 export const handler: Handler = async (event: SQSEvent) => {
     const completedDataSources: string[] = [];
+    const dataSourceIdToAccessTokenMap: { [id: string]: string } = {};
 
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
         process.env.MONGO_CONN_STRING as string,
@@ -98,6 +114,16 @@ export const handler: Handler = async (event: SQSEvent) => {
         storageUsageMapCache = {};
     }
 
+    for (const record of event.Records) {
+        const messageBody: GmailSQSMessageBody = JSON.parse(record.body);
+
+        if (!dataSourceIdToAccessTokenMap[messageBody.dataSourceId]) {
+            dataSourceIdToAccessTokenMap[messageBody.dataSourceId] = await refreshGoogleOAuthToken(
+                messageBody.refreshToken,
+            );
+        }
+    }
+
     await Promise.all(
         event.Records.map(async (record) => {
             const messageBody: GmailSQSMessageBody = JSON.parse(record.body);
@@ -106,9 +132,11 @@ export const handler: Handler = async (event: SQSEvent) => {
                 completedDataSources.push(messageBody.dataSourceId);
             }
 
-            const googleAPI = new GmailService(messageBody.secret, messageBody.refreshToken);
-
-            const threadData = await googleAPI.getThread(messageBody.userEmail, messageBody.threadId);
+            const googleAPI = new GmailService(
+                dataSourceIdToAccessTokenMap[messageBody.dataSourceId],
+                messageBody.refreshToken,
+            );
+            const threadData = await googleAPI.getThread(messageBody.threadId);
 
             await processGmailMessageThread(mongo, threadData, messageBody);
         }),

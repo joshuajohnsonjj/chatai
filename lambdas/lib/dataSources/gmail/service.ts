@@ -2,6 +2,7 @@ import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import type { GetThreadQueryParams, GetThreadResponse, ListThreadsQueryParams, ListThreadsResponse } from './types';
 import { GmailEndpoints, GmailMessageResponseFormat } from './constants';
 import { dateToGmailMinDateFilter } from './utility';
+import { refreshGoogleOAuthToken } from '../../internalAPI';
 
 const MAX_TRIES = 3;
 
@@ -17,21 +18,16 @@ export class GmailService {
         this.refreshToken = refreshToken;
     }
 
-    public async testConnection(email: string): Promise<boolean> {
+    public async testConnection(): Promise<boolean> {
         try {
-            await this.listThreads(email, new Date(), undefined, 1);
+            await this.listThreads(new Date(), undefined, 1);
             return true;
         } catch (error) {
             return false;
         }
     }
 
-    public async listThreads(
-        email: string,
-        minDate?: Date,
-        pageToken?: string,
-        maxResults = 250,
-    ): Promise<ListThreadsResponse> {
+    public async listThreads(minDate?: Date, pageToken?: string, maxResults = 250): Promise<ListThreadsResponse> {
         const params: ListThreadsQueryParams = {
             maxResults,
             includeSpamTrash: false,
@@ -49,14 +45,14 @@ export class GmailService {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: GmailService.GmailBaseUrl,
-            url: `${GmailEndpoints.LIST_THREADS.replace(':email', email)}?${query}`,
+            url: `${GmailEndpoints.LIST_THREADS}?${query}`,
             headers: { Authorization: `Bearer ${this.accessToken}` },
         });
 
         return response.data;
     }
 
-    public async getThread(email: string, threadId: string): Promise<GetThreadResponse> {
+    public async getThread(threadId: string): Promise<GetThreadResponse> {
         const params: GetThreadQueryParams = {
             format: GmailMessageResponseFormat.FULL,
         };
@@ -65,7 +61,7 @@ export class GmailService {
         const response = await this.sendHttpRequest({
             method: 'get',
             baseURL: GmailService.GmailBaseUrl,
-            url: `${GmailEndpoints.GET_THREAD.replace(':email', email).replace(':threadId', threadId)}?${query}`,
+            url: `${GmailEndpoints.GET_THREAD.replace(':threadId', threadId)}?${query}`,
             headers: { Authorization: `Bearer ${this.accessToken}` },
         });
 
@@ -73,31 +69,28 @@ export class GmailService {
     }
 
     /**
-     * Google Drive rate limit allows 12 req/sec.
+     * Gmail rate limit allows 25 req/sec.
      * https://developers.google.com/gmail/api/reference/quota
      *
-     * This wrapper around the axios request implements up to 3 retries
-     * with exponential backoff if 403 or 429 error received
+     * This wrapper around the axios request adds a 50 ms pause
+     * before making gmail request to avoid 429s
      */
     private sendHttpRequest = async (req: AxiosRequestConfig, attempt = 0): Promise<AxiosResponse> => {
         try {
+            await new Promise<void>((resolve) => {
+                setTimeout(resolve, 50);
+            });
             return await axios.request(req);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-            const code = e.response.data.error.code;
-            if (attempt + 1 < MAX_TRIES && (code === 403 || code === 429)) {
-                await new Promise<void>((resolve) => {
-                    setTimeout(resolve, 3 ** attempt);
-                });
-                return await this.sendHttpRequest(req);
-            } else if (code === 401 && this.refreshToken) {
-                const resp = await axios.request({
-                    method: 'get',
-                    baseURL: 'http://locahost:3001',
-                    url: `/v1/auth/google/refresh?refreshToken=${this.refreshToken}`,
-                });
-                this.accessToken = resp.data.accessToken;
-                await axios.request(req);
+        } catch (e) {
+            const code = (e as any).response.data.error.code;
+            if (code === 401 && this.refreshToken && attempt < MAX_TRIES) {
+                const newAccessToke = await refreshGoogleOAuthToken(this.refreshToken);
+                this.accessToken = newAccessToke;
+                const updatedReq = {
+                    ...req,
+                    headers: { Authorization: `Bearer ${newAccessToke}` },
+                };
+                return await this.sendHttpRequest(updatedReq, MAX_TRIES);
             }
             throw e;
         }

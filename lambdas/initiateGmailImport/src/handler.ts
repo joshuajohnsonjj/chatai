@@ -28,7 +28,6 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
 
     while (!isComplete) {
         const resp = await service.listThreads(
-            messageData.externalId!,
             messageData.lastSync ? new Date(messageData.lastSync) : undefined,
             nextCursor,
         );

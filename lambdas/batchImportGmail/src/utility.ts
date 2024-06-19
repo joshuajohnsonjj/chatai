@@ -20,6 +20,11 @@ export const extractEmail = (text: string): string | null => {
     return match ? match[0] : null;
 };
 
+/**
+ * Removes the leading Re: from an email string if present (case insensitive)
+ */
+export const cleanSubject = (subject?: string): string | null => (subject ? subject.replace(/^re:/i, '').trim() : null);
+
 const emailEndPatterns = [
     /On .*? \b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b wrote:/,
     /^(?:From|De|To|Para):\s+(.+?)\s+<([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})>$/im,
@@ -37,7 +42,7 @@ const emailEndPatterns = [
  *
  * Secondly method will clean excess newline characters.
  *
- * Lastly will chunk text into max text size of 1800 characters
+ * Lastly will chunk text into max text size of 2000 characters
  */
 export const sanitizePlainTextMessageToMessageChunks = (textBase64: string): string[] => {
     const text = Buffer.from(textBase64, 'base64').toString('utf8');
@@ -62,17 +67,17 @@ export const sanitizePlainTextMessageToMessageChunks = (textBase64: string): str
         cleanedText = text
             .substring(0, earliestMatchIndex)
             .trim()
-            .replace(/[\n\r]+/g, '\n');
+            .replace(/[\n\r\s]{2,}/g, '\n');
     } else {
-        cleanedText = text.trim().replace(/[\n\r]+/g, '\n');
+        cleanedText = text.trim().replace(/[\n\r\s]{2,}/g, '\n');
     }
 
-    if (cleanedText.length <= 1800) {
+    if (cleanedText.length <= 2000) {
         return [cleanedText];
     }
 
-    const numChunks = Math.ceil(cleanedText.length / 1000);
-    const chunkSize = Math.ceil(cleanedText.length / numChunks);
+    const numChunks = Math.floor(cleanedText.length / Math.min(2000, Math.floor(cleanedText.length / 2)));
+    const chunkSize = Math.floor(cleanedText.length / numChunks);
 
     const textChunks = [];
 
@@ -98,7 +103,9 @@ export const getEmailMetadata = (
 
     return {
         date: parseInt(messageData.internalDate, 10),
-        subject: messageData.payload.headers.find((header) => header.name === 'Subject')?.value ?? 'Gmail Message',
+        subject:
+            cleanSubject(messageData.payload.headers.find((header) => header.name === 'Subject')?.value) ??
+            'Gmail Message',
         senderEmail: sender ? extractEmail(sender) : null,
         senderName: sender ? extractTextBeforeEmail(sender) : null,
         receiver: messageData.payload.headers.find((header) => header.name === 'From')?.value ?? null,

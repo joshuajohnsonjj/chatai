@@ -1,6 +1,6 @@
 export enum GmailEndpoints {
-    LIST_THREADS = '/:email/threads',
-    GET_THREAD = '/:email/threads/:threadId',
+    LIST_THREADS = '/me/threads',
+    GET_THREAD = '/me/threads/:threadId',
 }
 
 export enum GmailMessageResponseFormat {

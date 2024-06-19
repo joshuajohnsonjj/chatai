@@ -197,6 +197,7 @@ enum DataSourceTypeName {
   SLACK
   NOTION
   GOOGLE_DRIVE
+  GMAIL
   FILE_UPLOAD
 }
 

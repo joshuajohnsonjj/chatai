@@ -5,7 +5,6 @@ export interface InitiateImportRequestData {
     ownerEntityId: string;
     externalId?: string;
     lastSync?: string | null;
-    userId?: string;
 }
 
 export interface InitiateImportWithOAuthRequestData extends InitiateImportRequestData {
