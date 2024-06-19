@@ -21,11 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit } from 'lodash';
-import {
-    initiateDataSourceImport,
-    modifyGoogleDriveWebhookConnection,
-    testDataSourceConnection,
-} from 'src/services/apiGateway';
+import { initiateDataSourceImport, testDataSourceConnection } from 'src/services/apiGateway';
 import * as moment from 'moment';
 import { createEventBridgeScheduledExecution } from 'src/services/eventBridge';
 import { BYTES_IN_MB, LoggerContext } from 'src/constants';
@@ -42,12 +38,17 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<DataSourceConnectionDto> {
+        const userInfo = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.idUser },
+            select: { type: true },
+        });
+
         this.logger.log(
-            `Creating new data source for ${params.ownerEntityType} - ${params.ownerEntityId}`,
+            `Creating new data source for ${userInfo.type} - ${params.ownerEntityId}`,
             LoggerContext.DATA_SOURCE,
         );
 
-        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
+        if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
@@ -59,11 +60,8 @@ export class DataSourceService {
             },
             select: {
                 name: true,
-                requiredCredentialTypes: true,
             },
         });
-        // TODO: not sure if this is really needed... need to see more data source integration
-        // this.verifyRequiredCredentialTypesProvided(dataSourceType.requiredCredentialTypes, params);
 
         const { isValid, message } = await testDataSourceConnection(
             this.configService.get<string>('BASE_API_GATEWAY_URL')!,
@@ -80,11 +78,7 @@ export class DataSourceService {
             throw new BadCredentialsError(message);
         }
 
-        await this.validateRequestedSyncInterval(
-            params.selectedSyncInterval,
-            params.ownerEntityType,
-            params.ownerEntityId,
-        );
+        await this.validateRequestedSyncInterval(params.selectedSyncInterval, userInfo.type, params.ownerEntityId);
 
         try {
             const dataSource = await this.prisma.dataSource.create({
@@ -92,10 +86,11 @@ export class DataSourceService {
                     dataSourceTypeId: params.dataSourceTypeId,
                     ownerEntityId: params.ownerEntityId,
                     ownerEntityType:
-                        params.ownerEntityType === UserType.ORGANIZATION_MEMBER
+                        userInfo.type === UserType.ORGANIZATION_MEMBER
                             ? EntityType.ORGANIZATION
                             : EntityType.INDIVIDUAL,
                     secret: params.secret,
+                    refreshToken: params.refreshToken,
                     externalId: params.externalId,
                     selectedSyncInterval: params.selectedSyncInterval,
                     lastSync: params.backfillHistoricalStartDate,
@@ -130,9 +125,12 @@ export class DataSourceService {
     ): Promise<void> {
         this.logger.log(`Updating new data source ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
-        const updates: Partial<DataSource> = {};
+        const userInfo = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.idUser },
+            select: { type: true },
+        });
 
-        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
+        if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(user.organization, user.organization, user.oganizationUserRole);
         }
 
@@ -140,6 +138,7 @@ export class DataSourceService {
             where: { id: dataSourceId },
             select: {
                 ownerEntityId: true,
+                type: { select: { name: true } },
             },
         });
 
@@ -147,13 +146,30 @@ export class DataSourceService {
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
-        if ('syncInterval' in params) {
-            await this.validateRequestedSyncInterval(
-                params.syncInterval!,
-                params.ownerEntityType,
-                dataSource.ownerEntityId,
-            );
+        const updates: Partial<DataSource> = {};
+
+        if (params.syncInterval) {
+            await this.validateRequestedSyncInterval(params.syncInterval, userInfo.type, dataSource.ownerEntityId);
             updates.selectedSyncInterval = params.syncInterval;
+        }
+
+        if (params.secret) {
+            const { isValid, message } = await testDataSourceConnection(
+                this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+                this.configService.get<string>('API_GATEWAY_KEY')!,
+                {
+                    dataSourceTypeName: dataSource.type.name,
+                    secret: params.secret,
+                },
+            );
+
+            if (!isValid) {
+                this.logger.warn(`Invalid credentials: ${message}`, LoggerContext.DATA_SOURCE);
+                throw new BadCredentialsError(message);
+            }
+
+            updates.secret = params.secret;
+            updates.refreshToken = params.refreshToken;
         }
 
         await this.prisma.dataSource.update({
@@ -166,21 +182,25 @@ export class DataSourceService {
         params: CreateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<TestDataSourceResponseDto> {
-        this.logger.log(`Testing data source credential for entity ${params.ownerEntityId}`, LoggerContext.DATA_SOURCE);
+        const userInfo = await this.prisma.user.findUniqueOrThrow({
+            where: { id: user.idUser },
+            select: { type: true },
+        });
 
-        if (params.ownerEntityType === UserType.ORGANIZATION_MEMBER) {
+        this.logger.log(
+            `Testing data source credential for ${userInfo.type} - ${params.ownerEntityId}`,
+            LoggerContext.DATA_SOURCE,
+        );
+
+        if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
             throw new AccessDeniedError('User id mismatch');
         }
 
         const dataSourceType = await this.prisma.dataSourceType.findUniqueOrThrow({
-            where: {
-                id: params.dataSourceTypeId,
-            },
-            select: {
-                name: true,
-            },
+            where: { id: params.dataSourceTypeId },
+            select: { name: true },
         });
 
         return await testDataSourceConnection(
@@ -192,97 +212,6 @@ export class DataSourceService {
                 externalId: params.externalId,
             },
         );
-    }
-
-    async killGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Destroying google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
-
-        const dataSource = await this.prisma.dataSource.findUnique({
-            where: { id: dataSourceId },
-            select: {
-                ownerEntityId: true,
-                secret: true,
-                googleDriveConnection: {
-                    select: {
-                        id: true,
-                        connectionId: true,
-                        resourceId: true,
-                        creatorUserId: true,
-                    },
-                },
-            },
-        });
-
-        if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
-        }
-
-        if (!dataSource.googleDriveConnection) {
-            throw new BadRequestError('No open google drive webhook connection for this data source');
-        }
-
-        if (dataSource.googleDriveConnection.creatorUserId !== userId) {
-            throw new BadRequestError('Only the original creator of the webhook connection may delete it.');
-        }
-
-        await modifyGoogleDriveWebhookConnection(
-            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
-            this.configService.get<string>('API_GATEWAY_KEY')!,
-            false,
-            {
-                secret: dataSource.secret,
-                connectionId: dataSource.googleDriveConnection.connectionId,
-                resourceId: dataSource.googleDriveConnection.resourceId,
-            },
-        );
-
-        await this.prisma.googleDriveWebhookConnection.delete({
-            where: { id: dataSource.googleDriveConnection.id },
-        });
-    }
-
-    async createGoogleDriveWebhookConnection(dataSourceId: string, userId: string): Promise<void> {
-        this.logger.log(`Creating google drive webhook connection for ${dataSourceId}`, LoggerContext.DATA_SOURCE);
-
-        const dataSource = await this.prisma.dataSource.findUnique({
-            where: { id: dataSourceId },
-            select: {
-                ownerEntityId: true,
-                secret: true,
-                googleDriveConnection: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
-        });
-
-        if (!dataSource) {
-            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
-        }
-
-        if (dataSource.googleDriveConnection) {
-            throw new BadRequestError('Connection already exists');
-        }
-
-        const response = await modifyGoogleDriveWebhookConnection(
-            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
-            this.configService.get<string>('API_GATEWAY_KEY')!,
-            false,
-            {
-                secret: dataSource.secret,
-                ownerEntityId: dataSource.ownerEntityId,
-            },
-        );
-
-        await this.prisma.googleDriveWebhookConnection.create({
-            data: {
-                connectionId: response.id,
-                resourceId: response.resourceId,
-                dataSourceId: dataSourceId,
-                creatorUserId: userId,
-            },
-        });
     }
 
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
@@ -308,7 +237,7 @@ export class DataSourceService {
         });
 
         return queryRes.map((item) => ({
-            ...omit(item, ['externalId', 'type', 'secret']),
+            ...omit(item, ['externalId', 'type', 'secret', 'refreshToken']),
             hasExternalId: !!item.externalId,
             dataSourceName: item.type.name,
             dataSourceLiveSyncAvailable: item.type.isLiveSyncAvailable,
@@ -316,7 +245,7 @@ export class DataSourceService {
         }));
     }
 
-    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto, temporarySecret?: string): Promise<void> {
+    async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
         this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         await this.prisma.$transaction(async (tx) => {
@@ -326,13 +255,14 @@ export class DataSourceService {
                     isSyncing: true,
                     ownerEntityId: true,
                     secret: true,
+                    refreshToken: true,
                     lastSync: true,
                     type: { select: { name: true } },
                 },
             });
 
             if (!dataSource) {
-                this.logger.error(`Data source ${dataSourceId} not found`, LoggerContext.DATA_SOURCE);
+                this.logger.error(`Data source ${dataSourceId} not found`, undefined, LoggerContext.DATA_SOURCE);
                 throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
             }
 
@@ -341,7 +271,7 @@ export class DataSourceService {
             }
 
             if (dataSource.isSyncing) {
-                this.logger.error(`Data source ${dataSourceId} already syncing`, LoggerContext.DATA_SOURCE);
+                this.logger.error(`Data source ${dataSourceId} already syncing`, undefined, LoggerContext.DATA_SOURCE);
                 throw new BadRequestError('Data source sync already in progress');
             }
 
@@ -358,7 +288,8 @@ export class DataSourceService {
                     dataSourceId,
                     userId: user.idUser,
                     dataSourceType: dataSource.type.name,
-                    secret: temporarySecret || dataSource.secret,
+                    secret: dataSource.secret,
+                    refreshToken: dataSource.refreshToken ?? undefined,
                     ownerEntityId: user.organization || user.idUser,
                     lastSync: dataSource.lastSync?.toISOString() ?? null,
                 },
@@ -392,7 +323,6 @@ export class DataSourceService {
     }
 
     // TODO: in addition to handling completion, need to handle error state out of either lambda...
-    // TODO: create google drive webhook conn if userId present in payload
     async handleImportsCompleted(
         data: CompletedImportsRequestDto,
         apiKey: string,
@@ -434,6 +364,7 @@ export class DataSourceService {
                         ownerEntityType: true,
                         selectedSyncInterval: true,
                         secret: true,
+                        refreshToken: true,
                         lastSync: true,
                         type: {
                             select: {
@@ -468,6 +399,7 @@ export class DataSourceService {
                                   dataSourceId: completed.dataSourceId,
                                   dataSourceType: queryRes.type.name,
                                   secret: queryRes.secret,
+                                  refreshToken: queryRes.refreshToken ?? undefined,
                                   ownerEntityId: queryRes.ownerEntityId,
                                   lastSync: new Date().toISOString(),
                               },
@@ -514,17 +446,6 @@ export class DataSourceService {
             this.logger.error('User is not an admin of the specified org', LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('Must be an organization admin to preform this action.');
         }
-    }
-
-    private verifyRequiredCredentialTypesProvided(
-        requiredFields: string[],
-        createParams: CreateDataSourceQueryDto,
-    ): void {
-        requiredFields.forEach((field) => {
-            if (!createParams[field]) {
-                throw new BadRequestError('Missing required credentials for DataSource type');
-            }
-        });
     }
 
     private async getAccountPlanMaxSyncInterval(

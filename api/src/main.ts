@@ -5,6 +5,7 @@ import { GlobalExceptionFilter } from './exceptions/handler';
 import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import * as CloudWatchTransport from 'winston-cloudwatch';
+import * as passport from 'passport';
 
 const localLogger = WinstonModule.createLogger({
     format: winston.format.uncolorize(),
@@ -48,6 +49,10 @@ async function bootstrap() {
 
     app.enableCors();
 
+    app.use(passport.initialize());
+    // app.use(passport.session());
+
     await app.listen(process.env.PORT || 3001);
 }
+
 bootstrap();

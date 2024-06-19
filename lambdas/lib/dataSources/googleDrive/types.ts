@@ -101,6 +101,7 @@ export interface GoogleDriveSQSMessageBody {
     ownerEntityId: string;
     fileName: string;
     secret: string;
+    refreshToken: string;
     dataSourceId: string;
     modifiedDate: string;
     userId: string;

@@ -3,23 +3,16 @@ export interface InitiateImportRequestData {
     dataSourceType: string;
     secret: string;
     ownerEntityId: string;
+    externalId?: string;
     lastSync?: string | null;
-    userId?: string;
+}
+
+export interface InitiateImportWithOAuthRequestData extends InitiateImportRequestData {
+    refreshToken: string;
 }
 
 export interface TestCredentialsRequestData {
     dataSourceTypeName: string;
     secret: string;
     externalId?: string;
-}
-
-export interface InitiateGoogleDriveWebhookRequestData {
-    ownerEntityId: string;
-    secret: string;
-}
-
-export interface KillGoogleDriveWebhookRequestData {
-    connectionId: string;
-    resourceId: string;
-    secret: string;
 }

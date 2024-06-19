@@ -1,5 +1,5 @@
 import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
-import { SlackBaseUrl, SlackEndpoints, SlackErros, SlackHeaders, SlackRedisKey } from './constants';
+import { SlackBaseUrl, SlackEndpoints, SlackErros, SlackHeaders } from './constants';
 import type {
     SlackAppActivityListRequestParams,
     SlackAppActivityResponse,
@@ -12,19 +12,12 @@ import type {
     SlackUserListResponse,
     SlackUserResponse,
 } from './types';
-import { type RedisClientType } from 'redis';
 
 export class SlackWrapper {
     private readonly accessToken: string;
 
-    private readonly cache: RedisClientType | null = null;
-
-    constructor(secret: string, cache?: unknown) {
+    constructor(secret: string) {
         this.accessToken = secret;
-
-        if (cache) {
-            this.cache = cache as RedisClientType;
-        }
     }
 
     public async testConnection(appId: string): Promise<{ token: boolean; appId: boolean }> {
@@ -129,14 +122,14 @@ export class SlackWrapper {
     }
 
     public async getUserInfoById(userId: string): Promise<SlackUserResponse> {
-        if (this.cacheClientReady) {
-            const cachedUser = await this.cache!.get(SlackRedisKey.USER(userId));
+        // if (this.cacheClientReady) {
+        //     const cachedUser = await this.cache!.get(SlackRedisKey.USER(userId));
 
-            if (cachedUser) {
-                this.setRedis(SlackRedisKey.USER(userId), cachedUser);
-                return JSON.parse(cachedUser);
-            }
-        }
+        //     if (cachedUser) {
+        //         this.setRedis(SlackRedisKey.USER(userId), cachedUser);
+        //         return JSON.parse(cachedUser);
+        //     }
+        // }
 
         const response = await this.sendHttpRequest({
             method: 'get',
@@ -150,20 +143,20 @@ export class SlackWrapper {
         });
 
         const userData = response.data.user;
-        this.setRedis(SlackRedisKey.USER(userId), JSON.stringify(userData));
+        // this.setRedis(SlackRedisKey.USER(userId), JSON.stringify(userData));
 
         return userData;
     }
 
     public async getChannelInfoById(channelId: string): Promise<SlackChannelInfoResponse> {
-        if (this.cacheClientReady) {
-            const cachedChannel = await this.cache!.get(SlackRedisKey.CHANNEL(channelId));
+        // if (this.cacheClientReady) {
+        //     const cachedChannel = await this.cache!.get(SlackRedisKey.CHANNEL(channelId));
 
-            if (cachedChannel) {
-                this.setRedis(SlackRedisKey.CHANNEL(channelId), cachedChannel);
-                return JSON.parse(cachedChannel);
-            }
-        }
+        //     if (cachedChannel) {
+        //         this.setRedis(SlackRedisKey.CHANNEL(channelId), cachedChannel);
+        //         return JSON.parse(cachedChannel);
+        //     }
+        // }
 
         const response = await this.sendHttpRequest({
             method: 'get',
@@ -177,7 +170,7 @@ export class SlackWrapper {
         });
 
         const channelData = response.data.user;
-        this.setRedis(SlackRedisKey.CHANNEL(channelId), JSON.stringify(channelData));
+        // this.setRedis(SlackRedisKey.CHANNEL(channelId), JSON.stringify(channelData));
 
         return channelData;
     }
@@ -195,11 +188,11 @@ export class SlackWrapper {
         return axios.request(req);
     }
 
-    private setRedis(key: string, value: string): void {
-        if (this.cacheClientReady) {
-            this.cache!.set(key, value, { EX: 259200 }); // 72 hr expiration
-        }
-    }
+    // private setRedis(key: string, value: string): void {
+    //     if (this.cacheClientReady) {
+    //         this.cache!.set(key, value, { EX: 259200 }); // 72 hr expiration
+    //     }
+    // }
 
     private checkTokenValidity(
         conversationResponse: SlackConversationListResponse,
@@ -217,7 +210,7 @@ export class SlackWrapper {
         return appResponse.error !== SlackErros.INVALID_APP && appResponse.error !== SlackErros.INVALID_APP_ID;
     }
 
-    private get cacheClientReady(): boolean {
-        return !!this.cache && this.cache.isOpen && this.cache.isReady;
-    }
+    // private get cacheClientReady(): boolean {
+    //     return !!this.cache && this.cache.isOpen && this.cache.isReady;
+    // }
 }

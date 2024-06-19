@@ -17,6 +17,7 @@ model DataSource {
   ownerEntityId        String
   ownerEntityType      EntityType
   secret               String
+  refreshToken         String?
   externalId           String?
   isSyncing            Boolean          @default(false)
   lastSync             DateTime?
@@ -24,32 +25,18 @@ model DataSource {
   mbStorageEstimate    Float            @default(0)
   selectedSyncInterval DataSyncInterval @default(WEEKLY)
 
-  googleDriveConnection GoogleDriveWebhookConnection?
-
   @@unique([ownerEntityId, dataSourceTypeId])
 }
 
-model GoogleDriveWebhookConnection {
-  id            String     @id @default(uuid())
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @default(now())
-  connectionId  String     @unique
-  resourceId    String     @unique
-  creatorUserId String     @unique
-  dataSourceId  String     @unique
-  dataSource    DataSource @relation(fields: [dataSourceId], references: [id])
-}
-
 model DataSourceType {
-  id                      String             @id @default(uuid())
-  createdAt               DateTime           @default(now())
-  updatedAt               DateTime           @default(now())
-  name                    DataSourceTypeName @unique
-  category                DataSourceCategory
-  isLiveSyncAvailable     Boolean            @default(false)
-  isManualSyncAllowed     Boolean            @default(false)
-  requiredCredentialTypes String[]
-  linkedSources           DataSource[]
+  id                  String             @id @default(uuid())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @default(now())
+  name                DataSourceTypeName @unique
+  category            DataSourceCategory
+  isLiveSyncAvailable Boolean            @default(false)
+  isManualSyncAllowed Boolean            @default(false)
+  linkedSources       DataSource[]
 }
 
 model Organization {
@@ -210,6 +197,7 @@ enum DataSourceTypeName {
   SLACK
   NOTION
   GOOGLE_DRIVE
+  GMAIL
   FILE_UPLOAD
 }
 

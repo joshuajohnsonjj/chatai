@@ -25,6 +25,7 @@ export interface APIGatewayInitiateImportParams {
     dataSourceId: string;
     dataSourceType: string;
     secret: string;
+    refreshToken?: string;
     ownerEntityId: string;
     lastSync: string | null;
     userId?: string;

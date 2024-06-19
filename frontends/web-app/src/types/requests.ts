@@ -17,6 +17,7 @@ export enum APIEndpoints {
     SEARCH = '/v1/search',
     TOPIC_SUGGESTIONS = '/v1/search/suggestions/topics',
     SEARCH_RESULT = '/v1/search/:resultId/data',
+    GOOGLE_AUTHENTICATE = '/v1/auth/google',
 }
 
 export enum APIMethods {

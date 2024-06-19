@@ -10,15 +10,18 @@ import { UserType } from '../types/user-store';
 
 export const updateDataSourceConnection = async (
     dataSourceId: string,
-    userType: string,
-    syncInterval: DataSyncInterval,
+    data: {
+        syncInterval?: DataSyncInterval;
+        secret?: string;
+        refreshToken?: string;
+    },
 ): Promise<void> => {
     await sendAPIRequest({
         method: APIMethods.PATCH,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: APIEndpoints.DATA_SOURCE_CONNECTION.replace(':dataSourceId', dataSourceId),
-        data: { userType, syncInterval },
+        data,
     });
 };
 

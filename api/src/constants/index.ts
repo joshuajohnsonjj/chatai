@@ -7,4 +7,5 @@ export enum LoggerContext {
     SEARCH = 'Search',
     USER = 'UserInfo',
     USER_AUTH = 'UserAuth',
+    GOOGLE_AUTH = 'GoogleAuth',
 }

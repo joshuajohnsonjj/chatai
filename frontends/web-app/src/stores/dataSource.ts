@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
+import find from 'lodash/find';
 import type {
     DataSourceConnectionsResponse,
     DataSourceTypesResponse,
@@ -9,19 +10,20 @@ import type {
 import {
     listDataSourceConnections,
     listDataSourceOptions,
-    manualSyncDataSource,
     testConnection,
     updateDataSourceConnection,
 } from '../requests';
 import { UserType } from '../types/user-store';
-import { googleSignIn, initGoogleClient } from '../services/googleAuth';
 import { encrypt } from '../utility/encryption';
+import { APIEndpoints } from '../types/requests';
+import { OAUTH_REDIRECT_PATH } from '../constants/localStorageKeys';
 import { useToast } from 'vue-toastification';
 
 const toast = useToast();
 
 export const useDataSourceStore = defineStore('dataSource', () => {
     const connections = ref<DataSourceConnectionsResponse[]>([]);
+    const currentConfiguring = ref<DataSourceConnectionsResponse | null>(null);
     const dataSourceOptions = ref<DataSourceTypesResponse[]>([]);
     const dataSourceCategoryToOptionsMap = ref<Record<string, string[]>>({});
     const isLoading = ref({
@@ -78,17 +80,18 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         return res;
     };
 
-    const commitDataSourceConnectionUpdate = async (
-        dataSourceId: string,
-        userType: string,
-        syncInterval: DataSyncInterval,
-    ): Promise<boolean> => {
+    const commitDataSourceConnectionUpdate = async (syncInterval: DataSyncInterval): Promise<boolean> => {
+        if (!currentConfiguring.value) {
+            return false;
+        }
+
         let success = true;
         try {
             isLoading.value.indexingIntervalUpdate = true;
-            await updateDataSourceConnection(dataSourceId, userType, syncInterval);
-            const ndx = connections.value.findIndex((conn) => conn.id === dataSourceId);
+            await updateDataSourceConnection(currentConfiguring.value.id, { syncInterval });
+            const ndx = connections.value.findIndex((conn) => conn.id === currentConfiguring.value!.id);
             connections.value[ndx].selectedSyncInterval = syncInterval;
+            currentConfiguring.value.selectedSyncInterval = syncInterval;
         } catch (e) {
             console.error(e);
             success = false;
@@ -98,24 +101,33 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         return success;
     };
 
-    const initiateGoogleDriveSync = async (dataSourceId: string) => {
+    const authenticateGoogle = async () => {
+        isLoading.value.connectionTest = true;
+        localStorage.setItem(OAUTH_REDIRECT_PATH, window.location.pathname);
+        window.location.href = `${(import.meta as any).env.VITE_API_BASE_URL}${APIEndpoints.GOOGLE_AUTHENTICATE}`;
+    };
+
+    const setCurrentConfiguring = (id?: string) => {
+        if (id) {
+            currentConfiguring.value = find(connections.value, (option) => option.id === id)!;
+        } else {
+            currentConfiguring.value = null;
+        }
+    };
+
+    const updateOAuthCredentials = async (accessToken: string, refreshToken: string) => {
+        if (!currentConfiguring.value) {
+            return;
+        }
+
         try {
-            isLoading.value.indexNowInvocation = true;
+            isLoading.value.connectionTest = true;
 
-            await initGoogleClient();
-            const authResponse = await googleSignIn();
+            await updateDataSourceConnection(currentConfiguring.value.id, { secret: accessToken, refreshToken });
 
-            await manualSyncDataSource(dataSourceId, authResponse.id_token);
-
-            const connNdx = connections.value.findIndex((conn) => conn.id === dataSourceId);
-            connections.value[connNdx].isSyncing = true;
-
-            toast.success('Google Drive indexing successfully initiated');
-        } catch (error) {
-            console.error(error);
-            toast.error('Error signing in with Google. Indexing canceled.');
+            toast.success('OAuth authentication succeeded!');
         } finally {
-            isLoading.value.indexNowInvocation = false;
+            isLoading.value.connectionTest = false;
         }
     };
 
@@ -125,10 +137,13 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         dataSourceCategoryToOptionsMap,
         isLoading,
         dataSourceStorageUsageSum,
+        currentConfiguring,
         retreiveConnections,
         retreiveDataSourceOptions,
         testDataSourceCredential,
         commitDataSourceConnectionUpdate,
-        initiateGoogleDriveSync,
+        authenticateGoogle,
+        setCurrentConfiguring,
+        updateOAuthCredentials,
     };
 });

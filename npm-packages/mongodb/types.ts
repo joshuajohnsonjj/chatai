@@ -13,6 +13,7 @@ export interface MongoDataElementCollectionDoc {
     title: string;
     embedding: number[];
     createdAt: number; // Unix timestamp
+    modifiedAt: number; // Unix timestamp
     url?: string;
     author?: {
         name: string;
@@ -28,6 +29,9 @@ export interface MongoDataElementCollectionDoc {
     // google drive specific fields
     fileId?: string;
     filePartIndex?: number;
+
+    // gmail specifc fields
+    threadId?: string;
 }
 
 export interface MongoAuthorCollectionDoc {

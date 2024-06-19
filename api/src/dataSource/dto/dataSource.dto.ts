@@ -1,4 +1,4 @@
-import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType, UserType } from '@prisma/client';
+import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
 
@@ -8,9 +8,6 @@ export class CreateDataSourceQueryDto {
 
     @IsUUID()
     ownerEntityId: string;
-
-    @IsEnum(UserType)
-    ownerEntityType: UserType;
 
     @IsString()
     secret: string;
@@ -25,21 +22,24 @@ export class CreateDataSourceQueryDto {
     @IsString()
     @IsOptional()
     externalId?: string;
-}
 
-export class SyncDataSourceQueryDto {
     @IsString()
     @IsOptional()
-    secret?: string;
+    refreshToken?: string;
 }
 
 export class UpdateDataSourceQueryDto {
-    @IsString()
-    ownerEntityType: UserType;
-
     @IsEnum(DataSyncInterval)
     @IsOptional()
     syncInterval?: DataSyncInterval;
+
+    @IsString()
+    @IsOptional()
+    secret?: string;
+
+    @IsString()
+    @IsOptional()
+    refreshToken?: string;
 }
 
 class CompletedImport {

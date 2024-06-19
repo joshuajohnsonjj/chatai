@@ -4,7 +4,7 @@ import type { AccountPlan, OrgInfo, UserInfo, UserSettings } from '../types/user
 import { UserType } from '../types/user-store';
 import { computed, ref } from 'vue';
 import omit from 'lodash/omit';
-import { TOKEN_STORAGE_KEY } from '../constants';
+import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 import { UpdateUserDetailRequest } from '../types/requests';
 
 export const useUserStore = defineStore('user', () => {

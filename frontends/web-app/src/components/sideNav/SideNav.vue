@@ -59,7 +59,7 @@
     import { useRoute, useRouter } from 'vue-router';
     import { useChatStore } from '../../stores/chat';
     import { storeToRefs } from 'pinia';
-    import { SETTINGS_STORAGE_KEY } from '../../constants';
+    import { SETTINGS_STORAGE_KEY } from '../../constants/localStorageKeys';
 
     const router = useRouter();
     const route = useRoute();
@@ -97,6 +97,7 @@
 
     const navigate = (routeName?: RouteName, externalLink?: string) => {
         if (externalLink) {
+            console.log(window);
             window.open(externalLink, '_blank')!.focus();
         } else if (routeName === RouteName.CHAT && selectedChat.value && route.meta.type !== RouteType.CHAT) {
             router.push({ name: RouteName.MESSAGES, params: { chatId: selectedChat.value.id } });

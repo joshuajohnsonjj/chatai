@@ -1,39 +1,25 @@
 import type { Handler } from 'aws-lambda';
-import { decryptData } from '../../lib/decryption';
-import { InternalAPIEndpoints } from '../../lib/constants';
 import { v4 } from 'uuid';
-import * as dotenv from 'dotenv';
 import moment from 'moment';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
-import { InitiateImportRequestData } from '../../lib/types';
+import { type InitiateImportWithOAuthRequestData } from '../../lib/types';
 import { GoogleDriveSQSMessageBody, GoogleDriveService } from '../../lib/dataSources/googleDrive';
-import axios from 'axios';
-
-dotenv.config({ path: __dirname + '/../../../../.env' });
+import { notifyImportStarted } from '../../lib/internalAPI';
 
 export const handler: Handler = async (event): Promise<{ success: boolean }> => {
-    const messageData: InitiateImportRequestData = event.body;
+    const messageData: InitiateImportWithOAuthRequestData = event.body;
 
     console.log(`Retreiving data source ${messageData.dataSourceId} Google Drive documents`);
 
-    const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, messageData.secret);
-    const googleDriveService = new GoogleDriveService(decryptedSecret);
+    const googleDriveService = new GoogleDriveService(messageData.secret, messageData.refreshToken);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
     try {
-        await axios({
-            method: 'patch',
-            baseURL: process.env.INTERNAL_BASE_API_HOST!,
-            url: InternalAPIEndpoints.STARTING_IMPORTS,
-            data: { dataSourceId: messageData.dataSourceId },
-            headers: {
-                'api-key': process.env.INTERNAL_API_KEY!,
-            },
-        });
+        await notifyImportStarted(messageData.dataSourceId);
     } catch (e) {
-        console.warn(e);
+        console.error(e);
         return { success: false };
     }
 
@@ -62,6 +48,7 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
                         ownerEntityId: messageData.ownerEntityId,
                         fileName: file.name,
                         secret: messageData.secret,
+                        refreshToken: messageData.refreshToken,
                         dataSourceId: messageData.dataSourceId,
                         modifiedDate: file.modifiedTime,
                         authorName: file.lastModifyingUser?.displayName,

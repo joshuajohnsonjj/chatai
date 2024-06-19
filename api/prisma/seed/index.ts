@@ -41,25 +41,26 @@ async function main() {
             {
                 name: DataSourceTypeName.FILE_UPLOAD,
                 category: DataSourceCategory.OTHER,
-                requiredCredentialTypes: ['secret'],
             },
             {
                 name: DataSourceTypeName.SLACK,
                 category: DataSourceCategory.COMMUNICATION,
-                requiredCredentialTypes: ['secret'],
+            },
+            {
+                id: '12knak123-k233-5kxd-b1k3-4jk23jl0f34a',
+                name: DataSourceTypeName.GMAIL,
+                category: DataSourceCategory.COMMUNICATION,
             },
             {
                 id: '02a83623-ffce-4218-82a7-fe7d705a23c2',
                 name: DataSourceTypeName.NOTION,
                 category: DataSourceCategory.NOTE_TAKING,
-                requiredCredentialTypes: ['secret'],
             },
             {
                 id: 'ea998762-bd13-41e5-bc6c-8277bf142c1f',
                 name: DataSourceTypeName.GOOGLE_DRIVE,
                 isLiveSyncAvailable: true,
                 category: DataSourceCategory.OTHER,
-                requiredCredentialTypes: ['secret'],
             },
         ],
     });
@@ -79,6 +80,13 @@ async function main() {
                 ownerEntityId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
                 ownerEntityType: EntityType.INDIVIDUAL,
                 secret: 'HyPH8F1eld7YApo+g8t1rHRtrb+r+OhZa8jE5MahTcgKO2gpVI8TOqRpUkyH732Dgx+kmd7wql0+I6XhQWrohDEtqsunqZEnZG9b4ZRkQeWab37m6qEjbepkBi62Tg4ngEszqcxBCBaiKkXrPzhvv+eYHZUwwt8k9Ske97MuoRvkzHNNODstjAR+ZXKBY87o1aq6RXfLr7N93ZnMDNIRzXuUkfco0GgAhMVQXsFZHOT2gS8QdN642NzWzTI4J8/JH7lHEpEPi1l0ZyRIjYdEfIXRwSUiBoVUWDDPJ42nsDkGeGeiIDeF6wDmwwwkb+78cggdyOClFdeux2RX9GUna3LdgdnkFabEF4wwpRiaxEBFC/P/XrJ1g2/IqZYW5llE6H8St9HJiJGnU5uWiEUS3XP8FRbFPvVWWpHh4aP+hxB9y7MUxf7io9EUGmIcdUukqqo5Z2hc/353eOFqMMs0DKm+nkRG1xdC2E2uO3usaPQ9DmtPU7utqUgoFuXVolbUrR4dIfiKt4uXaV2+g2qKm6UqjPIMEr+BlMBzez0XLjj/Bu9yiR0b4JEBDCqyeTTG2lWjoStpWb8kiCiA4vMJFii0Pm954Sfrb++D/jKL+Jkj4Y/0IQEYnQQLj49Fr2ZKMYPxBsWdD1Gb22EyV197ukRamV+d/b3BnY/+w7WdS/Q',
+            },
+            {
+                id: 'd156d576-c33b-4691-abcc-7f48f1d85f5a',
+                dataSourceTypeId: '12knak123-k233-5kxd-b1k3-4jk23jl0f34a',
+                ownerEntityId: '74284498-0011-7023-fc9c-67ab0f1e0a90',
+                ownerEntityType: EntityType.INDIVIDUAL,
+                secret: '',
             },
         ],
     });
