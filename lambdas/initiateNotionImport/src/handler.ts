@@ -8,7 +8,7 @@ import { sendSqsMessageBatches } from '../../lib/sqs';
 import { type InitiateImportRequestData } from '../../lib/types';
 import { v4 } from 'uuid';
 import { decryptData } from '../../lib/decryption';
-import { InternalAPIEndpoints } from '../../lib/constants';
+import { notifyImportStarted } from '../../lib/internalAPI';
 import axios from 'axios';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
@@ -26,15 +26,7 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 
     try {
-        await axios({
-            method: 'patch',
-            baseURL: process.env.INTERNAL_BASE_API_HOST!,
-            url: InternalAPIEndpoints.STARTING_IMPORTS,
-            data: { dataSourceId: data.dataSourceId },
-            headers: {
-                'api-key': process.env.INTERNAL_API_KEY!,
-            },
-        });
+        await notifyImportStarted(data.dataSourceId);
     } catch (e) {
         console.warn(e);
         return { success: false };
