@@ -51,7 +51,7 @@ async function bootstrap() {
 
     app.use(passport.initialize());
 
-    await app.listen(8080);
+    await app.listen(process.env.PORT || 3001);
 }
 
 bootstrap();
