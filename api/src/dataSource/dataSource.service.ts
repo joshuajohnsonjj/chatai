@@ -51,6 +51,7 @@ export class DataSourceService {
         if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
+            this.logger.error(`User ${user.idUser} does not match ${params.ownerEntityId}`, undefined, LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('User id mismatch');
         }
 
@@ -143,6 +144,7 @@ export class DataSourceService {
         });
 
         if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user.organization) {
+            this.logger.error(`User ${user.idUser} blocked from updating datasource ${dataSourceId}`, undefined, LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
@@ -195,6 +197,7 @@ export class DataSourceService {
         if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
+            this.logger.error(`User ${user.idUser} does not match ${params.ownerEntityId}`, undefined, LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('User id mismatch');
         }
 
@@ -248,53 +251,47 @@ export class DataSourceService {
     async syncDataSource(dataSourceId: string, user: DecodedUserTokenDto): Promise<void> {
         this.logger.log(`Starting data source sync for data source: ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
-        await this.prisma.$transaction(async (tx) => {
-            const dataSource = await tx.dataSource.findUnique({
-                where: { id: dataSourceId },
-                select: {
-                    isSyncing: true,
-                    ownerEntityId: true,
-                    secret: true,
-                    refreshToken: true,
-                    lastSync: true,
-                    type: { select: { name: true } },
-                },
-            });
-
-            if (!dataSource) {
-                this.logger.error(`Data source ${dataSourceId} not found`, undefined, LoggerContext.DATA_SOURCE);
-                throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
-            }
-
-            if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
-                throw new AccessDeniedError('User not associated with this data source');
-            }
-
-            if (dataSource.isSyncing) {
-                this.logger.error(`Data source ${dataSourceId} already syncing`, undefined, LoggerContext.DATA_SOURCE);
-                throw new BadRequestError('Data source sync already in progress');
-            }
-
-            await tx.dataSource.update({
-                where: { id: dataSourceId },
-                data: { isSyncing: true, updatedAt: new Date() },
-            });
-
-            initiateDataSourceImport(
-                this.configService.get<string>('BASE_API_GATEWAY_URL')!,
-                this.configService.get<string>('API_GATEWAY_KEY')!,
-                dataSource.type.name,
-                {
-                    dataSourceId,
-                    userId: user.idUser,
-                    dataSourceType: dataSource.type.name,
-                    secret: dataSource.secret,
-                    refreshToken: dataSource.refreshToken ?? undefined,
-                    ownerEntityId: user.organization || user.idUser,
-                    lastSync: dataSource.lastSync?.toISOString() ?? null,
-                },
-            );
+        const dataSource = await this.prisma.dataSource.findUnique({
+            where: { id: dataSourceId },
+            select: {
+                isSyncing: true,
+                ownerEntityId: true,
+                secret: true,
+                refreshToken: true,
+                lastSync: true,
+                type: { select: { name: true } },
+            },
         });
+
+        if (!dataSource) {
+            this.logger.error(`Data source ${dataSourceId} not found`, undefined, LoggerContext.DATA_SOURCE);
+            throw new ResourceNotFoundError(dataSourceId, LoggerContext.DATA_SOURCE);
+        }
+
+        if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
+            this.logger.error(`Blocked user ${user.idUser} from syncing datasource ${dataSourceId}`, undefined, LoggerContext.DATA_SOURCE);
+            throw new AccessDeniedError('User not associated with this data source');
+        }
+
+        if (dataSource.isSyncing) {
+            this.logger.error(`Data source ${dataSourceId} already syncing`, undefined, LoggerContext.DATA_SOURCE);
+            throw new BadRequestError('Data source sync already in progress');
+        }
+
+        initiateDataSourceImport(
+            this.configService.get<string>('BASE_API_GATEWAY_URL')!,
+            this.configService.get<string>('API_GATEWAY_KEY')!,
+            dataSource.type.name,
+            {
+                dataSourceId,
+                userId: user.idUser,
+                dataSourceType: dataSource.type.name,
+                secret: dataSource.secret,
+                refreshToken: dataSource.refreshToken ?? undefined,
+                ownerEntityId: user.organization || user.idUser,
+                lastSync: dataSource.lastSync?.toISOString() ?? null,
+            },
+        );
     }
 
     async handleImportInitiated(dataSourceId: string, apiKey: string, ignoreAPIKey = false): Promise<void> {
@@ -308,6 +305,7 @@ export class DataSourceService {
         });
 
         if (dataSource?.isSyncing) {
+            this.logger.error(`Data source ${dataSourceId} already syncing`, undefined, LoggerContext.DATA_SOURCE);
             throw new BadRequestError('Data source sync already in progress');
         }
 
@@ -349,6 +347,8 @@ export class DataSourceService {
                     return moment().add(7, 'd').toDate();
             }
         };
+
+        this.logger.log('Starting handle data source post sync job', LoggerContext.DATA_SOURCE);
 
         await Promise.all(
             data.completed.map(async (completed) => {
@@ -434,6 +434,7 @@ export class DataSourceService {
         });
 
         if (!apiKey || keyRes !== 1) {
+            this.logger.error(`No valid key provided in api-key header`, undefined, LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('Valid API key not provided in `api-key` header');
         }
     }
@@ -483,6 +484,7 @@ export class DataSourceService {
         );
 
         if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
+            this.logger.error(`Owner entity ${ownerEntityId} requested unallowed interval ${requested}`, undefined, LoggerContext.DATA_SOURCE);
             throw new BadRequestError('Current plan does not allow this indexing interval');
         }
     }
