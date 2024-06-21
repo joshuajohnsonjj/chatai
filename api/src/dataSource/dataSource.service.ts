@@ -19,11 +19,11 @@ import {
 } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
-import { CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
+import { type APIGatewayInitiateImportParams, CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit } from 'lodash';
 import { initiateDataSourceImport, testDataSourceConnection } from 'src/services/apiGateway';
 import * as moment from 'moment';
-import { createEventBridgeScheduledExecution } from 'src/services/eventBridge';
+import { createEventBridgeScheduledExecution, deleteEventBridgeSchedule } from 'src/services/eventBridge';
 import { BYTES_IN_MB, LoggerContext } from 'src/constants';
 
 @Injectable()
@@ -143,6 +143,9 @@ export class DataSourceService {
             where: { id: dataSourceId },
             select: {
                 ownerEntityId: true,
+                secret: true,
+                refreshToken: true,
+                lastSync: true,
                 type: { select: { name: true } },
             },
         });
@@ -182,9 +185,26 @@ export class DataSourceService {
             updates.refreshToken = params.refreshToken;
         }
 
-        await this.prisma.dataSource.update({
-            where: { id: dataSourceId },
-            data: updates,
+        await this.prisma.$transaction(async (tx) => {
+            await tx.dataSource.update({
+                where: { id: dataSourceId },
+                data: updates,
+            });
+
+            if (params.syncInterval) {
+                await this.updateSyncSchedule(
+                    params.syncInterval,
+                    {
+                        dataSourceId,
+                        dataSourceType: dataSource.type.name,
+                        secret: dataSource.secret,
+                        refreshToken: dataSource.refreshToken ?? undefined,
+                        ownerEntityId: dataSource.ownerEntityId,
+                        lastSync: dataSource.lastSync?.toISOString() ?? null,
+                    },
+                    true,
+                );
+            }
         });
     }
 
@@ -300,7 +320,6 @@ export class DataSourceService {
             dataSource.type.name,
             {
                 dataSourceId,
-                userId: user.idUser,
                 dataSourceType: dataSource.type.name,
                 secret: dataSource.secret,
                 refreshToken: dataSource.refreshToken ?? undefined,
@@ -390,20 +409,17 @@ export class DataSourceService {
 
                 await Promise.all([
                     !isLiveSyncingDataSource && !queryRes.nextScheduledSync
-                        ? createEventBridgeScheduledExecution(
-                              this.configService.get<string>('AWS_REGION')!,
-                              this.configService.get<string>(`INITIATE_${queryRes.type.name}_LAMBDA_ARN`)!,
-                              this.logger,
-                              queryRes.selectedSyncInterval,
-                              {
-                                  dataSourceId: completed.dataSourceId,
-                                  dataSourceType: queryRes.type.name,
-                                  secret: queryRes.secret,
-                                  refreshToken: queryRes.refreshToken ?? undefined,
-                                  ownerEntityId: queryRes.ownerEntityId,
-                                  lastSync: new Date().toISOString(),
-                              },
-                          )
+                        ? this.updateSyncSchedule(
+                            queryRes.selectedSyncInterval,
+                            {
+                                dataSourceId: completed.dataSourceId,
+                                dataSourceType: queryRes.type.name,
+                                secret: queryRes.secret,
+                                refreshToken: queryRes.refreshToken ?? undefined,
+                                ownerEntityId: queryRes.ownerEntityId,
+                                lastSync: new Date().toISOString(),
+                            },
+                        )
                         : Promise.resolve(),
                     this.prisma.dataSource.update({
                         where: { id: completed.dataSourceId },
@@ -491,6 +507,24 @@ export class DataSourceService {
             );
             throw new BadRequestError('Current plan does not allow this indexing interval');
         }
+    }
+
+    private async updateSyncSchedule(syncInterval: DataSyncInterval, schedulerData: APIGatewayInitiateImportParams, shouldDeleteOldSchedule = false) {
+        if (shouldDeleteOldSchedule) {
+            await deleteEventBridgeSchedule(
+                this.configService.get<string>('AWS_REGION')!,
+                schedulerData.dataSourceId,
+                this.logger,
+            );
+        }
+
+        await createEventBridgeScheduledExecution(
+            this.configService.get<string>('AWS_REGION')!,
+            this.configService.get<string>(`INITIATE_${schedulerData.dataSourceType}_LAMBDA_ARN`)!,
+            this.logger,
+            syncInterval,
+            schedulerData,
+        );
     }
 
     private syncIntervalToNextSyncDate(interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null {

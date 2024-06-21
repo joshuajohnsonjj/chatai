@@ -28,7 +28,6 @@ export interface APIGatewayInitiateImportParams {
     refreshToken?: string;
     ownerEntityId: string;
     lastSync: string | null;
-    userId?: string;
 }
 
 export interface APIGatewayTestCredentialsParams {

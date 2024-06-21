@@ -8,10 +8,13 @@ import {
     SchedulerClient,
     CreateScheduleCommand,
     ActionAfterCompletion,
+    DeleteScheduleCommand,
 } from '@aws-sdk/client-scheduler';
 import { DataSyncInterval } from '@prisma/client';
 
 const EventBridgeSechulerRole = 'arn:aws:iam::353643225333:role/EventBridgeSchedulerRole';
+
+const scheduleName = (dataSourceId: string): string => `schedule-${dataSourceId}`;
 
 const syncIntervalToSchedulerRate = (interval: DataSyncInterval): string => {
     switch (interval) {
@@ -38,7 +41,7 @@ export const createEventBridgeScheduledExecution = async (
 
     try {
         const createScheduleCommand = new CreateScheduleCommand({
-            Name: `schedule-${payload.dataSourceId}`,
+            Name: scheduleName(payload.dataSourceId),
             ScheduleExpression: syncIntervalToSchedulerRate(interval),
             Target: {
                 Arn: lambdaArn,
@@ -52,7 +55,7 @@ export const createEventBridgeScheduledExecution = async (
             State: ScheduleState.ENABLED,
             FlexibleTimeWindow: {
                 Mode: FlexibleTimeWindowMode.FLEXIBLE,
-                MaximumWindowInMinutes: 15,
+                MaximumWindowInMinutes: 12,
             },
             ActionAfterCompletion: ActionAfterCompletion.NONE,
         });
@@ -66,6 +69,31 @@ export const createEventBridgeScheduledExecution = async (
     } catch (error) {
         logger.error(
             `Creating schedule for datasource ${payload.dataSourceId} failed: ${error.message}`,
+            error.stack,
+            LoggerContext.DATA_SOURCE,
+        );
+        throw new InternalError(error.message);
+    }
+};
+
+export const deleteEventBridgeSchedule = async (
+    region: string,
+    dataSourceId: string,
+    logger: Logger,
+): Promise<void> => {
+    const schedulerClient = new SchedulerClient({ region });
+
+    const command = new DeleteScheduleCommand({
+        Name: scheduleName(dataSourceId),
+    });
+
+    logger.log(`Deleting EventBridge schedule for datasource ${dataSourceId}`, LoggerContext.DATA_SOURCE);
+
+    try {
+        await schedulerClient.send(command);
+    } catch (error) {
+        logger.error(
+            `Delete schedule for datasource ${dataSourceId} failed: ${error.message}`,
             error.stack,
             LoggerContext.DATA_SOURCE,
         );
