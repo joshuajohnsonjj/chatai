@@ -9,34 +9,41 @@ import {
     CreateScheduleCommand,
     ActionAfterCompletion,
 } from '@aws-sdk/client-scheduler';
+import { DataSyncInterval } from '@prisma/client';
 
-const dateToCron = (date: Date): string => {
-    const minutes = date.getUTCMinutes();
-    const hours = date.getUTCHours();
-    const dayOfMonth = date.getUTCDate();
-    const month = date.getUTCMonth() + 1; // getUTCMonth() is zero-based
-    const year = date.getUTCFullYear();
+const EventBridgeSechulerRole = 'arn:aws:iam::353643225333:role/EventBridgeSchedulerRole';
 
-    return `${minutes} ${hours} ${dayOfMonth} ${month} ? ${year}`;
+const syncIntervalToSchedulerRate = (interval: DataSyncInterval): string => {
+    switch (interval) {
+        case DataSyncInterval.INSTANT:
+            return 'rate(15 minutes)';
+        case DataSyncInterval.SEMI_DAILY:
+            return 'rate(12 hours)';
+        case DataSyncInterval.DAILY:
+            return 'rate(1 day)';
+        case DataSyncInterval.WEEKLY:
+        default:
+            return 'rate(7 days)';
+    }
 };
 
 export const createEventBridgeScheduledExecution = async (
     region: string,
     lambdaArn: string,
     logger: Logger,
-    executionDate: Date,
+    interval: DataSyncInterval,
     payload: APIGatewayInitiateImportParams,
 ): Promise<void> => {
     const schedulerClient = new SchedulerClient({ region });
 
     try {
         const createScheduleCommand = new CreateScheduleCommand({
-            Name: `schedule-${payload.dataSourceId}-${Date.now()}`,
-            ScheduleExpression: `cron(${dateToCron(executionDate)})`,
+            Name: `schedule-${payload.dataSourceId}`,
+            ScheduleExpression: syncIntervalToSchedulerRate(interval),
             Target: {
                 Arn: lambdaArn,
                 Input: JSON.stringify(payload),
-                RoleArn: 'arn:aws:iam::353643225333:role/EventBridgeSchedulerRole',
+                RoleArn: EventBridgeSechulerRole,
                 RetryPolicy: {
                     MaximumEventAgeInSeconds: 600,
                     MaximumRetryAttempts: 20,
@@ -47,18 +54,18 @@ export const createEventBridgeScheduledExecution = async (
                 Mode: FlexibleTimeWindowMode.FLEXIBLE,
                 MaximumWindowInMinutes: 15,
             },
-            ActionAfterCompletion: ActionAfterCompletion.DELETE,
+            ActionAfterCompletion: ActionAfterCompletion.NONE,
         });
 
         const ruleResponse = await schedulerClient.send(createScheduleCommand);
 
         logger.log(
-            `Added scheduler ${ruleResponse.ScheduleArn} to sync datasource ${payload.dataSourceId} on ${executionDate.toISOString()}`,
+            `Added scheduler ${ruleResponse.ScheduleArn} to sync datasource ${payload.dataSourceId} on ${interval} interval`,
             LoggerContext.DATA_SOURCE,
         );
     } catch (error) {
         logger.error(
-            `Error creating EventBridge schedule for datasource ${payload.dataSourceId}`,
+            `Creating schedule for datasource ${payload.dataSourceId} failed: ${error.message}`,
             error.stack,
             LoggerContext.DATA_SOURCE,
         );

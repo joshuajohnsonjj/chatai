@@ -51,7 +51,11 @@ export class DataSourceService {
         if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
-            this.logger.error(`User ${user.idUser} does not match ${params.ownerEntityId}`, undefined, LoggerContext.DATA_SOURCE);
+            this.logger.error(
+                `User ${user.idUser} does not match ${params.ownerEntityId}`,
+                undefined,
+                LoggerContext.DATA_SOURCE,
+            );
             throw new AccessDeniedError('User id mismatch');
         }
 
@@ -144,7 +148,11 @@ export class DataSourceService {
         });
 
         if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user.organization) {
-            this.logger.error(`User ${user.idUser} blocked from updating datasource ${dataSourceId}`, undefined, LoggerContext.DATA_SOURCE);
+            this.logger.error(
+                `User ${user.idUser} blocked from updating datasource ${dataSourceId}`,
+                undefined,
+                LoggerContext.DATA_SOURCE,
+            );
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
@@ -197,7 +205,11 @@ export class DataSourceService {
         if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
             this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
         } else if (params.ownerEntityId !== user.idUser) {
-            this.logger.error(`User ${user.idUser} does not match ${params.ownerEntityId}`, undefined, LoggerContext.DATA_SOURCE);
+            this.logger.error(
+                `User ${user.idUser} does not match ${params.ownerEntityId}`,
+                undefined,
+                LoggerContext.DATA_SOURCE,
+            );
             throw new AccessDeniedError('User id mismatch');
         }
 
@@ -269,7 +281,11 @@ export class DataSourceService {
         }
 
         if (dataSource.ownerEntityId !== user.idUser && dataSource.ownerEntityId !== user[CognitoAttribute.ORG]) {
-            this.logger.error(`Blocked user ${user.idUser} from syncing datasource ${dataSourceId}`, undefined, LoggerContext.DATA_SOURCE);
+            this.logger.error(
+                `Blocked user ${user.idUser} from syncing datasource ${dataSourceId}`,
+                undefined,
+                LoggerContext.DATA_SOURCE,
+            );
             throw new AccessDeniedError('User not associated with this data source');
         }
 
@@ -330,24 +346,6 @@ export class DataSourceService {
             await this.validateInternalAPIKey(apiKey);
         }
 
-        const syncIntervalToNextSyncDate = (interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null => {
-            if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
-                return null;
-            }
-
-            switch (interval) {
-                case DataSyncInterval.INSTANT:
-                    return moment().add(15, 'm').toDate();
-                case DataSyncInterval.SEMI_DAILY:
-                    return moment().add(12, 'h').toDate();
-                case DataSyncInterval.DAILY:
-                    return moment().add(24, 'h').toDate();
-                case DataSyncInterval.WEEKLY:
-                default:
-                    return moment().add(7, 'd').toDate();
-            }
-        };
-
         this.logger.log('Starting handle data source post sync job', LoggerContext.DATA_SOURCE);
 
         await Promise.all(
@@ -361,11 +359,10 @@ export class DataSourceService {
                     where: { id: completed.dataSourceId },
                     select: {
                         ownerEntityId: true,
-                        ownerEntityType: true,
                         selectedSyncInterval: true,
                         secret: true,
                         refreshToken: true,
-                        lastSync: true,
+                        nextScheduledSync: true,
                         type: {
                             select: {
                                 name: true,
@@ -383,18 +380,21 @@ export class DataSourceService {
                     return;
                 }
 
-                const nextScheduledSync = syncIntervalToNextSyncDate(
+                const nextScheduledSync = this.syncIntervalToNextSyncDate(
                     queryRes.selectedSyncInterval,
                     queryRes.type.isLiveSyncAvailable,
                 );
 
+                const isLiveSyncingDataSource =
+                    queryRes.type.isLiveSyncAvailable && queryRes.selectedSyncInterval === DataSyncInterval.INSTANT;
+
                 await Promise.all([
-                    nextScheduledSync
+                    !isLiveSyncingDataSource && !queryRes.nextScheduledSync
                         ? createEventBridgeScheduledExecution(
                               this.configService.get<string>('AWS_REGION')!,
                               this.configService.get<string>(`INITIATE_${queryRes.type.name}_LAMBDA_ARN`)!,
                               this.logger,
-                              nextScheduledSync,
+                              queryRes.selectedSyncInterval,
                               {
                                   dataSourceId: completed.dataSourceId,
                                   dataSourceType: queryRes.type.name,
@@ -434,7 +434,7 @@ export class DataSourceService {
         });
 
         if (!apiKey || keyRes !== 1) {
-            this.logger.error(`No valid key provided in api-key header`, undefined, LoggerContext.DATA_SOURCE);
+            this.logger.error('No valid key provided in api-key header', undefined, LoggerContext.DATA_SOURCE);
             throw new AccessDeniedError('Valid API key not provided in `api-key` header');
         }
     }
@@ -484,8 +484,30 @@ export class DataSourceService {
         );
 
         if (intervalLevels.indexOf(planInterval!) < intervalLevels.indexOf(requested)) {
-            this.logger.error(`Owner entity ${ownerEntityId} requested unallowed interval ${requested}`, undefined, LoggerContext.DATA_SOURCE);
+            this.logger.error(
+                `Owner entity ${ownerEntityId} requested unallowed interval ${requested}`,
+                undefined,
+                LoggerContext.DATA_SOURCE,
+            );
             throw new BadRequestError('Current plan does not allow this indexing interval');
+        }
+    }
+
+    private syncIntervalToNextSyncDate(interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null {
+        if (interval === DataSyncInterval.INSTANT && isLiveSyncAvailable) {
+            return null;
+        }
+
+        switch (interval) {
+            case DataSyncInterval.INSTANT:
+                return moment().add(15, 'm').toDate();
+            case DataSyncInterval.SEMI_DAILY:
+                return moment().add(12, 'h').toDate();
+            case DataSyncInterval.DAILY:
+                return moment().add(24, 'h').toDate();
+            case DataSyncInterval.WEEKLY:
+            default:
+                return moment().add(7, 'd').toDate();
         }
     }
 }
