@@ -43,10 +43,28 @@ export const getChatHistory = async (chatId: string, page: number): Promise<List
 };
 
 // TODO: need to implement auth retries here since its not using the sendAPIRequest axios wrapper
-export const sendChatMessage = async (chatId: string, params: SendMessageParams): Promise<any> => {
+export const sendChatMessage = async (chatId: string, params: SendMessageParams) => {
     const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
     const response = await fetch(
         `${(import.meta as any).env.VITE_API_BASE_URL}${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}`,
+        {
+            headers: {
+                Authorization: `Bearer ${tokenData.accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            method: APIMethods.POST,
+            body: JSON.stringify(params),
+        },
+    );
+
+    return response.body;
+};
+
+// TODO: need to implement auth retries here since its not using the sendAPIRequest axios wrapper
+export const sendEditChatMessage = async (chatId: string, params: SendMessageParams) => {
+    const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
+    const response = await fetch(
+        `${(import.meta as any).env.VITE_API_BASE_URL}${APIEndpoints.CHAT_MESSAGE.replace(':chatId', chatId).replace(':messageId', params.userPromptMessageId)}`,
         {
             headers: {
                 Authorization: `Bearer ${tokenData.accessToken}`,

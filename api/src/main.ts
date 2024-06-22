@@ -47,7 +47,11 @@ async function bootstrap() {
     // FIXME: figure out why this isnt working!!!
     app.useGlobalPipes(new ValidationPipe());
 
-    app.enableCors();
+    app.enableCors({
+        origin: true,
+        methods: 'GET,POST,PATCH,DELETE',
+        allowedHeaders: 'Content-Type,Authorization',
+    });
 
     app.use(passport.initialize());
 

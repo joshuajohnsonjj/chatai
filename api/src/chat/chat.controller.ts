@@ -88,6 +88,56 @@ export class ChatController {
         }
     }
 
+    @Post(':chatId/message/:messageId')
+    async generateUpdatedChatResponse(
+        @Param('chatId') chatId: string,
+        @Param('messageId') messageId: string,
+        @Body() params: GetChatResponseQueryDto,
+        @Req() req: Request,
+        @Res() res: Response,
+    ): Promise<void> {
+        res.setHeader('Content-Type', 'text/plain');
+
+        try {
+            this.logger.log(`Updating chat message ${messageId}`, LoggerContext.CHAT);
+
+            const data = await this.service.generateResponse(
+                chatId,
+                params,
+                req.user as DecodedUserTokenDto,
+                messageId,
+            );
+
+            this.logger.log('Chunking response content', LoggerContext.CHAT);
+            let generatedResponse = '';
+            for await (const chunk of data.stream) {
+                const chunkText = chunk.choices[0]?.delta?.content;
+
+                if (!chunkText) {
+                    continue;
+                }
+
+                generatedResponse += chunkText;
+                res.write(chunkText);
+            }
+            this.logger.log('Chunking response content finished', LoggerContext.CHAT);
+
+            await this.service.handleUpdatedChatResponseCompletion(
+                params.userPromptMessageId,
+                params.userPromptText,
+                generatedResponse,
+                chatId,
+                params.threadId,
+                params.systemResponseMessageId,
+                data.matchedDataResult,
+            );
+        } catch (e) {
+            this.logger.error(e.message, e.stack, LoggerContext.CHAT);
+        } finally {
+            res.end();
+        }
+    }
+
     @Get(':chatId/message')
     async listChatMessages(
         @Param('chatId') chatId: string,

@@ -1,9 +1,25 @@
 <template>
     <div class="bg-surface-bright rounded py-2 px-4 d-flex">
         <v-avatar image="@/assets/avatar.jpg" size="32"></v-avatar>
-        <p class="ml-4 mt-1 me-auto text-body-1 text-primary">{{ text }}</p>
 
-        <v-btn variant="plain" color="secondary" style="height: 30px; width: 30px">
+        <p v-if="!isEditing" class="ml-4 mt-1 me-auto text-body-1 text-primary">{{ text }}</p>
+
+        <div v-else class="relative ml-4 my-1 w-100">
+            <v-textarea variant="solo-filled" v-model="editText"></v-textarea>
+
+            <div id="editActionBtnContainer" class="d-flex justify-end absolute">
+                <v-btn class="action-button" @click="onEditCancel">cancel</v-btn>
+                <v-btn class="action-button ml-2" color="blue" @click="onEditSent">send</v-btn>
+            </div>
+        </div>
+
+        <v-btn
+            v-if="!isEditing"
+            variant="plain"
+            color="secondary"
+            style="height: 30px; width: 30px"
+            @click="isEditing = true"
+        >
             <v-icon icon="mdi-square-edit-outline" size="large"></v-icon>
             <v-tooltip text="Edit prompt" activator="parent" location="top"></v-tooltip>
         </v-btn>
@@ -11,7 +27,41 @@
 </template>
 
 <script lang="ts" setup>
-    defineProps<{
+    import { ref } from 'vue';
+    import { useChatStore } from '../../stores/chat';
+
+    const props = defineProps<{
         text: string;
+        messageId: string;
+        systemResponseId: string;
+        threadId: string;
     }>();
+
+    const chatStore = useChatStore();
+
+    const isEditing = ref(false);
+    const editText = ref(props.text);
+
+    const onEditCancel = () => {
+        isEditing.value = false;
+        editText.value = props.text;
+    };
+
+    const onEditSent = () => {
+        isEditing.value = false;
+
+        chatStore.updateMessage(editText.value, props.messageId, props.systemResponseId, props.threadId);
+    };
 </script>
+
+<style scoped>
+    #editActionBtnContainer {
+        bottom: 10px;
+        right: 10px;
+    }
+
+    .action-button {
+        width: 5.5rem;
+        border-radius: 2rem;
+    }
+</style>

@@ -39,7 +39,12 @@ export class ChatService {
         private readonly mongo: MongoDBService,
     ) {}
 
-    async generateResponse(chatId: string, params: GetChatResponseQueryDto, user: DecodedUserTokenDto) {
+    async generateResponse(
+        chatId: string,
+        params: GetChatResponseQueryDto,
+        user: DecodedUserTokenDto,
+        editingMessageId?: string,
+    ) {
         this.logger.log(`Start generate response for chat ${chatId}`, LoggerContext.CHAT);
 
         const chat = await this.prisma.chat.findUniqueOrThrow({
@@ -74,20 +79,12 @@ export class ChatService {
             .map((data) => data.text ?? '')
             .join('. ');
 
-        let chatHistory: OpenAIMessageHistory | undefined;
-        if (params.isReplyMessage) {
-            this.logger.log(
-                `Retrieving thread ${params.threadId} history for response continuation`,
-                LoggerContext.CHAT,
-            );
-
-            const queryRes = await this.prisma.chatMessage.findMany({
-                where: { chatId, threadId: params.threadId },
-                orderBy: { createdAt: 'asc' },
-            });
-
-            chatHistory = this.openai.buildGptHistoryFromRawMessages(queryRes);
-        }
+        const chatHistory = await this.getThreadHistory(
+            params.isReplyMessage,
+            params.threadId,
+            chatId,
+            editingMessageId,
+        );
 
         const chatSettings = {
             chatCreativity: params.creativitySetting,
@@ -152,6 +149,57 @@ export class ChatService {
                     isSystemMessage: true,
                     threadId,
                 },
+            }),
+            this.prisma.chat.update({
+                where: { id: chatId },
+                data: { updatedAt: new Date() },
+            }),
+        ]);
+
+        await this.prisma.chatMessageInformer.createMany({
+            data: matchedInformers.map((match) => ({
+                messageId: systemResponseMessageId,
+                name: match.title,
+                url: match.url ?? '',
+                sourceName: match.dataSourceType,
+                confidence: match.score,
+            })),
+        });
+
+        return savedResponse;
+    }
+
+    async handleUpdatedChatResponseCompletion(
+        userPromptMessageId: string,
+        userPrompt: string,
+        generatedResponse: string,
+        chatId: string,
+        threadId: string,
+        systemResponseMessageId: string,
+        matchedInformers: (MongoDataElementCollectionDoc & { score: number })[],
+    ): Promise<GetChatResponseResponseDto> {
+        this.logger.log(
+            `Chat message update generation complete. Updating thread ${threadId} data.`,
+            LoggerContext.CHAT,
+        );
+
+        const [savedResponse] = await Promise.all([
+            this.prisma.chatMessage.update({
+                where: { id: systemResponseMessageId },
+                data: {
+                    text: generatedResponse,
+                    updatedAt: new Date(),
+                },
+            }),
+            this.prisma.chatMessage.update({
+                where: { id: userPromptMessageId },
+                data: {
+                    text: userPrompt,
+                    updatedAt: new Date(),
+                },
+            }),
+            this.prisma.chatMessageInformer.deleteMany({
+                where: { messageId: systemResponseMessageId },
             }),
             this.prisma.chat.update({
                 where: { id: chatId },
@@ -419,5 +467,31 @@ export class ChatService {
             timestamp: queryRes.createdAt,
             messages: queryRes.messages,
         };
+    }
+
+    private async getThreadHistory(
+        isReplyMessage: boolean,
+        threadId: string,
+        chatId: string,
+        editingMessageId?: string,
+    ): Promise<OpenAIMessageHistory | undefined> {
+        if (!isReplyMessage) {
+            return;
+        }
+
+        this.logger.log(`Retrieving thread ${threadId} history for response continuation`, LoggerContext.CHAT);
+
+        const queryRes = await this.prisma.chatMessage.findMany({
+            where: { chatId, threadId: threadId },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        let rawHistory = queryRes;
+        if (editingMessageId) {
+            const editingMessageNdx = queryRes.findIndex((message) => message.id === editingMessageId);
+            rawHistory = queryRes.slice(0, editingMessageNdx);
+        }
+
+        return this.openai.buildGptHistoryFromRawMessages(rawHistory);
     }
 }

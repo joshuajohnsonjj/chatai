@@ -7,7 +7,21 @@
     >
         <div class="bg-background rounded px-6 pt-6">
             <div v-for="(message, ndx) in thread.messages" :key="message.id">
-                <UserChatMessage v-if="!message.isSystemMessage" :text="message.text" />
+                <UserChatMessage
+                    v-if="!message.isSystemMessage"
+                    :text="message.text"
+                    :message-id="message.id"
+                    :system-response-id="thread.messages[ndx + 1].id"
+                    :thread-id="thread.threadId"
+                />
+
+                <v-skeleton-loader
+                    v-else-if="pendingEditMessageResponseId === message.id"
+                    type="sentences"
+                    color="background"
+                    :elevation="0"
+                ></v-skeleton-loader>
+
                 <SystemChatMessage
                     v-else
                     :text="message.text"
@@ -49,8 +63,14 @@
     import { ChatThreadResponse } from '../../types/responses';
 
     const chatStore = useChatStore();
-    const { pendingThreadResponseId, chatHistory, replyingInThreadId, isLoading, expandedThreads } =
-        storeToRefs(chatStore);
+    const {
+        pendingThreadResponseId,
+        chatHistory,
+        replyingInThreadId,
+        isLoading,
+        expandedThreads,
+        pendingEditMessageResponseId,
+    } = storeToRefs(chatStore);
 
     const messagesHistory = computed(() => {
         if (replyingInThreadId.value) {

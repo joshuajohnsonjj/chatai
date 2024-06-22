@@ -7,6 +7,7 @@ import {
     listChats,
     retrieveChatMessage,
     sendChatMessage,
+    sendEditChatMessage,
     updateChatDetail,
 } from '../requests/chat';
 import find from 'lodash/find';
@@ -25,8 +26,10 @@ export const useChatStore = defineStore('chat', () => {
     const nextChatHistoryPageNdx = ref<number>(0);
     const hasMoreChatHistoryResults = ref<boolean>(false);
     const replyingInThreadId = ref<string | null>(null);
-    const pendingThreadResponseId = ref<string | null>(null);
     const expandedThreads = ref<string[]>([]);
+
+    const pendingThreadResponseId = ref<string | null>(null);
+    const pendingEditMessageResponseId = ref<string | null>(null);
 
     const isLoading = ref({
         chatList: false,
@@ -194,7 +197,7 @@ export const useChatStore = defineStore('chat', () => {
                 informers: [],
             });
 
-            const reader = aiResponseStream.getReader();
+            const reader = aiResponseStream!.getReader();
             let done = false,
                 value;
             while (!done) {
@@ -220,12 +223,89 @@ export const useChatStore = defineStore('chat', () => {
         }
     };
 
+    const updateMessage = async (
+        text: string,
+        userPromptMessageId: string,
+        systemResponseMessageId: string,
+        threadId: string,
+    ) => {
+        if (!selectedChat.value) {
+            return;
+        }
+
+        const threadNdx = chatHistory.value.findIndex((histThread) => histThread.threadId === threadId);
+        const messageThread = chatHistory.value[threadNdx];
+
+        const userMessageNdxInThread = messageThread?.messages.findIndex(
+            (message) => message.id === userPromptMessageId,
+        );
+        const originalUserMessage = messageThread.messages[userMessageNdxInThread];
+
+        const systemMessageNdxInThread = messageThread?.messages.findIndex(
+            (message) => message.id === systemResponseMessageId,
+        );
+        const originalSystemMessage = messageThread.messages[systemMessageNdxInThread];
+
+        const isReplyMessage = (messageThread?.totalMessageCount ?? 0) > 2 && (userMessageNdxInThread ?? 0) >= 2;
+
+        pendingEditMessageResponseId.value = systemResponseMessageId;
+
+        try {
+            chatHistory.value[threadNdx].messages[userMessageNdxInThread] = {
+                ...originalUserMessage,
+                text,
+            };
+            chatHistory.value[threadNdx].messages[systemMessageNdxInThread] = {
+                ...originalSystemMessage,
+                text: '',
+            };
+
+            const aiResponseStream = await sendEditChatMessage(selectedChat.value.id, {
+                userPromptMessageId,
+                userPromptText: text,
+                threadId,
+                systemResponseMessageId,
+                isReplyMessage,
+                creativitySetting: chatSettings.value.chatCreativity,
+                confidenceSetting: chatSettings.value.chatMinConfidence,
+                toneSetting: chatSettings.value.chatTone,
+                baseInstructions: chatSettings.value.baseInstructions,
+            });
+
+            chatHistory.value[threadNdx].messages[systemMessageNdxInThread].informers = [];
+
+            const reader = aiResponseStream!.getReader();
+            let done = false,
+                value;
+            while (!done) {
+                ({ value, done } = await reader.read());
+                if (done) {
+                    break;
+                }
+                pendingEditMessageResponseId.value = null;
+                chatHistory.value[threadNdx].messages[systemMessageNdxInThread].text += String.fromCharCode.apply(
+                    null,
+                    value,
+                );
+            }
+
+            const savedSystemResponse = await retrieveChatMessage(selectedChat.value.id, systemResponseMessageId);
+            chatHistory.value[threadNdx].messages[systemMessageNdxInThread].informers = savedSystemResponse.informers;
+        } catch (e) {
+            console.log(e);
+            toast.error('Response generation failed. Contact support if problem persists.');
+        } finally {
+            pendingThreadResponseId.value = null;
+        }
+    };
+
     return {
         chats,
         selectedChat,
         chatHistory,
         hasMoreChatHistoryResults,
         pendingThreadResponseId,
+        pendingEditMessageResponseId,
         isLoading,
         replyingInThreadId,
         expandedThreads,
@@ -233,6 +313,7 @@ export const useChatStore = defineStore('chat', () => {
         unsetChat,
         getChatList,
         sendMessage,
+        updateMessage,
         setReplyMode,
         updateChat,
         retrieveFullThread,
