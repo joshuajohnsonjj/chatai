@@ -42,19 +42,27 @@ export const useUserStore = defineStore('user', () => {
 
     const login = async (email: string, password: string): Promise<boolean> => {
         isLoading.value.authentication = true;
-        const resp = await loginUser(email, password);
 
-        if (!resp) {
+        try {
+            const resp = await loginUser(email, password);
+
+            if (!resp) {
+                isLoading.value.authentication = false;
+                return false;
+            }
+
+            localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(resp));
+
+            await setCurrentUser();
+
             isLoading.value.authentication = false;
+
+            return true;
+        } catch (e) {
+            isLoading.value.authentication = false;
+
             return false;
         }
-
-        localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(resp));
-
-        await setCurrentUser();
-
-        isLoading.value.authentication = false;
-        return true;
     };
 
     const setCurrentUser = async () => {

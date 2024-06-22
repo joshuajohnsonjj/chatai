@@ -118,12 +118,11 @@
         return '12';
     });
 
-    /**
-     * Scroll based pagination handler
-     */
     const onScroll = () => {
+        // track scroll position to return after search result detail view
         searchResultsLastScrollPosition.value = searchResultScrollContainer.value?.scrollTop ?? null;
 
+        // pagination handling
         if (
             (searchResultScrollContainer.value?.scrollHeight ?? 0) * 0.75 -
                 (searchResultScrollContainer.value?.scrollTop ?? 0) <

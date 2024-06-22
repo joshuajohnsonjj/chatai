@@ -111,8 +111,6 @@ export const useChatStore = defineStore('chat', () => {
         expandedThreads.value.push(threadId);
 
         isLoading.value.threadExpansion = false;
-
-        console.log(expandedThreads.value);
     };
 
     const condenseThread = (threadId: string) => {

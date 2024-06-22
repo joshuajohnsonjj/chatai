@@ -2,7 +2,7 @@
     <v-sheet
         v-for="thread in messagesHistory"
         :key="thread.threadId"
-        class="my-2"
+        class="my-2 thread"
         :class="{ 'z-100': !!replyingInThreadId }"
     >
         <div class="bg-background rounded px-6 pt-6">
@@ -12,9 +12,9 @@
                     v-else
                     :text="message.text"
                     :thread-id="thread.threadId"
-                    :is-final="ndx === thread.totalMessageCount - 1"
                     :message-id="message.id"
                     :informers="message.informers"
+                    :has-hidden-messages="hasHiddenMessages(thread)"
                 />
 
                 <div v-if="shouldShowExpandThreadOption(thread, ndx)" class="mb-6 mt-2 relative">
@@ -60,13 +60,11 @@
         }
     });
 
-    const shouldShowExpandThreadOption = (thread: ChatThreadResponse, ndx: number): boolean => {
-        return (
-            thread.totalMessageCount > thread.messages.length &&
-            ndx === 1 &&
-            !expandedThreads.value.includes(thread.threadId)
-        );
-    };
+    const hasHiddenMessages = (thread: ChatThreadResponse): boolean =>
+        thread.totalMessageCount > thread.messages.length && !expandedThreads.value.includes(thread.threadId);
+
+    const shouldShowExpandThreadOption = (thread: ChatThreadResponse, ndx: number): boolean =>
+        hasHiddenMessages(thread) && ndx === 1;
 
     const additionalMessageCount = (thread: ChatThreadResponse) =>
         Math.floor((thread.totalMessageCount - thread.messages.length) / 2);
@@ -77,10 +75,6 @@
 </script>
 
 <style scoped>
-    .z-100 {
-        z-index: 100;
-    }
-
     .horizantile-line {
         border-top: 1px solid rgb(var(--v-theme-border-color));
     }
@@ -92,5 +86,10 @@
         width: 100px;
         background: rgb(var(--v-theme-border-color));
         height: 22px;
+    }
+
+    .thread {
+        width: 800px;
+        margin: auto;
     }
 </style>

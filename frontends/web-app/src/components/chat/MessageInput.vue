@@ -1,5 +1,5 @@
 <template>
-    <div v-if="$route.name === RouteName.MESSAGES" id="gradientTopper"></div>
+    <div v-if="$route.name === RouteName.MESSAGES" id="gradientTopper" :class="{ 'z-100': !!replyingInThreadId }"></div>
     <div class="bg-surface">
         <!-- TODO: change to fext area, fix auto sizeing -->
         <v-text-field
@@ -19,8 +19,13 @@
     import { useChatStore } from '../../stores/chat';
     import { useGoTo } from 'vuetify';
     import { RouteName } from '../../types/router';
+    import { storeToRefs } from 'pinia';
+
+    const emit = defineEmits(['replyModeExited']);
 
     const chatStore = useChatStore();
+    const { replyingInThreadId } = storeToRefs(chatStore);
+
     const goTo = useGoTo();
 
     const textField = ref<string>('');
@@ -46,7 +51,7 @@
         if (e.key === 'Enter') {
             sendMessage();
         } else if (e.key == 'Escape') {
-            chatStore.setReplyMode(null);
+            emit('replyModeExited');
         }
     };
 </script>

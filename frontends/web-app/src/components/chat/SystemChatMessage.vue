@@ -28,7 +28,7 @@
         </div>
         <div class="d-flex justify-end">
             <div
-                v-if="expandedThreads.includes(threadId)"
+                v-if="expandedThreads.includes(threadId) && replyingInThreadId !== threadId"
                 class="button-hover message-option"
                 @click="onCondenseThread"
             >
@@ -51,7 +51,7 @@
                     location="top"
                 ></v-tooltip>
             </div>
-            <div v-if="isFinal" class="button-hover message-option" @click="chatStore.setReplyMode(threadId)">
+            <div v-if="!replyingInThreadId" class="button-hover message-option" @click="onReplyInThread">
                 <v-icon icon=" mdi-chat-outline" size="large"></v-icon>
                 <v-tooltip text="Reply in thread" activator="parent" location="top"></v-tooltip>
             </div>
@@ -72,13 +72,13 @@
     const props = defineProps<{
         text: string;
         threadId: string;
-        isFinal: boolean;
         messageId: string;
         informers: ChatMessageInformer[];
+        hasHiddenMessages: boolean;
     }>();
 
     const chatStore = useChatStore();
-    const { expandedThreads } = storeToRefs(chatStore);
+    const { expandedThreads, replyingInThreadId } = storeToRefs(chatStore);
 
     const toast = useToast();
 
@@ -99,6 +99,14 @@
 
     const onGoodResponse = () => {
         toast.success('Thanks for your feedback!');
+    };
+
+    const onReplyInThread = async () => {
+        if (props.hasHiddenMessages) {
+            await chatStore.retrieveFullThread(props.threadId);
+        }
+
+        chatStore.setReplyMode(props.threadId);
     };
 
     const openSource = (url: string) => {

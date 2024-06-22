@@ -1,5 +1,5 @@
 <template>
-    <FullScreenBackgroundBlur v-if="!!replyingInThreadId" @click="chatStore.setReplyMode(null)" />
+    <FullScreenBackgroundBlur v-if="!!replyingInThreadId" @click="onExitReplyMode" />
 
     <div class="bg-surface w-100 h-100 rounded-xl px-6 relative">
         <div class="w-100 bg-surface header-container bottom-border-primary">
@@ -67,13 +67,18 @@
 
         <div class="d-flex justify-space-between">
             <div style="max-width: 800px" class="mx-auto">
-                <div id="chat-scroll" ref="chatScrollContainer" class="d-flex flex-column mb-6">
+                <div
+                    id="chat-scroll"
+                    ref="chatScrollContainer"
+                    class="d-flex flex-column mb-6"
+                    :class="{ 'reply-mode-chat-scroll': !!replyingInThreadId }"
+                >
                     <MessageThreadDisplay />
 
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
                 </div>
 
-                <MessageInput />
+                <MessageInput @reply-mode-exited="onExitReplyMode" />
             </div>
 
             <v-expand-x-transition>
@@ -123,6 +128,7 @@
     const titleEditField = ref<string>('');
     const isConfirmArchive = ref<boolean>(false);
     const chatScrollContainer = ref<HTMLElement | null>(null);
+    const chatScrollPosition = ref<number>(0);
     const shouldShowScrollToBottomButton = ref<boolean>(false);
 
     const isChatSettingsOpen = computed(() => route.query.settings === 'true');
@@ -134,6 +140,7 @@
         if (!chatHistory.value.length) {
             await chatStore.setChatHistory(route.params.chatId as string);
         }
+
         scrollToBottom();
 
         chatScrollContainer.value!.addEventListener('scroll', debounce(onScroll, 100));
@@ -170,18 +177,32 @@
         await chatStore.updateChat(selectedChat.value!.id, { isArchived: true });
     };
 
-    /**
-     * Scroll based pagination handler
-     */
+    const onExitReplyMode = () => {
+        chatStore.setReplyMode(null);
+        goTo(chatScrollPosition.value, {
+            container: '#chat-scroll',
+            duration: 0,
+            easing: 'easeOutQuad',
+        });
+    };
+
     const onScroll = () => {
+        // track scroll possition for returning after reply mode exit
+        if (!replyingInThreadId.value) {
+            chatScrollPosition.value = chatScrollContainer.value!.scrollTop;
+        }
+
+        // pagination handling
         if (
             (chatScrollContainer.value?.scrollTop ?? 1750) < 1750 &&
             hasMoreChatHistoryResults.value &&
-            !isLoading.value.chatHistory
+            !isLoading.value.chatHistory &&
+            !replyingInThreadId.value
         ) {
             chatStore.setChatHistory(route.params.chatId as string);
         }
 
+        // quick scroll to bottom button conditional render
         if (
             chatScrollContainer.value &&
             chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop > 1250
@@ -207,18 +228,17 @@
         left: 0;
         top: 2rem;
         right: 0;
-        max-width: 800px;
-        margin: auto;
         bottom: 3.1rem;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .reply-mode-chat-scroll {
+        top: -1rem !important;
     }
 
     #chat-scroll::-webkit-scrollbar {
         display: none;
-    }
-
-    #chat-scroll {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
     }
 
     #floating-to-bottom-btn {
