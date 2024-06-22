@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService, type MongoDataElementCollectionDoc } from '@joshuajohnsonjj38/mongodb';
 import type {
+    ChatThreadResponseDto,
     GetChatResponseQueryDto,
     GetChatResponseResponseDto,
     ListChatMessagesResponseDto,
@@ -49,8 +50,8 @@ export class ChatService {
         if (chat.associatedEntityId !== user.idUser && chat.associatedEntityId !== user.organization) {
             this.logger.error(
                 `Blocked user ${user.idUser} from interacting with chat ${chatId}`,
-                'generateResponse authorization',
-                'Chat',
+                undefined,
+                LoggerContext.CHAT,
             );
             throw new AccessDeniedError('User unauthorized to interact with this chat');
         }
@@ -173,12 +174,19 @@ export class ChatService {
 
     async startNewChat(params: StartNewChatQueryDto, user: DecodedUserTokenDto): Promise<ChatResponseDto> {
         if (user.idUser !== params.associatedEntityId && user.organization !== params.associatedEntityId) {
+            this.logger.error(
+                `Blocked user ${user.idUser} from starting chat in entity ${params.associatedEntityId}`,
+                undefined,
+                LoggerContext.CHAT,
+            );
             throw new AccessDeniedError('User does not have access to perform this action');
         }
 
+        this.logger.log(`Creating chat ${params.title} for user ${user.idUser}`, LoggerContext.CHAT);
+
         return await this.prisma.chat.create({
             data: {
-                userId: params.userId,
+                userId: user.idUser,
                 title: params.title,
                 chatType: params.chatType,
                 associatedEntityId: params.associatedEntityId,
@@ -206,8 +214,15 @@ export class ChatService {
             });
         } catch (e) {
             if (e.code === PrismaError.RECORD_DOES_NOT_EXIST) {
+                this.logger.error(
+                    `Chat ${chatId} does not exist or user ${user.idUser} does not have access`,
+                    undefined,
+                    LoggerContext.CHAT,
+                );
                 throw new AccessDeniedError('User does not have access to this chat');
             }
+
+            this.logger.error(e.message, e.stack, LoggerContext.CHAT);
             throw new InternalError();
         }
     }
@@ -217,6 +232,8 @@ export class ChatService {
         page: number,
         user: DecodedUserTokenDto,
     ): Promise<ListChatMessagesResponseDto> {
+        this.logger.log(`Listing message page ${page} for chat ${chatId}`, LoggerContext.CHAT);
+
         const pageSize = 20;
 
         // Retrieves 20 threads with oldest 2 messages per thread as well
@@ -305,8 +322,8 @@ export class ChatService {
         ) {
             this.logger.error(
                 `Blocked user ${user.idUser} from querying message ${messageId}`,
-                'permissionError',
-                'Chat',
+                undefined,
+                LoggerContext.CHAT,
             );
             throw new AccessDeniedError('User unauthorized to read this data');
         }
@@ -365,6 +382,42 @@ export class ChatService {
             page,
             size: chats.length,
             chats,
+        };
+    }
+
+    async getThreadById(chatId: string, threadId: string, user: DecodedUserTokenDto): Promise<ChatThreadResponseDto> {
+        this.logger.log(`Retreiving messages for thead ${threadId}`, LoggerContext.CHAT);
+
+        const queryRes = await this.prisma.chatMessageThread.findUniqueOrThrow({
+            where: { id: threadId, chatId },
+            include: {
+                messages: {
+                    orderBy: { createdAt: 'asc' },
+                    include: {
+                        informers: true,
+                    },
+                },
+                chat: true,
+            },
+        });
+
+        if (
+            queryRes.chat.associatedEntityId !== user.idUser &&
+            queryRes.chat.associatedEntityId !== user.organization
+        ) {
+            this.logger.error(
+                `Blocked user ${user.idUser} from querying thread ${threadId}`,
+                undefined,
+                LoggerContext.CHAT,
+            );
+            throw new AccessDeniedError('User unauthorized to read this thread');
+        }
+
+        return {
+            threadId,
+            totalMessageCount: queryRes.messages.length,
+            timestamp: queryRes.createdAt,
+            messages: queryRes.messages,
         };
     }
 }

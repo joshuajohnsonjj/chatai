@@ -14,9 +14,6 @@ import { ChatTone, ChatType } from '@prisma/client';
 
 export class StartNewChatQueryDto {
     @IsUUID()
-    userId: string;
-
-    @IsUUID()
     associatedEntityId: string;
 
     @IsString()

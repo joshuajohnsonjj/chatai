@@ -27,8 +27,16 @@
             </div>
         </div>
         <div class="d-flex justify-end">
-            <div class="button-hover message-option" @click="copyToClipboard(text)">
-                <v-icon icon=" mdi-content-copy" size="large"></v-icon>
+            <div
+                v-if="expandedThreads.includes(threadId)"
+                class="button-hover message-option"
+                @click="onCondenseThread"
+            >
+                <v-icon icon="mdi-arrow-collapse" size="large"></v-icon>
+                <v-tooltip text="Condense thread" activator="parent" location="top"></v-tooltip>
+            </div>
+            <div class="button-hover message-option" @click="onCopyToClipboard(text)">
+                <v-icon icon="mdi-content-copy" size="large"></v-icon>
                 <v-tooltip text="Copy response" activator="parent" location="top"></v-tooltip>
             </div>
             <div
@@ -59,8 +67,9 @@
     import { ref } from 'vue';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../../constants';
     import { maxStrLenToElipse } from '../../utility';
+    import { storeToRefs } from 'pinia';
 
-    defineProps<{
+    const props = defineProps<{
         text: string;
         threadId: string;
         isFinal: boolean;
@@ -69,13 +78,19 @@
     }>();
 
     const chatStore = useChatStore();
+    const { expandedThreads } = storeToRefs(chatStore);
+
     const toast = useToast();
 
     const isInformersVisible = ref(false);
 
-    const copyToClipboard = (copyText: string) => {
+    const onCopyToClipboard = (copyText: string) => {
         navigator.clipboard.writeText(copyText);
         toast.success('Content coppied to clipboard!');
+    };
+
+    const onCondenseThread = () => {
+        chatStore.condenseThread(props.threadId);
     };
 
     const onBadResponse = () => {

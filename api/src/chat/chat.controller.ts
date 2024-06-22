@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Body, Post, Query, Req, UseGuards, Patch, Res, Logger } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import type {
+    ChatThreadResponseDto,
     GetChatResponseQueryDto,
     GetChatResponseResponseDto,
     ListChatMessagesQueryDto,
@@ -102,5 +103,14 @@ export class ChatController {
         @Req() req: Request,
     ): Promise<GetChatResponseResponseDto> {
         return await this.service.getMessageById(messageId, req.user as DecodedUserTokenDto);
+    }
+
+    @Get(':chatId/thread/:threadId')
+    async getThreadById(
+        @Param('chatId') chatId: string,
+        @Param('threadId') threadId: string,
+        @Req() req: Request,
+    ): Promise<ChatThreadResponseDto> {
+        return await this.service.getThreadById(chatId, threadId, req.user as DecodedUserTokenDto);
     }
 }

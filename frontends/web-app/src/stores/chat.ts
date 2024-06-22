@@ -1,8 +1,16 @@
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { ChatMessageResponse, ChatResponse, ChatThreadResponse } from '../types/responses';
-import { getChatHistory, listChats, retrieveChatMessage, sendChatMessage, updateChatDetail } from '../requests/chat';
+import {
+    getChatHistory,
+    getThreadById,
+    listChats,
+    retrieveChatMessage,
+    sendChatMessage,
+    updateChatDetail,
+} from '../requests/chat';
 import find from 'lodash/find';
+import remove from 'lodash/remove';
 import { useToast } from 'vue-toastification';
 import { v4 } from 'uuid';
 import { ChatResponseTone, UpdateChatParams } from '../types/chat-store';
@@ -17,12 +25,15 @@ export const useChatStore = defineStore('chat', () => {
     const nextChatHistoryPageNdx = ref<number>(0);
     const hasMoreChatHistoryResults = ref<boolean>(false);
     const replyingInThreadId = ref<string | null>(null);
+    const pendingThreadResponseId = ref<string | null>(null);
+    const expandedThreads = ref<string[]>([]);
+
     const isLoading = ref({
         chatList: false,
         chatHistory: false,
         chatUpdate: false,
+        threadExpansion: false,
     });
-    const pendingThreadResponseId = ref<string | null>(null);
 
     const chatSettings = computed(() => {
         const userInfo = useUserStore().userData;
@@ -87,6 +98,35 @@ export const useChatStore = defineStore('chat', () => {
         hasMoreChatHistoryResults.value = chatHistoryData.responseSize === chatHistoryData.pageSize;
 
         isLoading.value.chatHistory = false;
+    };
+
+    const retrieveFullThread = async (threadId: string) => {
+        isLoading.value.threadExpansion = true;
+
+        const thread = await getThreadById(selectedChat.value!.id, threadId);
+
+        const historyThreadNdx = chatHistory.value.findIndex((history) => history.threadId === threadId);
+        chatHistory.value.splice(historyThreadNdx, 1, thread);
+
+        expandedThreads.value.push(threadId);
+
+        isLoading.value.threadExpansion = false;
+
+        console.log(expandedThreads.value);
+    };
+
+    const condenseThread = (threadId: string) => {
+        const historyThreadNdx = chatHistory.value.findIndex((history) => history.threadId === threadId);
+        const threadMessageLength = chatHistory.value[historyThreadNdx].messages.length;
+
+        chatHistory.value[historyThreadNdx].messages = [
+            chatHistory.value[historyThreadNdx].messages[0],
+            chatHistory.value[historyThreadNdx].messages[1],
+            chatHistory.value[historyThreadNdx].messages[threadMessageLength - 2],
+            chatHistory.value[historyThreadNdx].messages[threadMessageLength - 1],
+        ];
+
+        remove(expandedThreads.value, (expandedThreadId) => expandedThreadId === threadId);
     };
 
     const setReplyMode = (threadId: string | null) => {
@@ -190,11 +230,14 @@ export const useChatStore = defineStore('chat', () => {
         pendingThreadResponseId,
         isLoading,
         replyingInThreadId,
+        expandedThreads,
         setChatHistory,
         unsetChat,
         getChatList,
         sendMessage,
         setReplyMode,
         updateChat,
+        retrieveFullThread,
+        condenseThread,
     };
 });

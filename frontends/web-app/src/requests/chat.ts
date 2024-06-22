@@ -1,6 +1,12 @@
 import type { SendMessageParams, UpdateChatParams } from '../types/chat-store';
 import { APIEndpoints, APIMethods } from '../types/requests';
-import type { ChatMessageResponse, ChatResponse, ListChatHistoryResponse, ListChatsResponse } from '../types/responses';
+import type {
+    ChatMessageResponse,
+    ChatResponse,
+    ChatThreadResponse,
+    ListChatHistoryResponse,
+    ListChatsResponse,
+} from '../types/responses';
 import { sendAPIRequest } from './service';
 import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 
@@ -8,9 +14,7 @@ import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 export const listChats = async (): Promise<ListChatsResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHATS}?${new URLSearchParams({ page: '0' })}`,
     });
@@ -20,9 +24,7 @@ export const listChats = async (): Promise<ListChatsResponse> => {
 export const updateChatDetail = async (chatId: string, chatUpdates: UpdateChatParams): Promise<ChatResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.PATCH,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         data: chatUpdates,
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHAT.replace(':chatId', chatId)}`,
@@ -33,16 +35,14 @@ export const updateChatDetail = async (chatId: string, chatUpdates: UpdateChatPa
 export const getChatHistory = async (chatId: string, page: number): Promise<ListChatHistoryResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHAT_MESSAGES.replace(':chatId', chatId)}?${new URLSearchParams({ page: page.toString() })}`,
     });
     return resp as ListChatHistoryResponse;
 };
 
-// TODO: need to implement retries here since its not using the sendAPIRequest axios wrapper
+// TODO: need to implement auth retries here since its not using the sendAPIRequest axios wrapper
 export const sendChatMessage = async (chatId: string, params: SendMessageParams): Promise<any> => {
     const tokenData = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}');
     const response = await fetch(
@@ -63,11 +63,19 @@ export const sendChatMessage = async (chatId: string, params: SendMessageParams)
 export const retrieveChatMessage = async (chatId: string, messageId: string): Promise<ChatMessageResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.CHAT_MESSAGE.replace(':chatId', chatId).replace(':messageId', messageId)}`,
     });
     return resp as ChatMessageResponse;
+};
+
+export const getThreadById = async (chatId: string, threadId: string): Promise<ChatThreadResponse> => {
+    const resp = await sendAPIRequest({
+        method: APIMethods.GET,
+        headers: { 'Content-Type': 'application/json' },
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
+        url: `${APIEndpoints.CHAT_MESSAGE_THREAD.replace(':chatId', chatId).replace(':threadId', threadId)}`,
+    });
+    return resp as ChatThreadResponse;
 };
