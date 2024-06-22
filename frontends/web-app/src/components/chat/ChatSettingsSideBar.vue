@@ -131,6 +131,8 @@
 
 <style scoped>
     #chat-settings-container {
+        position: absolute;
+        right: 1rem;
         margin-top: 5rem;
         height: 85vh;
         width: 250px;
