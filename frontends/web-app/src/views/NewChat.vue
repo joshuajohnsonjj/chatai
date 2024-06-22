@@ -38,7 +38,9 @@
                     ]"
                 />
             </div>
+        </div>
 
+        <div class="mx-auto mb-4 input-container">
             <MessageInput />
         </div>
     </div>
@@ -58,3 +60,14 @@
         }
     });
 </script>
+
+<style scoped>
+    .input-container {
+        position: absolute;
+        left: 0;
+        right: 0;
+        margin: auto;
+        max-width: 850px;
+        bottom: 0.75rem;
+    }
+</style>

@@ -25,7 +25,7 @@ export interface ChatResponse {
     baseInstructions: string | null;
     isArchived: boolean;
     lastMessage?: {
-        timestamp: Date;
+        timestamp: string;
         text: string;
         isSystemMessage: boolean;
     };
@@ -41,14 +41,14 @@ export interface ListChatHistoryResponse {
 export interface ChatThreadResponse {
     threadId: string;
     totalMessageCount: number;
-    timestamp: Date;
+    timestamp: string;
     messages: ChatMessageResponse[];
 }
 
 export class ChatMessageInformer {
     id: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     messageId: string;
     name: string;
     url: string;
@@ -62,8 +62,8 @@ export interface ChatMessageResponse {
     isSystemMessage: boolean;
     chatId: string;
     threadId: string;
-    createdAt: Date;
-    updatedAt?: Date;
+    createdAt: string;
+    updatedAt?: string;
     informers: ChatMessageInformer[];
 }
 
@@ -76,8 +76,8 @@ export enum DataSyncInterval {
 
 export interface UserInfoResponse {
     id: string;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     type: string;
     planId: string | null;
     organizationId: string | null;
@@ -89,16 +89,16 @@ export interface UserInfoResponse {
     stripeCustomerId: string | null;
     organization: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt: string;
+        updatedAt: string;
         planId: string;
         isAccountActive: boolean;
         name: string;
     } | null;
     plan: {
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        createdAt: string;
+        updatedAt: string;
         isActive: boolean;
         adHocUploadsEnabled: boolean;
         dailyMessageQuota: number | null;

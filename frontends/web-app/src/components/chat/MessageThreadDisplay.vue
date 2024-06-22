@@ -72,9 +72,9 @@
         pendingEditMessageResponseId,
     } = storeToRefs(chatStore);
 
-    const messagesHistory = computed(() => {
+    const messagesHistory = computed((): ChatThreadResponse[] => {
         if (replyingInThreadId.value) {
-            return [chatHistory.value.find((thread) => thread.threadId === replyingInThreadId.value)];
+            return [chatHistory.value.find((thread) => thread.threadId === replyingInThreadId.value)!];
         } else {
             return chatHistory.value;
         }
@@ -96,7 +96,7 @@
 
 <style scoped>
     .horizantile-line {
-        border-top: 1px solid rgb(var(--v-theme-border-color));
+        border-top: 1px solid rgb(var(--v-theme-surface-bright));
     }
 
     .expand-thread-button {
@@ -104,7 +104,7 @@
         left: 43%;
         top: -11px;
         width: 100px;
-        background: rgb(var(--v-theme-border-color));
+        background: rgb(var(--v-theme-surface-bright));
         height: 22px;
     }
 

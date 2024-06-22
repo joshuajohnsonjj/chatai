@@ -65,12 +65,12 @@
             </div>
         </div>
 
-        <div class="d-flex justify-space-between">
+        <div class="d-flex justify-space-between" style="height: 100%">
             <div style="max-width: 800px" class="mx-auto">
                 <div
                     id="chat-scroll"
                     ref="chatScrollContainer"
-                    class="d-flex flex-column mb-6"
+                    class="d-flex flex-column"
                     :class="{ 'reply-mode-chat-scroll': !!replyingInThreadId }"
                 >
                     <MessageThreadDisplay />
@@ -78,7 +78,10 @@
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
                 </div>
 
-                <MessageInput @reply-mode-exited="onExitReplyMode" />
+                <MessageInput
+                    @reply-mode-exited="onExitReplyMode"
+                    @input-height-changed="(sizeDiff: number) => handleInputHeightChange(sizeDiff)"
+                />
             </div>
 
             <v-expand-x-transition>
@@ -186,6 +189,10 @@
         });
     };
 
+    const handleInputHeightChange = (sizeDiff: number) => {
+        chatScrollContainer.value!.style.height = `calc(85vh - ${sizeDiff}rem)`;
+    };
+
     const onScroll = () => {
         // track scroll possition for returning after reply mode exit
         if (!replyingInThreadId.value) {
@@ -224,13 +231,9 @@
 
     #chat-scroll {
         overflow-y: scroll;
-        position: absolute;
-        left: 0;
-        top: 2rem;
-        right: 0;
-        bottom: 3.1rem;
         -ms-overflow-style: none;
         scrollbar-width: none;
+        height: 85vh;
     }
 
     .reply-mode-chat-scroll {
