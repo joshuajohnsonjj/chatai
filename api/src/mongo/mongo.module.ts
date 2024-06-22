@@ -6,10 +6,7 @@ import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
         {
             provide: 'MONGO_DB_CONNECTION',
             useFactory: async (): Promise<MongoDBService> => {
-                const client = new MongoDBService(
-                    process.env.MONGO_DB_CONN_STRING as string,
-                    process.env.MONGO_DB_NAME as string,
-                );
+                const client = new MongoDBService(process.env.MONGO_DB_CONN_STRING!, process.env.MONGO_DB_NAME!);
                 await client.init();
                 return client;
             },

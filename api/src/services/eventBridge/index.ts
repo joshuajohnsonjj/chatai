@@ -12,6 +12,8 @@ import {
 } from '@aws-sdk/client-scheduler';
 import { DataSyncInterval } from '@prisma/client';
 
+const schedulerClient = new SchedulerClient({ region: process.env.AWS_REGION! });
+
 const EventBridgeSechulerRole = 'arn:aws:iam::353643225333:role/EventBridgeSchedulerRole';
 
 const scheduleName = (dataSourceId: string): string => `schedule-${dataSourceId}`;
@@ -31,20 +33,16 @@ const syncIntervalToSchedulerRate = (interval: DataSyncInterval): string => {
 };
 
 export const createEventBridgeScheduledExecution = async (
-    region: string,
-    lambdaArn: string,
-    logger: Logger,
     interval: DataSyncInterval,
     payload: APIGatewayInitiateImportParams,
+    logger: Logger,
 ): Promise<void> => {
-    const schedulerClient = new SchedulerClient({ region });
-
     try {
         const createScheduleCommand = new CreateScheduleCommand({
             Name: scheduleName(payload.dataSourceId),
             ScheduleExpression: syncIntervalToSchedulerRate(interval),
             Target: {
-                Arn: lambdaArn,
+                Arn: process.env[`INITIATE_${payload.dataSourceType}_LAMBDA_ARN`]!,
                 Input: JSON.stringify(payload),
                 RoleArn: EventBridgeSechulerRole,
                 RetryPolicy: {
@@ -76,13 +74,7 @@ export const createEventBridgeScheduledExecution = async (
     }
 };
 
-export const deleteEventBridgeSchedule = async (
-    region: string,
-    dataSourceId: string,
-    logger: Logger,
-): Promise<void> => {
-    const schedulerClient = new SchedulerClient({ region });
-
+export const deleteEventBridgeSchedule = async (dataSourceId: string, logger: Logger): Promise<void> => {
     const command = new DeleteScheduleCommand({
         Name: scheduleName(dataSourceId),
     });

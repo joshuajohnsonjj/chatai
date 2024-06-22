@@ -512,20 +512,10 @@ export class DataSourceService {
         shouldDeleteOldSchedule = false,
     ) {
         if (shouldDeleteOldSchedule) {
-            await deleteEventBridgeSchedule(
-                this.configService.get<string>('AWS_REGION')!,
-                schedulerData.dataSourceId,
-                this.logger,
-            );
+            await deleteEventBridgeSchedule(schedulerData.dataSourceId, this.logger);
         }
 
-        await createEventBridgeScheduledExecution(
-            this.configService.get<string>('AWS_REGION')!,
-            this.configService.get<string>(`INITIATE_${schedulerData.dataSourceType}_LAMBDA_ARN`)!,
-            this.logger,
-            syncInterval,
-            schedulerData,
-        );
+        await createEventBridgeScheduledExecution(syncInterval, schedulerData, this.logger);
     }
 
     private syncIntervalToNextSyncDate(interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null {
