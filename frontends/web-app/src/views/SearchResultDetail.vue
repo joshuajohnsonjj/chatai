@@ -42,7 +42,7 @@
                     :disabled="!selectedSearchResult?.url"
                     @click="openSource"
                 >
-                    View in {{ selectedSearchResult?.dataSourceType }}
+                    View in {{ formatStringStartCase(selectedSearchResult?.dataSourceType ?? '') }}
                 </v-btn>
                 <!-- TODO: handle content deletion -->
                 <v-btn class="w-100" color="warning" prepend-icon="mdi-trash-can" variant="tonal">
@@ -54,13 +54,13 @@
         <div style="height: 60vh; overflow-y: scroll">
             <div class="bg-background pa-6 rounded">
                 <div class="bg-surface-bright py-2 px-4 rounded d-flex justify-space-between">
-                    <div class="font-weight-medium text-h6 text-primary pt-1">Content preview</div>
+                    <div class="font-weight-medium text-h6 text-primary pt-1">Content excerpt</div>
                     <v-btn variant="text" class="text-caption" @click="copyToClipboard">Copy to clipboard</v-btn>
                 </div>
                 <div
                     id="content-preview"
                     class="pa-6 text-body-1 text-primary"
-                    v-html="markdown(selectedSearchResult?.text)"
+                    v-html="markdown(selectedSearchResult?.text ?? '')"
                 ></div>
             </div>
         </div>
@@ -77,6 +77,7 @@
     import { onBeforeMount } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
     import { RouteName } from '../types/router';
+    import { formatStringStartCase } from '../utility';
 
     const searchStore = useSearchStore();
     const { selectedSearchResult } = storeToRefs(searchStore);

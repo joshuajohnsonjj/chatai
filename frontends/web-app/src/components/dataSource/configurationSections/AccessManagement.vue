@@ -32,9 +32,12 @@
                     variant="plain"
                     :loading="isLoading.connectionTest"
                     @click="onTestConnection"
+                    :disabled="apiKeyInput.length < 5"
                     >Test connection</v-btn
                 >
-                <v-btn class="body-action-btn" color="blue" variant="tonal">Update Key</v-btn>
+                <v-btn class="body-action-btn" color="blue" variant="tonal" :disabled="apiKeyInput.length < 5"
+                    >Update Key</v-btn
+                >
             </div>
         </div>
     </v-sheet>
@@ -66,7 +69,7 @@
         }
 
         const result = await dataSourceStore.testDataSourceCredential(
-            currentConfiguring.value?.dataSourceTypeId as string,
+            currentConfiguring.value!.dataSourceTypeId,
             userEntityId.value,
             userData.value!.type,
             apiKeyInput.value,

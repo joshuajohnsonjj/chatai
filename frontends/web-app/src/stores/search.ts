@@ -96,7 +96,7 @@ export const useSearchStore = defineStore('search', () => {
         isLoading.value.allSearchSuggestions = true;
 
         const topicRes = await getTopicSuggestions(entityId, input);
-        // TODO: ONLY FOR ORGS ===> const suthorRes = await getAuthorSuggestions(input, entityId);
+        // TODO:  ===> const suthorRes = await getAuthorSuggestions(input, entityId);
         const sourcesRes = autocompleteSearch(
             input,
             dataSourceOptions.map((opt) => opt.name),

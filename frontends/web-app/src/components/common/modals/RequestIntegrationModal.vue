@@ -18,7 +18,6 @@
 
             <div class="text-primary text-caption font-weight-bold">Website address</div>
             <v-text-field
-                :append-inner-icon="isFocused ? 'mdi-close' : ''"
                 variant="outlined"
                 hide-details
                 v-model="input"

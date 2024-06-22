@@ -409,17 +409,14 @@ export class DataSourceService {
 
                 await Promise.all([
                     !isLiveSyncingDataSource && !queryRes.nextScheduledSync
-                        ? this.updateSyncSchedule(
-                            queryRes.selectedSyncInterval,
-                            {
-                                dataSourceId: completed.dataSourceId,
-                                dataSourceType: queryRes.type.name,
-                                secret: queryRes.secret,
-                                refreshToken: queryRes.refreshToken ?? undefined,
-                                ownerEntityId: queryRes.ownerEntityId,
-                                lastSync: new Date().toISOString(),
-                            },
-                        )
+                        ? this.updateSyncSchedule(queryRes.selectedSyncInterval, {
+                              dataSourceId: completed.dataSourceId,
+                              dataSourceType: queryRes.type.name,
+                              secret: queryRes.secret,
+                              refreshToken: queryRes.refreshToken ?? undefined,
+                              ownerEntityId: queryRes.ownerEntityId,
+                              lastSync: new Date().toISOString(),
+                          })
                         : Promise.resolve(),
                     this.prisma.dataSource.update({
                         where: { id: completed.dataSourceId },
@@ -509,7 +506,11 @@ export class DataSourceService {
         }
     }
 
-    private async updateSyncSchedule(syncInterval: DataSyncInterval, schedulerData: APIGatewayInitiateImportParams, shouldDeleteOldSchedule = false) {
+    private async updateSyncSchedule(
+        syncInterval: DataSyncInterval,
+        schedulerData: APIGatewayInitiateImportParams,
+        shouldDeleteOldSchedule = false,
+    ) {
         if (shouldDeleteOldSchedule) {
             await deleteEventBridgeSchedule(
                 this.configService.get<string>('AWS_REGION')!,

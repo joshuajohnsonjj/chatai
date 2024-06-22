@@ -11,13 +11,13 @@
                         <p class="text-caption text-secondary sub-info-line-height">
                             <HubOutline style="width: 16px; height: 16px; margin-bottom: -3px" class="icon-secondary" />
                             {{ dataSources.length }}
-                            {{ planData.maxDataSources ? `of ${planData.maxDataSources}` : '' }} Integrations connected
+                            {{ planData?.maxDataSources ? `of ${planData.maxDataSources}` : '' }} Integrations connected
                         </p>
                         <v-icon icon="mdi-circle-small" color="secondary"></v-icon>
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-archive-outline" color="secondary"></v-icon>
                             {{ dataSourceStorageUsageSum > 0 ? dataSourceStorageUsageSum.toFixed(2) : '0' }} MB of
-                            {{ planData.maxStorageMegaBytes }} MB used
+                            {{ planData?.maxStorageMegaBytes }} MB used
                         </p>
                     </div>
                 </div>
@@ -27,10 +27,10 @@
                 <div class="px-6">
                     <div class="d-flex justify-center">
                         <v-progress-circular
-                            :model-value="dataSourceConnectionCountPercentage"
+                            :model-value="dataSourceConnectionCountPercentage ?? 0"
                             :size="50"
                             :width="5"
-                            :color="usageGraphColor(dataSourceConnectionCountPercentage)"
+                            :color="usageGraphColor(dataSourceConnectionCountPercentage ?? 0)"
                         >
                             <template v-slot:default> {{ dataSourceConnectionCountPercentage }} % </template>
                         </v-progress-circular>
@@ -69,11 +69,7 @@
                 @click="$router.push({ name: RouteName.DATA_SOURCE_CONFIG, params: { dataSourceId: dataSource.id } })"
             >
                 <div v-if="dataSource.isSyncing" class="px-2 absolute" style="right: 12px; top: 12px">
-                    <v-tooltip text="Indexing in progress" location="top" max-width="300">
-                        <template v-slot:activator="{ props }">
-                            <v-icon class="spining" icon="mdi-sync" size="large" color="info" v-bind="props"></v-icon>
-                        </template>
-                    </v-tooltip>
+                    <IndexInProgressSpinner />
                 </div>
 
                 <div class="d-flex justify-start mb-4">

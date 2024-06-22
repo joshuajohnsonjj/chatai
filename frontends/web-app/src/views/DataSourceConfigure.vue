@@ -27,17 +27,7 @@
                         />
 
                         <div v-if="currentConfiguring?.isSyncing" class="px-2">
-                            <v-tooltip text="Indexing in progress" location="top" max-width="300">
-                                <template v-slot:activator="{ props }">
-                                    <v-icon
-                                        class="spining"
-                                        icon="mdi-sync"
-                                        size="large"
-                                        color="info"
-                                        v-bind="props"
-                                    ></v-icon>
-                                </template>
-                            </v-tooltip>
+                            <IndexInProgressSpinner />
                         </div>
                     </div>
 
@@ -99,9 +89,24 @@
             <v-col cols="12">
                 <v-sheet class="border-primary rounded pa-6">
                     <p class="text-h6 text-primary font-weight-medium">Other Configurations</p>
-                    <v-btn class="body-action-btn" color="warning" prepend-icon="mdi-trash-can" variant="tonal"
+
+                    <v-btn
+                        class="body-action-btn"
+                        color="warning"
+                        prepend-icon="mdi-trash-can"
+                        variant="tonal"
+                        @click="showCofirmRemovalModal = true"
                         >Remove integration</v-btn
                     >
+
+                    <ConfirmModal
+                        v-if="showCofirmRemovalModal"
+                        title="Permanently delete integration?"
+                        sub-title="All data associated will be erased. This action is irreversible."
+                        button-theme="warning"
+                        @confirmed="() => {}"
+                        @close-modal="showCofirmRemovalModal = false"
+                    />
                 </v-sheet>
             </v-col>
         </v-row>
@@ -109,7 +114,7 @@
 </template>
 
 <script lang="ts" setup>
-    import { onBeforeMount } from 'vue';
+    import { onBeforeMount, ref } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useDataSourceStore } from '../stores/dataSource';
     import { useUserStore } from '../stores/user';
@@ -135,6 +140,8 @@
     const { userEntityId } = storeToRefs(userStore);
 
     const searchStore = useSearchStore();
+
+    const showCofirmRemovalModal = ref(false);
 
     onBeforeMount(async () => {
         if (!connections.value.length) {
@@ -171,17 +178,6 @@
 </script>
 
 <style scoped>
-    .filter-selected {
-        background-color: rgb(var(--v-theme-background));
-    }
-
-    .disabled {
-        font-weight: normal !important;
-        filter: brightness(100%) !important;
-        cursor: not-allowed !important;
-        color: rgb(var(--v-theme-secondary)) !important;
-    }
-
     .body-action-btn {
         width: 200px;
     }

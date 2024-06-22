@@ -34,6 +34,7 @@
                 class="body-action-btn"
                 @click="commitIndexingSelection"
                 :loading="isLoading.indexingIntervalUpdate"
+                :disabled="!syncPreferenceChanged"
                 >Update Preference</v-btn
             >
         </div>
@@ -44,7 +45,7 @@
     import { storeToRefs } from 'pinia';
     import { useUserStore } from '../../../stores/user';
     import { DataSyncInterval } from '../../../types/responses';
-    import { computed, onBeforeMount, ref } from 'vue';
+    import { computed, onMounted, ref, watch } from 'vue';
     import { useToast } from 'vue-toastification';
     import { useDataSourceStore } from '../../../stores/dataSource';
     import { IndexingIntervalOptions } from '../../../constants/dataSourceConfiguration';
@@ -59,9 +60,17 @@
 
     const selectedIndexingOption = ref<DataSyncInterval>();
 
-    onBeforeMount(async () => {
+    onMounted(() => {
         selectedIndexingOption.value = currentConfiguring.value?.selectedSyncInterval;
     });
+
+    watch(currentConfiguring, (newVal) => {
+        selectedIndexingOption.value = newVal?.selectedSyncInterval;
+    });
+
+    const syncPreferenceChanged = computed(
+        () => selectedIndexingOption.value !== currentConfiguring.value?.selectedSyncInterval,
+    );
 
     const maxPlanIntervalLevel = computed(
         () => IndexingIntervalOptions[planData.value?.dataSyncInterval || DataSyncInterval.WEEKLY].level,
@@ -88,5 +97,16 @@
 <style scoped>
     .body-action-btn {
         width: 200px;
+    }
+
+    .filter-selected {
+        background-color: rgb(var(--v-theme-background));
+    }
+
+    .disabled {
+        font-weight: normal !important;
+        filter: brightness(100%) !important;
+        cursor: not-allowed !important;
+        color: rgb(var(--v-theme-secondary)) !important;
     }
 </style>

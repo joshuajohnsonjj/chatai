@@ -2,7 +2,7 @@ import moment from 'moment';
 import startCase from 'lodash/startCase';
 import reverse from 'lodash/reverse';
 
-export const dateToString = (date: Date): string => {
+export const dateToString = (date: string): string => {
     const momentDate = moment(date);
     const minutesPassed = moment().diff(momentDate, 'minutes');
     const daysPassed = moment().diff(momentDate, 'days');
