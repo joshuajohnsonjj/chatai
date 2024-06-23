@@ -87,6 +87,10 @@ export class UserAuthService {
             },
         });
 
+        await this.prisma.entitySettings.create({
+            data: { associatedUserId: userId },
+        });
+
         return {
             uuid: userId,
             userConfirmed: signupResponse.UserConfirmed ?? false,
@@ -236,8 +240,7 @@ export class UserAuthService {
             if (error.name === 'UserNotConfirmedException') {
                 throw new UserNotConfirmedError('User must complete confirmation to login');
             }
-            throw error;
-            // throw new BadRequestError(error.message);
+            throw new BadRequestError(error.message);
         }
     }
 
