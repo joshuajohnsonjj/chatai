@@ -28,6 +28,18 @@ export class CreateDataSourceQueryDto {
     refreshToken?: string;
 }
 
+export class TestCredentialsQueryDto {
+    @IsString()
+    dataSourceTypeName: string;
+
+    @IsString()
+    secret: string;
+
+    @IsString()
+    @IsOptional()
+    externalId?: string;
+}
+
 export class UpdateDataSourceQueryDto {
     @IsEnum(DataSyncInterval)
     @IsOptional()

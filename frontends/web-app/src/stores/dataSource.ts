@@ -8,16 +8,17 @@ import type {
     TestDataSourceConnectionResponse,
 } from '../types/responses';
 import {
+    createDataSource,
     listDataSourceConnections,
     listDataSourceOptions,
     testConnection,
     updateDataSourceConnection,
 } from '../requests';
-import { UserType } from '../types/user-store';
 import { encrypt } from '../utility/encryption';
 import { APIEndpoints } from '../types/requests';
 import { OAUTH_REDIRECT_PATH } from '../constants/localStorageKeys';
 import { useToast } from 'vue-toastification';
+import { CreateDataSourceRequest } from '../types/data-source-store';
 
 const toast = useToast();
 
@@ -32,6 +33,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         connectionTest: false,
         indexingIntervalUpdate: false,
         indexNowInvocation: false,
+        createDataSource: false,
     });
 
     const dataSourceStorageUsageSum = computed(() =>
@@ -73,11 +75,24 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         }
     };
 
+    const createDataSourceConnection = async (createData: CreateDataSourceRequest) => {
+        isLoading.value.createDataSource = true;
+
+        try {
+            const resp = await createDataSource({
+                ...createData,
+                secret: await encrypt(createData.secret),
+            });
+            connections.value.push(resp);
+        } finally {
+            isLoading.value.createDataSource = false;
+        }
+    };
+
     const testDataSourceCredential = async (
-        dataSourceTypeId: string,
-        ownerEntityId: string,
-        userType: UserType,
+        dataSourceTypeName: string,
         secret: string,
+        externalId?: string,
     ): Promise<TestDataSourceConnectionResponse> => {
         isLoading.value.connectionTest = true;
 
@@ -85,7 +100,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
 
         try {
             const encryptedSecret = await encrypt(secret);
-            result = await testConnection(dataSourceTypeId, ownerEntityId, userType, encryptedSecret);
+            result = await testConnection(dataSourceTypeName, encryptedSecret, externalId);
         } catch (e) {
             result = {
                 isValid: false,
@@ -163,5 +178,6 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         authenticateGoogle,
         setCurrentConfiguring,
         updateOAuthCredentials,
+        createDataSourceConnection,
     };
 });

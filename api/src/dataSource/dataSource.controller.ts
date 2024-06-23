@@ -8,6 +8,7 @@ import type {
     DataSourceConnectionDto,
     ListDataSourceConnectionsResponseDto,
     ListDataSourceTypesResponseDto,
+    TestCredentialsQueryDto,
     TestDataSourceResponseDto,
     UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
@@ -46,11 +47,8 @@ export class DataSourceController {
 
     @Post('/connections/test')
     @UseGuards(AuthGuard('jwt'))
-    async testDataSourceCredential(
-        @Body() body: CreateDataSourceQueryDto,
-        @Req() req: Request,
-    ): Promise<TestDataSourceResponseDto> {
-        return await this.service.testDataSourceCredential(body, req.user as DecodedUserTokenDto);
+    async testDataSourceCredential(@Body() body: TestCredentialsQueryDto): Promise<TestDataSourceResponseDto> {
+        return await this.service.testDataSourceCredential(body);
     }
 
     @Post('/connections/:dataSourceId/sync')

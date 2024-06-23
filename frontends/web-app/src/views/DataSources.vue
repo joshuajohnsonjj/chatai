@@ -2,10 +2,11 @@
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
         <div class="bg-background w-100 pa-6 rounded d-flex justify-space-between mb-6">
             <div class="d-flex justify-start">
-                <v-avatar image="@/assets/companyLogo.jpg" size="60"></v-avatar>
+                <v-avatar v-if="userData?.photoUrl" :image="userData.photoUrl" size="60"></v-avatar>
+                <v-avatar v-else icon="mdi-account-circle" size="60" style="font-size: 2.5rem"></v-avatar>
 
                 <div class="ml-4">
-                    <p class="text-h5 text-primary mb-1">ABC Technology's Data Integrations</p>
+                    <p class="text-h5 text-primary mb-1">{{ userData.firstName }}'s Data Integrations</p>
 
                     <div class="d-flex justify-start">
                         <p class="text-caption text-secondary sub-info-line-height">
@@ -60,6 +61,27 @@
             </div>
             <div class="text-secondary text-body-1 text-center my-2">Loading integrations...</div>
         </div>
+
+        <div v-else-if="dataSources.length === 0">
+            <div class="d-flex justify-center">
+                <v-icon icon="mdi-alert-circle-outline" color="secondary" style="font-size: 10rem"></v-icon>
+            </div>
+            <div class="d-flex justify-center">
+                <div class="text-secondary text-h6 font-weight-medium text-center" style="max-width: 450px">
+                    No integrations added
+                </div>
+            </div>
+            <div class="d-flex justify-center">
+                <div
+                    class="text-secondary text-body-1 text-center"
+                    style="max-width: 450px"
+                    @click="isModalOpen = true"
+                >
+                    Click below to add your first
+                </div>
+            </div>
+        </div>
+
         <div v-else class="d-flex flex-wrap">
             <div
                 v-for="dataSource in dataSources"
@@ -125,7 +147,7 @@
     const { connections: dataSources, isLoading, dataSourceStorageUsageSum } = storeToRefs(dataSourceStore);
 
     const userStore = useUserStore();
-    const { planData } = storeToRefs(userStore);
+    const { planData, userData } = storeToRefs(userStore);
 
     onBeforeMount(async () => {
         if (!dataSources.value.length) {

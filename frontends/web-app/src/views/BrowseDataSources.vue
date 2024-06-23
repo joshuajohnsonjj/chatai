@@ -11,7 +11,7 @@
             class="rounded"
             variant="tonal"
             style="width: 40px; height: 40px"
-            @click="$router.go(-1)"
+            @click="$router.push({ name: RouteName.DATA_SOURCES })"
         ></v-btn>
         <p class="text-h5 text-primary my-5 font-weight-medium">Add Data Source Integration</p>
         <div class="d-flex justify-space-between">

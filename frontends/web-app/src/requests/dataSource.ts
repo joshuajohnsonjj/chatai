@@ -7,6 +7,7 @@ import type {
 } from '../types/responses';
 import { sendAPIRequest } from './service';
 import { UserType } from '../types/user-store';
+import { CreateDataSourceRequest } from '../types/data-source-store';
 
 export const updateDataSourceConnection = async (
     dataSourceId: string,
@@ -46,10 +47,9 @@ export const listDataSourceOptions = async (): Promise<DataSourceTypesResponse[]
 };
 
 export const testConnection = async (
-    dataSourceTypeId: string,
-    ownerEntityId: string,
-    ownerEntityType: UserType,
+    dataSourceTypeName: string,
     secret: string,
+    externalId?: string,
 ): Promise<TestDataSourceConnectionResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.POST,
@@ -57,13 +57,23 @@ export const testConnection = async (
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: APIEndpoints.TEST_DATA_SOURCE,
         data: {
-            dataSourceTypeId,
-            ownerEntityId,
-            ownerEntityType,
+            dataSourceTypeName,
             secret,
+            externalId,
         },
     });
     return resp as TestDataSourceConnectionResponse;
+};
+
+export const createDataSource = async (data: CreateDataSourceRequest): Promise<DataSourceConnectionsResponse> => {
+    const resp = await sendAPIRequest({
+        method: APIMethods.POST,
+        headers: { 'Content-Type': 'application/json' },
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
+        url: APIEndpoints.DATA_SOURCE,
+        data,
+    });
+    return resp as DataSourceConnectionsResponse;
 };
 
 export const manualSyncDataSource = async (dataSourceId: string, secret: string): Promise<void> => {

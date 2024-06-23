@@ -8,6 +8,7 @@ import type {
     UpdateDataSourceQueryDto,
     CompletedImportsRequestDto,
     DataSourceConnectionDto,
+    TestCredentialsQueryDto,
 } from './dto/dataSource.dto';
 import { DataSource, DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
@@ -208,41 +209,12 @@ export class DataSourceService {
         });
     }
 
-    async testDataSourceCredential(
-        params: CreateDataSourceQueryDto,
-        user: DecodedUserTokenDto,
-    ): Promise<TestDataSourceResponseDto> {
-        const userInfo = await this.prisma.user.findUniqueOrThrow({
-            where: { id: user.idUser },
-            select: { type: true },
-        });
-
-        this.logger.log(
-            `Testing data source credential for ${userInfo.type} - ${params.ownerEntityId}`,
-            LoggerContext.DATA_SOURCE,
-        );
-
-        if (userInfo.type === UserType.ORGANIZATION_MEMBER) {
-            this.checkIsOrganizationAdmin(params.ownerEntityId, user.organization, user.oganizationUserRole);
-        } else if (params.ownerEntityId !== user.idUser) {
-            this.logger.error(
-                `User ${user.idUser} does not match ${params.ownerEntityId}`,
-                undefined,
-                LoggerContext.DATA_SOURCE,
-            );
-            throw new AccessDeniedError('User id mismatch');
-        }
-
-        const dataSourceType = await this.prisma.dataSourceType.findUniqueOrThrow({
-            where: { id: params.dataSourceTypeId },
-            select: { name: true },
-        });
-
+    async testDataSourceCredential(params: TestCredentialsQueryDto): Promise<TestDataSourceResponseDto> {
         return await testDataSourceConnection(
             this.configService.get<string>('BASE_API_GATEWAY_URL')!,
             this.configService.get<string>('API_GATEWAY_KEY')!,
             {
-                dataSourceTypeName: dataSourceType.name,
+                dataSourceTypeName: params.dataSourceTypeName,
                 secret: params.secret,
                 externalId: params.externalId,
             },

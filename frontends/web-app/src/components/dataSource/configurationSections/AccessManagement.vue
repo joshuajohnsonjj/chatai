@@ -5,7 +5,7 @@
             <HelpBox class="icon-primary grow-hover button-hover ml-2 pb-6" style="width: 12px" @click="openAuthDocs" />
         </div>
         <p class="text-caption text-secondary" style="max-width: 250px">
-            Your credentials are used to connect to and synchronize the data source
+            Your credentials are used to connect to and index the data source
         </p>
 
         <div v-if="currentConfiguring?.dataSourceName === DataSourceTypeName.GOOGLE_DRIVE">
@@ -49,16 +49,12 @@
     import { useDataSourceStore } from '../../../stores/dataSource';
     import { useToast } from 'vue-toastification';
     import { ref } from 'vue';
-    import { useUserStore } from '../../../stores/user';
     import { DataSourceTypeName } from '../../../types/responses';
 
     const toast = useToast();
 
     const dataSourceStore = useDataSourceStore();
     const { isLoading, currentConfiguring } = storeToRefs(dataSourceStore);
-
-    const userStore = useUserStore();
-    const { userData, userEntityId } = storeToRefs(userStore);
 
     const apiKeyInput = ref<string>('');
 
@@ -69,9 +65,7 @@
         }
 
         const result = await dataSourceStore.testDataSourceCredential(
-            currentConfiguring.value!.dataSourceTypeId,
-            userEntityId.value,
-            userData.value!.type,
+            currentConfiguring.value!.dataSourceName,
             apiKeyInput.value,
         );
 
