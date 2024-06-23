@@ -8,4 +8,5 @@ export interface CreateDataSourceRequest {
     selectedSyncInterval: DataSyncInterval;
     externalId?: string;
     refreshToken?: string;
+    additionalConfiguration: any;
 }

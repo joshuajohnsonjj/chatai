@@ -26,6 +26,7 @@ import { initiateDataSourceImport, testDataSourceConnection } from 'src/services
 import * as moment from 'moment';
 import { createEventBridgeScheduledExecution, deleteEventBridgeSchedule } from 'src/services/eventBridge';
 import { BYTES_IN_MB, LoggerContext } from 'src/constants';
+import { AdditionalConfigTemplate } from 'src/types/prismaJson';
 
 @Injectable()
 export class DataSourceService {
@@ -100,6 +101,7 @@ export class DataSourceService {
                     externalId: params.externalId,
                     selectedSyncInterval: params.selectedSyncInterval,
                     lastSync: params.backfillHistoricalStartDate,
+                    additionalConfig: JSON.stringify(params.additionalConfiguration ?? {}),
                 },
             });
 
@@ -160,7 +162,7 @@ export class DataSourceService {
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
-        const updates: Partial<DataSource> = {};
+        const updates: any = {};
 
         if (params.syncInterval) {
             await this.validateRequestedSyncInterval(params.syncInterval, userInfo.type, dataSource.ownerEntityId);
@@ -229,10 +231,14 @@ export class DataSourceService {
                 category: true,
                 isLiveSyncAvailable: true,
                 isManualSyncAllowed: true,
+                additionalConfigTemplate: true,
             },
         });
 
-        return queryRes;
+        return queryRes.map((type) => ({
+            ...type,
+            additionalConfigTemplate: type.additionalConfigTemplate as AdditionalConfigTemplate,
+        }));
     }
 
     async listUserDataSourceConnections(user: DecodedUserTokenDto): Promise<ListDataSourceConnectionsResponseDto[]> {

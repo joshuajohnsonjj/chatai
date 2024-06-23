@@ -1,6 +1,7 @@
 import { DataSourceCategory, DataSourceTypeName, DataSyncInterval, EntityType } from '@prisma/client';
 import { Type } from 'class-transformer';
 import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from 'class-validator';
+import type { AdditionalConfigTemplate, DataSourceAdditonalConfig } from 'src/types/prismaJson';
 
 export class CreateDataSourceQueryDto {
     @IsUUID()
@@ -26,6 +27,9 @@ export class CreateDataSourceQueryDto {
     @IsString()
     @IsOptional()
     refreshToken?: string;
+
+    @IsOptional()
+    additionalConfiguration?: DataSourceAdditonalConfig;
 }
 
 export class TestCredentialsQueryDto {
@@ -94,6 +98,7 @@ export class DataSourceConnectionDto {
     isSyncing: boolean;
     selectedSyncInterval: DataSyncInterval;
     nextScheduledSync: Date | null;
+    additionalConfig: any;
 }
 
 export class ListDataSourceConnectionsResponseDto extends DataSourceConnectionDto {
@@ -109,4 +114,5 @@ export class ListDataSourceTypesResponseDto {
     category: DataSourceCategory;
     isLiveSyncAvailable: boolean;
     isManualSyncAllowed: boolean;
+    additionalConfigTemplate: AdditionalConfigTemplate | null;
 }

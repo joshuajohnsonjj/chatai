@@ -9,14 +9,6 @@
                         <p class="text-body-1 text-primary font-weight-medium">
                             {{ `${userData?.firstName} ${userData?.lastName}` }}
                         </p>
-
-                        <!-- <div 
-                            v-if="!miniMode"
-                            class="bg-success rounded align-self-start text-caption px-2  button-hover"
-                            @click="$router.push({ name: RouteName.SETTINGS_SUBSCRIPTION })"
-                        >
-                            Upgrade
-                        </div> -->
                     </div>
                     <p class="text-caption text-secondary">{{ email }}</p>
                 </div>
@@ -41,8 +33,6 @@
     import { storeToRefs } from 'pinia';
     import { useUserStore } from '../../stores/user';
     import { TOKEN_STORAGE_KEY } from '../../constants/localStorageKeys';
-    import { useRouter } from 'vue-router';
-    import { RouteName } from '../../types/router';
 
     defineProps<{
         miniMode: boolean;
@@ -51,13 +41,11 @@
     const userStore = useUserStore();
     const { userData } = storeToRefs(userStore);
 
-    const router = useRouter();
-
     const email = JSON.parse(localStorage.getItem(TOKEN_STORAGE_KEY) ?? '{}')?.email;
 
     const onLogout = () => {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
-        router.push({ name: RouteName.LOGIN });
+        window.location.href = '/login';
     };
 </script>
 

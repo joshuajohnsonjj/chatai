@@ -26,10 +26,10 @@
             </div>
         </div>
 
-        <div class="form-container mt-8 d-flex flex-column">
+        <div class="form-container mt-10 d-flex flex-column">
             <div v-if="currentStep === 0">
                 <div class="text-h4 text-primary font-weight-medium text-center">Access management</div>
-                <div class="text-body-1 text-primary text-center mb-14">
+                <div class="text-body-1 text-primary text-center mb-8">
                     Your credentials are used to connect to and index the data source
                 </div>
 
@@ -62,7 +62,7 @@
 
             <div v-else-if="currentStep === 1">
                 <div class="text-h4 text-primary font-weight-medium text-center">Indexing frequency</div>
-                <div class="text-body-1 text-primary text-center mb-14">
+                <div class="text-body-1 text-primary text-center mb-8">
                     Within the confines of your current plan, you may adjust the frequency with which the integration is
                     indexed
                 </div>
@@ -103,8 +103,27 @@
 
             <div v-else>
                 <div class="text-h4 text-primary font-weight-medium text-center">Additional configurations</div>
-                <div class="text-body-1 text-primary text-center mb-14">
+                <div class="text-body-1 text-primary text-center mb-8">
                     Optionally fine tune different aspects of your integration's behavior
+                </div>
+
+                <div
+                    v-for="[optionName, configOption] in Object.entries(
+                        selectedDataSourceOption?.additionalConfigTemplate ?? {},
+                    )"
+                >
+                    <div class="text-body-1 text-primary font-weight-bold mt-6">{{ configOption.displayName }}</div>
+                    <div class="text-body-2 text-secondary" style="max-width: 400px">
+                        {{ configOption.description }}
+                    </div>
+
+                    <div v-if="configOption.type === 'BOOLEAN'">
+                        <v-switch
+                            v-model="additionalConfiguration[optionName]"
+                            color="info"
+                            :label="additionalConfiguration[optionName] ? 'Enabled' : 'Disabled'"
+                        ></v-switch>
+                    </div>
                 </div>
             </div>
 
@@ -153,11 +172,12 @@
 
     const steps = ['Auth', 'Indexing', 'Options'];
 
-    const currentStep = ref<number>(2);
+    const currentStep = ref<number>(0);
     const apiKeyInput = ref<string>();
     const selectedDataSourceOption = ref<DataSourceTypesResponse>();
     const selectedIndexingOption = ref<DataSyncInterval>();
     const backfillDate = ref();
+    const additionalConfiguration = ref({});
 
     onMounted(async () => {
         if (!dataSourceOptions.value.length) {
@@ -172,6 +192,13 @@
             toast.error('Data source type not found');
             onBackToBrowse();
         }
+
+        additionalConfiguration.value = Object.fromEntries(
+            Object.entries(selectedDataSourceOption.value?.additionalConfigTemplate).map(([property, data]: any) => [
+                property,
+                data.default,
+            ]),
+        );
     });
 
     const maxPlanIntervalLevel = computed(
@@ -221,8 +248,8 @@
             secret: apiKeyInput.value!,
             selectedSyncInterval: selectedIndexingOption.value!,
             backfillHistoricalStartDate: backfillDate.value ? new Date(backfillDate.value).toISOString() : undefined,
+            additionalConfiguration: additionalConfiguration.value,
         });
-
         onBackToBrowse();
     };
 

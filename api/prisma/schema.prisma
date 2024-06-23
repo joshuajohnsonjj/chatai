@@ -24,19 +24,21 @@ model DataSource {
   nextScheduledSync    DateTime?
   mbStorageEstimate    Float            @default(0)
   selectedSyncInterval DataSyncInterval @default(WEEKLY)
+  additionalConfig     Json?
 
   @@unique([ownerEntityId, dataSourceTypeId])
 }
 
 model DataSourceType {
-  id                  String             @id @default(uuid())
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @default(now())
-  name                DataSourceTypeName @unique
-  category            DataSourceCategory
-  isLiveSyncAvailable Boolean            @default(false)
-  isManualSyncAllowed Boolean            @default(false)
-  linkedSources       DataSource[]
+  id                       String             @id @default(uuid())
+  createdAt                DateTime           @default(now())
+  updatedAt                DateTime           @default(now())
+  name                     DataSourceTypeName @unique
+  category                 DataSourceCategory
+  isLiveSyncAvailable      Boolean            @default(false)
+  isManualSyncAllowed      Boolean            @default(false)
+  linkedSources            DataSource[]
+  additionalConfigTemplate Json?
 }
 
 model Organization {

@@ -136,6 +136,7 @@ export interface DataSourceConnectionsResponse {
     selectedSyncInterval: DataSyncInterval;
     mbStorageEstimate: number;
     nextScheduledSync: string | null;
+    additionalConfig: any;
 }
 
 export enum DataSourceTypeName {
@@ -150,6 +151,7 @@ export interface DataSourceTypesResponse {
     isLiveSyncAvailable: boolean;
     isManualSyncAllowed: boolean;
     userConnectedDataSourceId?: string;
+    additionalConfigTemplate: any;
 }
 
 export interface TestDataSourceConnectionResponse {
