@@ -67,7 +67,7 @@
                     indexed
                 </div>
 
-                <p class="mt-2 text-body-2 font-weight-medium text-primary">Set Interval</p>
+                <div class="text-body-1 text-primary font-weight-bold mb-2">Set Interval</div>
                 <div class="border-primary rounded px-4 py-2 d-flex justify-space-between">
                     <div
                         v-for="option in Object.values(IndexingIntervalOptions)"
@@ -88,16 +88,37 @@
                         </p>
                     </div>
                 </div>
+
+                <div class="text-body-1 text-primary font-weight-bold mt-6">Backfill cutoff date</div>
+                <div class="text-body-2 text-secondary mb-2" style="max-width: 400px">
+                    Set earliest date for which historical data will be indexed, or leave empty for all-time
+                </div>
+                <v-text-field
+                    variant="outlined"
+                    type="date"
+                    style="max-width: 200px"
+                    v-model="backfillDate"
+                ></v-text-field>
             </div>
 
-            <div v-else>options</div>
+            <div v-else>
+                <div class="text-h4 text-primary font-weight-medium text-center">Additional configurations</div>
+                <div class="text-body-1 text-primary text-center mb-14">
+                    Optionally fine tune different aspects of your integration's behavior
+                </div>
+            </div>
 
             <div class="mt-auto">
                 <div class="d-flex">
                     <v-btn class="w-50" color="secondary" @click="onBack">
                         {{ currentStep !== 0 ? 'back' : 'cancel' }}
                     </v-btn>
-                    <v-btn class="w-50 ml-2" color="blue" @click="onNext" :loading="isLoading.connectionTest">
+                    <v-btn
+                        class="w-50 ml-2"
+                        color="blue"
+                        @click="onNext"
+                        :loading="isLoading.connectionTest || isLoading.createDataSource"
+                    >
                         {{ currentStep !== 2 ? 'next step' : 'finish setup' }}
                     </v-btn>
                 </div>
@@ -132,10 +153,11 @@
 
     const steps = ['Auth', 'Indexing', 'Options'];
 
-    const currentStep = ref<number>(0);
+    const currentStep = ref<number>(2);
     const apiKeyInput = ref<string>();
     const selectedDataSourceOption = ref<DataSourceTypesResponse>();
     const selectedIndexingOption = ref<DataSyncInterval>();
+    const backfillDate = ref();
 
     onMounted(async () => {
         if (!dataSourceOptions.value.length) {
@@ -198,6 +220,7 @@
             ownerEntityId: userEntityId.value,
             secret: apiKeyInput.value!,
             selectedSyncInterval: selectedIndexingOption.value!,
+            backfillHistoricalStartDate: backfillDate.value ? new Date(backfillDate.value).toISOString() : undefined,
         });
 
         onBackToBrowse();
