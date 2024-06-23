@@ -9,6 +9,7 @@ export enum RouteName {
     BROWSE_DATA_SOURCES = 'browse-data-sources',
     LOGIN = 'login',
     SIGNUP = 'signup',
+    SIGNUP_CONFIRMATION = 'signup-confirm',
     PLAN_SELECT = 'plan-selection',
     SETTINGS_PROFILE = 'settings-profile',
     SETTINGS_SUBSCRIPTION = 'settings-subscription',

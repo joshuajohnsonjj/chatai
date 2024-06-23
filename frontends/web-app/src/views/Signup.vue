@@ -15,7 +15,7 @@
                             variant="solo-filled"
                             type="text"
                             placeholder="John"
-                            v-model="email"
+                            v-model="firstName"
                         ></v-text-field>
                     </v-col>
                     <v-col cols="6">
@@ -24,7 +24,7 @@
                             variant="solo-filled"
                             type="text"
                             placeholder="Doe"
-                            v-model="email"
+                            v-model="lastName"
                         ></v-text-field>
                     </v-col>
                     <v-col cols="12">
@@ -49,7 +49,7 @@
                     </v-col>
                     <v-col cols="12">
                         <div class="d-flex justify-start">
-                            <v-checkbox v-model="rememberMe" style="margin-top: -18px"></v-checkbox>
+                            <v-checkbox v-model="termsAgreed" style="margin-top: -18px"></v-checkbox>
                             <div class="text-caption text-secondary">
                                 By checking the box you agree to our
                                 <span class="link button-hover">Terms of Service</span> and
@@ -59,9 +59,9 @@
                     </v-col>
                 </v-row>
 
-                <div class="w-100 mt-2 px-5 rounded login-button button-hover mb-12" @click="login">
+                <div class="w-100 mt-2 px-5 rounded login-button button-hover mb-12" @click="signup">
                     <div v-if="!isLoading.authentication" class="d-flex justify-space-between">
-                        <p class="line-height-60">Log in to Apoio</p>
+                        <p class="line-height-60">Sign up to Apoio</p>
                         <v-icon class="line-height-60" style="height: 60px" icon="mdi-arrow-right"></v-icon>
                     </div>
                     <div v-else class="d-flex justify-center py-4">
@@ -74,7 +74,7 @@
                 <div class="w-100 mt-12 pa-1 rounded login-button button-hover">
                     <div class="bg-background w-100 d-flex justify-start rounded px-5">
                         <v-icon class="line-height-60" style="height: 60px" icon="mdi-google"></v-icon>
-                        <p class="pl-4 line-height-60">Log in with Google</p>
+                        <p class="pl-4 line-height-60">Sign up with Google</p>
                     </div>
                 </div>
             </v-col>
@@ -91,28 +91,76 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useUserStore } from '../stores/user';
-    import { EMAIL_STORAGE_KEY } from '../constants/localStorageKeys';
     import { storeToRefs } from 'pinia';
     import { RouteName } from '../types/router';
+    import { useToast } from 'vue-toastification';
+    import { useRouter } from 'vue-router';
 
     const userStore = useUserStore();
-
     const { isLoading } = storeToRefs(userStore);
 
-    const passwordVisible = ref(false);
-    const email = ref<string>(localStorage.getItem(EMAIL_STORAGE_KEY) ?? '');
-    const password = ref<string>();
-    const rememberMe = ref(!!localStorage.getItem(EMAIL_STORAGE_KEY));
-</script>
+    const toast = useToast();
 
-<style>
-    .v-input__details {
-        display: none;
-    }
-</style>
+    const router = useRouter();
+
+    const passwordVisible = ref(false);
+    const firstName = ref<string>();
+    const lastName = ref<string>();
+    const email = ref<string>();
+    const password = ref<string>();
+    const termsAgreed = ref(false);
+
+    const validPassword = (password: string): boolean => {
+        if (password.length < 8) {
+            toast.error('Password must be at least 8 characters in length');
+            return false;
+        }
+
+        const regex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d).+$/;
+        if (!regex.test(password)) {
+            toast.error('Password must contain an uppercase letter, lowercase letter, and number.');
+            return false;
+        }
+
+        return true;
+    };
+
+    const signup = async () => {
+        if (!firstName.value || !lastName.value || !email.value || !password.value) {
+            toast.error('Missing required fields');
+            return;
+        }
+
+        if (!email.value.includes('@')) {
+            toast.error('Valid email address required');
+            return;
+        }
+
+        if (!validPassword(password.value)) {
+            return;
+        }
+
+        if (!termsAgreed.value) {
+            toast.error('Must agree to the terms of service and privacy policy');
+            return;
+        }
+
+        await userStore.signup(firstName.value, lastName.value, email.value, password.value);
+
+        toast.success('Signup succeeded');
+
+        router.push({ name: RouteName.SIGNUP_CONFIRMATION, query: { email: email.value } });
+    };
+</script>
 
 <style scoped>
     .line-height-60 {
         line-height: 60px;
+    }
+</style>
+
+<style>
+    .v-input__details {
+        display: none;
     }
 </style>

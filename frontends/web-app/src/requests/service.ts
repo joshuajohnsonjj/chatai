@@ -39,6 +39,7 @@ export const sendAPIRequest = async (req: AxiosRequestConfig, withAuthRetry = tr
         const response = await axios(req);
         return response.data;
     } catch (e) {
+        console.log(e);
         const isBadToken = e.response.data?.error?.name === 'UnauthorizedException';
         if (isBadToken && withAuthRetry && tokenData.email && tokenData.refreshToken) {
             await refreshTokenRequest(tokenData.email, tokenData.refreshToken);
@@ -48,10 +49,10 @@ export const sendAPIRequest = async (req: AxiosRequestConfig, withAuthRetry = tr
             window.location.pathname = '/login';
         } else if (e.response.data?.error?.code >= 400 && e.response.data?.error?.code < 500) {
             toast.error(e.response.data.error.message);
-            throw Error(e);
+            throw e;
         } else {
             toast.error('An internal error has occured. Contact support if the issue continues.');
-            throw Error(e);
+            throw e;
         }
     }
 };

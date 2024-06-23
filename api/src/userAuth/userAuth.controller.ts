@@ -18,11 +18,7 @@ export class UserAuthController {
     @Post('register')
     @UsePipes(ValidationPipe)
     async register(@Body() registerRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
-        try {
-            return await this.authService.register(registerRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.register(registerRequest);
     }
 
     @Post('invite/:invitationId/accept')
@@ -30,75 +26,43 @@ export class UserAuthController {
         @Param() invitationId: string,
         @Body() registerRequest: RegisterRequestDto,
     ): Promise<RegisterResponseDto> {
-        try {
-            return await this.authService.acceptInvite(invitationId, registerRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.acceptInvite(invitationId, registerRequest);
     }
 
     @Post('login')
     async authenticate(@Body() authenticateRequest: AuthenticateRequestDto): Promise<AuthenticateResponseDto> {
-        try {
-            return await this.authService.authenticate(authenticateRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.authenticate(authenticateRequest);
     }
 
     @Post('/password/forgot')
     async forgot(@Body() forgetRequest: ForgetRequestDto) {
-        try {
-            return await this.authService.forget(forgetRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.forget(forgetRequest);
     }
 
     @Post('/password/reset')
     async reset(@Body() resetRequest: ResetRequestDto) {
-        try {
-            return await this.authService.reset(resetRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.reset(resetRequest);
     }
 
     @Post('/password/change')
     async updatePassword(@Body() data: ChangeRequestDto) {
-        try {
-            return await this.authService.updatePassword(data.accessToken, data.oldPassword, data.newPassword);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.updatePassword(data.accessToken, data.oldPassword, data.newPassword);
     }
 
     @Post('confirm')
     async confirm(@Body() confirmUserRequest: ConfirmUserRequestDto) {
-        try {
-            return await this.authService.confirmUser(confirmUserRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.confirmUser(confirmUserRequest);
     }
 
     @Patch('confirm')
     async resendConfirmEmail(@Body() params: ForgetRequestDto) {
-        try {
-            return await this.authService.resendConfirmEmail(params.email);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.resendConfirmEmail(params.email);
     }
 
     @Post('refresh')
     async refreshSession(
         @Body() refreshSessionRequest: RefreshUserSessionRequestDto,
     ): Promise<AuthenticateResponseDto> {
-        try {
-            return await this.authService.refreshUserSession(refreshSessionRequest);
-        } catch (e) {
-            throw new BadRequestError(e.message);
-        }
+        return await this.authService.refreshUserSession(refreshSessionRequest);
     }
 }

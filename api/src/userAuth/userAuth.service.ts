@@ -26,7 +26,7 @@ import { UserInviteType, UserType } from '@prisma/client';
 import { StripeService } from 'src/services/stripe';
 import { type JwtPayload, decode } from 'jsonwebtoken';
 import { LoggerContext } from 'src/constants';
-import { BadRequestError } from 'src/exceptions';
+import { BadRequestError, UserNotConfirmedError } from 'src/exceptions';
 import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
 
 @Injectable()
@@ -43,9 +43,10 @@ export class UserAuthService {
         private readonly logger: Logger,
     ) {}
 
-    // TODO: encrypt password for transit
     async register(authRegisterRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
         const { firstName, lastName, email, password } = authRegisterRequest;
+
+        this.logger.log(`Creating new user ${email}`, LoggerContext.USER_AUTH);
 
         const signupInput = {
             ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
@@ -232,7 +233,11 @@ export class UserAuthService {
             };
         } catch (error) {
             this.logger.error(error.message, error.stack, LoggerContext.USER_AUTH);
-            throw new BadRequestError(error.message);
+            if (error.name === 'UserNotConfirmedException') {
+                throw new UserNotConfirmedError('User must complete confirmation to login');
+            }
+            throw error;
+            // throw new BadRequestError(error.message);
         }
     }
 

@@ -1,4 +1,6 @@
 export enum APIEndpoints {
+    REGISTER = '/v1/userAuth/register',
+    CONFIRM_SIGNUP = '/v1/userAuth/confirm',
     LOGIN = '/v1/userAuth/login',
     REFRESH = '/v1/userAuth/refresh',
     PASSWORD_CHANGE = '/v1/userAuth/password/change',

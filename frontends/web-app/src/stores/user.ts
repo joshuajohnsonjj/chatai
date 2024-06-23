@@ -1,11 +1,21 @@
 import { defineStore } from 'pinia';
-import { getUserInfo, loginUser, updateDetails, updatePassowrd, updateSettings, uploadAvatarToS3 } from '../requests';
+import {
+    confirmNewUser,
+    getUserInfo,
+    loginUser,
+    registerNewUser,
+    updateDetails,
+    updatePassword,
+    updateSettings,
+    uploadAvatarToS3,
+} from '../requests';
 import type { AccountPlan, OrgInfo, UserInfo, UserSettings } from '../types/user-store';
 import { UserType } from '../types/user-store';
 import { computed, ref } from 'vue';
 import omit from 'lodash/omit';
 import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 import { UpdateUserDetailRequest } from '../types/requests';
+import { HttpStatusCode } from 'axios';
 
 export const useUserStore = defineStore('user', () => {
     const isLoading = ref({
@@ -40,7 +50,31 @@ export const useUserStore = defineStore('user', () => {
         return userData.value.id;
     });
 
-    const login = async (email: string, password: string): Promise<boolean> => {
+    const signup = async (firstName: string, lastName: string, email: string, password: string) => {
+        isLoading.value.authentication = true;
+
+        try {
+            await registerNewUser(firstName, lastName, email, password);
+        } finally {
+            isLoading.value.authentication = false;
+        }
+    };
+
+    const confirmUser = async (email: string, code: string): Promise<boolean> => {
+        isLoading.value.authentication = true;
+
+        let success = false;
+
+        try {
+            await confirmNewUser(email, code);
+            success = true;
+        } finally {
+            isLoading.value.authentication = false;
+            return success;
+        }
+    };
+
+    const login = async (email: string, password: string): Promise<{ success: boolean; unconfirmed: boolean }> => {
         isLoading.value.authentication = true;
 
         try {
@@ -48,7 +82,10 @@ export const useUserStore = defineStore('user', () => {
 
             if (!resp) {
                 isLoading.value.authentication = false;
-                return false;
+                return {
+                    success: false,
+                    unconfirmed: false,
+                };
             }
 
             localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(resp));
@@ -57,11 +94,24 @@ export const useUserStore = defineStore('user', () => {
 
             isLoading.value.authentication = false;
 
-            return true;
+            return {
+                success: true,
+                unconfirmed: false,
+            };
         } catch (e) {
             isLoading.value.authentication = false;
 
-            return false;
+            if (e.response.data?.error?.code === HttpStatusCode.UnprocessableEntity) {
+                return {
+                    success: false,
+                    unconfirmed: true,
+                };
+            }
+
+            return {
+                success: false,
+                unconfirmed: false,
+            };
         }
     };
 
@@ -160,7 +210,7 @@ export const useUserStore = defineStore('user', () => {
         let success = true;
 
         try {
-            await updatePassowrd(oldPassword, newPassword, accessToken);
+            await updatePassword(oldPassword, newPassword, accessToken);
         } catch (e) {
             success = false;
             isLoading.value.passwordUpdate = false;
@@ -200,6 +250,8 @@ export const useUserStore = defineStore('user', () => {
         userEntityId,
         planData,
         login,
+        signup,
+        confirmUser,
         setCurrentUser,
         setNewProfileImage,
         commitProfileDetailUpdate,

@@ -14,6 +14,8 @@ const getStatusCode = (exceptionName: string): number => {
             return HttpStatus.NOT_FOUND;
         case ErrorTypes.AccessDeniedError:
             return HttpStatus.UNAUTHORIZED;
+        case ErrorTypes.UserNotConfirmedError:
+            return HttpStatus.UNPROCESSABLE_ENTITY;
         default:
             return HttpStatus.INTERNAL_SERVER_ERROR;
     }

@@ -3,6 +3,7 @@ export enum ErrorTypes {
     BadCredentialsError = 'BadCredentialsError',
     ResourceNotFoundError = 'ResourceNotFoundError',
     AccessDeniedError = 'AccessDeniedError',
+    UserNotConfirmedError = 'UserNotConfirmedError',
     InternalError = 'InternalError',
 }
 
@@ -10,6 +11,13 @@ export class BadRequestError extends Error {
     constructor(message: string) {
         super(message);
         this.name = ErrorTypes.BadRequestError;
+    }
+}
+
+export class UserNotConfirmedError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = ErrorTypes.UserNotConfirmedError;
     }
 }
 

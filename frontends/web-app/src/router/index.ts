@@ -4,6 +4,7 @@ import Chat from '../views/Chat.vue';
 import NewChat from '../views/NewChat.vue';
 import Login from '../views/Login.vue';
 import Signup from '../views/Signup.vue';
+import SignupConfirm from '../views/SignupConfirm.vue';
 import PlanSelection from '../views/PlanSelection.vue';
 import DataSources from '../views/DataSources.vue';
 import Search from '../views/Search.vue';
@@ -186,6 +187,15 @@ const router = createRouter({
                 sideNavEnabled: false,
             },
             component: Signup,
+        },
+        {
+            path: '/signup/confirmation',
+            name: RouteName.SIGNUP_CONFIRMATION,
+            meta: {
+                type: RouteType.AUTH,
+                sideNavEnabled: false,
+            },
+            component: SignupConfirm,
         },
 
         /**

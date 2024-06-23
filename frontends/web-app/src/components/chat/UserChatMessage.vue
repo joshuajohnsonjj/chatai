@@ -1,6 +1,7 @@
 <template>
     <div class="bg-surface-bright rounded py-2 px-4 d-flex">
-        <v-avatar image="@/assets/avatar.jpg" size="32"></v-avatar>
+        <v-avatar v-if="userData?.photoUrl" :image="userData.photoUrl" size="32"></v-avatar>
+        <v-avatar v-else icon="mdi-account-circle" size="32" style="font-size: 2rem"></v-avatar>
 
         <p v-if="!isEditing" class="ml-4 mt-1 me-auto text-body-1 text-primary">{{ text }}</p>
 
@@ -29,6 +30,8 @@
 <script lang="ts" setup>
     import { ref } from 'vue';
     import { useChatStore } from '../../stores/chat';
+    import { useUserStore } from '../../stores/user';
+    import { storeToRefs } from 'pinia';
 
     const props = defineProps<{
         text: string;
@@ -38,6 +41,9 @@
     }>();
 
     const chatStore = useChatStore();
+
+    const userStore = useUserStore();
+    const { userData } = storeToRefs(userStore);
 
     const isEditing = ref(false);
     const editText = ref(props.text);

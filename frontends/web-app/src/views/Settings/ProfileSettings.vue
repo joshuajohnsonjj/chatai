@@ -185,7 +185,7 @@
                                 variant="tonal"
                                 min-width="200"
                                 :disabled="!passowrdChanged"
-                                @click="updatePassowrd"
+                                @click="updatePassword"
                                 :loading="isLoading.passwordUpdate"
                                 >save</v-btn
                             >
@@ -365,7 +365,7 @@
         }
     };
 
-    const updatePassowrd = async () => {
+    const updatePassword = async () => {
         const { success } = await userStore.updateUserPassowrd(password.value.new, password.value.current);
 
         if (success) {

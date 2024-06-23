@@ -87,7 +87,11 @@
             return;
         }
 
-        const success = await userStore.login(email.value, password.value);
+        const { success, unconfirmed } = await userStore.login(email.value, password.value);
+
+        if (unconfirmed) {
+            router.push({ name: RouteName.SIGNUP_CONFIRMATION, query: { email: email.value } });
+        }
 
         if (!success) {
             return;

@@ -1,13 +1,15 @@
-import { IsEmail, IsOptional, IsPhoneNumber, IsString, IsStrongPassword } from 'class-validator';
+import { IsEmail, IsOptional, IsPhoneNumber, IsString, IsStrongPassword, MaxLength } from 'class-validator';
 
 export class RegisterRequestDto {
     @IsString()
+    @MaxLength(15)
     firstName: string;
 
     @IsString()
+    @MaxLength(20)
     lastName: string;
 
-    @IsPhoneNumber('US')
+    @IsPhoneNumber()
     @IsOptional()
     phoneNumber?: string;
 
