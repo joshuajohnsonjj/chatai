@@ -70,12 +70,11 @@
                 <div
                     id="chat-scroll"
                     ref="chatScrollContainer"
-                    class="d-flex flex-column"
                     :class="{ 'reply-mode-chat-scroll': !!replyingInThreadId }"
                 >
-                    <MessageThreadDisplay />
-
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
+
+                    <MessageThreadDisplay />
                 </div>
 
                 <MessageInput
@@ -115,13 +114,14 @@
     import { storeToRefs } from 'pinia';
     import { useChatStore } from '../stores/chat';
     import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-    import { useRoute } from 'vue-router';
+    import { useRoute, useRouter } from 'vue-router';
     import { useGoTo } from 'vuetify';
     import debounce from 'lodash/debounce';
 
     const chatStore = useChatStore();
     const goTo = useGoTo();
     const route = useRoute();
+    const router = useRouter();
 
     const { chats, selectedChat, chatHistory, replyingInThreadId, isLoading, hasMoreChatHistoryResults } =
         storeToRefs(chatStore);
@@ -140,9 +140,12 @@
         if (!chats.value.length) {
             await chatStore.getChatList();
         }
-        if (!chatHistory.value.length) {
+
+        if (!chatHistory.value.length && !route.query.create) {
             await chatStore.setChatHistory(route.params.chatId as string);
         }
+
+        router.replace({ query: {} });
 
         scrollToBottom();
 
@@ -195,13 +198,15 @@
 
     const onScroll = () => {
         // track scroll possition for returning after reply mode exit
-        if (!replyingInThreadId.value) {
-            chatScrollPosition.value = chatScrollContainer.value!.scrollTop;
+        if (!replyingInThreadId.value && chatScrollContainer.value) {
+            chatScrollPosition.value = chatScrollContainer.value.scrollTop;
         }
 
         // pagination handling
         if (
-            (chatScrollContainer.value?.scrollTop ?? 1750) < 1750 &&
+            chatScrollContainer.value &&
+            chatScrollContainer.value &&
+            Math.abs(chatScrollContainer.value.scrollTop) > 0.75 * chatScrollContainer.value.scrollHeight &&
             hasMoreChatHistoryResults.value &&
             !isLoading.value.chatHistory &&
             !replyingInThreadId.value
@@ -210,10 +215,7 @@
         }
 
         // quick scroll to bottom button conditional render
-        if (
-            chatScrollContainer.value &&
-            chatScrollContainer.value.scrollHeight - chatScrollContainer.value.scrollTop > 1250
-        ) {
+        if (chatScrollContainer.value && Math.abs(chatScrollContainer.value.scrollTop) > 1250) {
             shouldShowScrollToBottomButton.value = true;
         } else {
             shouldShowScrollToBottomButton.value = false;
@@ -234,6 +236,8 @@
         -ms-overflow-style: none;
         scrollbar-width: none;
         height: 85vh;
+        display: flex;
+        flex-direction: column-reverse;
     }
 
     .reply-mode-chat-scroll {

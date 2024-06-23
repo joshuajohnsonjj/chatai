@@ -37,13 +37,20 @@
     import { useGoTo } from 'vuetify';
     import { RouteName } from '../../types/router';
     import { storeToRefs } from 'pinia';
+    import { useRoute, useRouter } from 'vue-router';
+    import { useUserStore } from '../../stores/user';
 
     const emit = defineEmits(['replyModeExited', 'inputHeightChanged']);
 
     const chatStore = useChatStore();
-    const { replyingInThreadId } = storeToRefs(chatStore);
+    const { replyingInThreadId, selectedChat } = storeToRefs(chatStore);
+
+    const userStore = useUserStore();
 
     const goTo = useGoTo();
+
+    const route = useRoute();
+    const router = useRouter();
 
     const textField = ref<string>('');
     const isHovering = ref(false);
@@ -59,6 +66,10 @@
 
     const onInput = async () => {
         await nextTick();
+
+        if (!gradient.value || textArea.value) {
+            return;
+        }
 
         const newHeight = textArea.value!.clientHeight;
         if (newHeight < 70) {
@@ -76,12 +87,23 @@
         }
     };
 
-    const sendMessage = () => {
+    const sendMessage = async () => {
         if (!textField.value.length) {
             return;
         }
 
-        chatStore.sendMessage(textField.value);
+        if (route.name === RouteName.MESSAGES) {
+            chatStore.sendMessage(textField.value);
+        } else {
+            await chatStore.createNewChat(userStore.userEntityId);
+            router.push({
+                name: RouteName.MESSAGES,
+                params: { chatId: selectedChat.value!.id },
+                query: { create: 'true' },
+            });
+            chatStore.sendMessage(textField.value);
+        }
+
         textField.value = '';
         scrollToBottom();
     };
@@ -122,7 +144,7 @@
     }
 
     .messageInput {
-        max-width: 725px;
+        width: 725px;
     }
 
     #sendBtn {

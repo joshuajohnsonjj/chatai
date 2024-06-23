@@ -42,7 +42,10 @@
                 </p>
             </div>
 
-            <HorizontalLine v-if="[RouteType.CHAT, RouteType.SETTINGS].includes($route.meta.type)" :mr="4" />
+            <HorizontalLine
+                v-if="[RouteType.CHAT, RouteType.SETTINGS].includes($route.meta.type as RouteType)"
+                :mr="4"
+            />
 
             <SideNavChatOptions :mini-mode="!isMenuExpanded" />
             <SideNavSettingsOptions :mini-mode="!isMenuExpanded" />

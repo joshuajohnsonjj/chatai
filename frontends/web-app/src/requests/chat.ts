@@ -1,4 +1,4 @@
-import type { SendMessageParams, UpdateChatParams } from '../types/chat-store';
+import { ChatType, type SendMessageParams, type UpdateChatParams } from '../types/chat-store';
 import { APIEndpoints, APIMethods } from '../types/requests';
 import type {
     ChatMessageResponse,
@@ -9,6 +9,21 @@ import type {
 } from '../types/responses';
 import { sendAPIRequest } from './service';
 import { TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
+
+export const createChat = async (associatedEntityId: string, title?: string): Promise<ChatResponse> => {
+    const resp = await sendAPIRequest({
+        method: APIMethods.POST,
+        headers: { 'Content-Type': 'application/json' },
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
+        url: APIEndpoints.CHATS,
+        data: {
+            chatType: ChatType.SYSTEM,
+            associatedEntityId,
+            title,
+        },
+    });
+    return resp as ChatResponse;
+};
 
 // TODO: implement pagination
 export const listChats = async (): Promise<ListChatsResponse> => {

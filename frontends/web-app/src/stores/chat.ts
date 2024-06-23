@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import type { ChatMessageResponse, ChatResponse, ChatThreadResponse } from '../types/responses';
 import {
+    createChat,
     getChatHistory,
     getThreadById,
     listChats,
@@ -36,6 +37,7 @@ export const useChatStore = defineStore('chat', () => {
         chatHistory: false,
         chatUpdate: false,
         threadExpansion: false,
+        createChat: false,
     });
 
     const chatSettings = computed(() => {
@@ -51,37 +53,59 @@ export const useChatStore = defineStore('chat', () => {
 
     const getChatList = async () => {
         isLoading.value.chatList = true;
-        const chatData = await listChats();
-        chats.value = chatData.chats;
-        isLoading.value.chatList = false;
+
+        try {
+            const chatData = await listChats();
+            chats.value = chatData.chats;
+        } finally {
+            isLoading.value.chatList = false;
+        }
     };
 
     const updateChat = async (chatId: string, updates: UpdateChatParams) => {
         isLoading.value.chatUpdate = true;
 
-        const response = await updateChatDetail(chatId, updates);
+        try {
+            const response = await updateChatDetail(chatId, updates);
 
-        if (updates.isArchived) {
-            toast.warning('Chat archived');
-        } else if (updates.isArchived === false) {
-            toast.success('Chat unarchived');
-        } else {
-            toast.success('Chat details updated');
+            if (updates.isArchived) {
+                toast.warning('Chat archived');
+            } else if (updates.isArchived === false) {
+                toast.success('Chat unarchived');
+            } else {
+                toast.success('Chat details updated');
+            }
+
+            const ndx = chats.value.findIndex((chat) => chat.id === response.id);
+            chats.value[ndx] = response;
+
+            if (selectedChat.value?.id === response.id) {
+                selectedChat.value = response;
+            }
+        } finally {
+            isLoading.value.chatUpdate = false;
         }
-
-        const ndx = chats.value.findIndex((chat) => chat.id === response.id);
-        chats.value[ndx] = response;
-
-        if (selectedChat.value?.id === response.id) {
-            selectedChat.value = response;
-        }
-
-        isLoading.value.chatUpdate = false;
     };
 
     const unsetChat = () => {
         selectedChat.value = null;
         chatHistory.value = [];
+        nextChatHistoryPageNdx.value = 0;
+        hasMoreChatHistoryResults.value = false;
+        expandedThreads.value = [];
+        replyingInThreadId.value = null;
+    };
+
+    const createNewChat = async (associatedEntityId: string, title?: string) => {
+        isLoading.value.createChat = true;
+
+        try {
+            const newChat = await createChat(associatedEntityId, title);
+            chats.value.unshift(newChat);
+            selectedChat.value = newChat;
+        } finally {
+            isLoading.value.createChat = false;
+        }
     };
 
     const setChatHistory = async (chatId: string) => {
@@ -94,26 +118,30 @@ export const useChatStore = defineStore('chat', () => {
 
         isLoading.value.chatHistory = true;
 
-        selectedChat.value = selected;
-        const chatHistoryData = await getChatHistory(selected.id, nextChatHistoryPageNdx.value);
-        chatHistory.value = [...chatHistoryData.threads, ...chatHistory.value];
-        nextChatHistoryPageNdx.value += 1;
-        hasMoreChatHistoryResults.value = chatHistoryData.responseSize === chatHistoryData.pageSize;
-
-        isLoading.value.chatHistory = false;
+        try {
+            selectedChat.value = selected;
+            const chatHistoryData = await getChatHistory(selected.id, nextChatHistoryPageNdx.value);
+            chatHistory.value = [...chatHistoryData.threads, ...chatHistory.value];
+            nextChatHistoryPageNdx.value += 1;
+            hasMoreChatHistoryResults.value = chatHistoryData.responseSize === chatHistoryData.pageSize;
+        } finally {
+            isLoading.value.chatHistory = false;
+        }
     };
 
     const retrieveFullThread = async (threadId: string) => {
         isLoading.value.threadExpansion = true;
 
-        const thread = await getThreadById(selectedChat.value!.id, threadId);
+        try {
+            const thread = await getThreadById(selectedChat.value!.id, threadId);
 
-        const historyThreadNdx = chatHistory.value.findIndex((history) => history.threadId === threadId);
-        chatHistory.value.splice(historyThreadNdx, 1, thread);
+            const historyThreadNdx = chatHistory.value.findIndex((history) => history.threadId === threadId);
+            chatHistory.value.splice(historyThreadNdx, 1, thread);
 
-        expandedThreads.value.push(threadId);
-
-        isLoading.value.threadExpansion = false;
+            expandedThreads.value.push(threadId);
+        } finally {
+            isLoading.value.threadExpansion = false;
+        }
     };
 
     const condenseThread = (threadId: string) => {
@@ -148,8 +176,8 @@ export const useChatStore = defineStore('chat', () => {
             isSystemMessage: false,
             chatId: selectedChat.value.id,
             threadId,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             informers: [],
         };
 
@@ -161,7 +189,7 @@ export const useChatStore = defineStore('chat', () => {
             newOrFoundThread = {
                 threadId,
                 totalMessageCount: 1,
-                timestamp: new Date(),
+                timestamp: new Date().toISOString(),
                 messages: [promptMessage],
             };
             chatHistory.value.push(newOrFoundThread);
@@ -193,7 +221,7 @@ export const useChatStore = defineStore('chat', () => {
                 isSystemMessage: true,
                 chatId: selectedChat.value.id,
                 threadId: newOrFoundThread.threadId,
-                createdAt: new Date(),
+                createdAt: new Date().toISOString(),
                 informers: [],
             });
 
@@ -318,5 +346,6 @@ export const useChatStore = defineStore('chat', () => {
         updateChat,
         retrieveFullThread,
         condenseThread,
+        createNewChat,
     };
 });

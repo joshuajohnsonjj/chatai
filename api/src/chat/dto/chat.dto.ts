@@ -19,7 +19,7 @@ export class StartNewChatQueryDto {
     @IsString()
     @MaxLength(40)
     @MinLength(1)
-    title: string;
+    title?: string;
 
     @IsString()
     chatType: ChatType;

@@ -97,15 +97,19 @@ export const useUserStore = defineStore('user', () => {
 
         isLoading.value.imageUpload = true;
 
-        const resp = await uploadAvatarToS3(imageBase64, type);
+        try {
+            const resp = await uploadAvatarToS3(imageBase64, type);
 
-        if (resp?.imageUrl) {
-            userData.value!.photoUrl = resp.imageUrl;
-        } else {
+            if (resp?.imageUrl) {
+                userData.value!.photoUrl = resp.imageUrl;
+            } else {
+                success = false;
+            }
+        } catch (e) {
             success = false;
+        } finally {
+            isLoading.value.imageUpload = false;
         }
-
-        isLoading.value.imageUpload = false;
 
         return { success };
     };

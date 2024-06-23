@@ -11,7 +11,7 @@
                     v-if="!message.isSystemMessage"
                     :text="message.text"
                     :message-id="message.id"
-                    :system-response-id="thread.messages[ndx + 1].id"
+                    :system-response-id="thread.messages[ndx + 1]?.id"
                     :thread-id="thread.threadId"
                 />
 

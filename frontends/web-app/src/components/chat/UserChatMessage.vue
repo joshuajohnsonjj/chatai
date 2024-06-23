@@ -14,7 +14,7 @@
         </div>
 
         <v-btn
-            v-if="!isEditing"
+            v-if="!isEditing && !!systemResponseId"
             variant="plain"
             color="secondary"
             style="height: 30px; width: 30px"
@@ -33,7 +33,7 @@
     const props = defineProps<{
         text: string;
         messageId: string;
-        systemResponseId: string;
+        systemResponseId?: string;
         threadId: string;
     }>();
 
@@ -50,7 +50,7 @@
     const onEditSent = () => {
         isEditing.value = false;
 
-        chatStore.updateMessage(editText.value, props.messageId, props.systemResponseId, props.threadId);
+        chatStore.updateMessage(editText.value, props.messageId, props.systemResponseId!, props.threadId);
     };
 </script>
 

@@ -40,8 +40,12 @@ export const useDataSourceStore = defineStore('dataSource', () => {
 
     const retreiveConnections = async () => {
         isLoading.value.dataSourceConnections = true;
-        connections.value = await listDataSourceConnections();
-        isLoading.value.dataSourceConnections = false;
+
+        try {
+            connections.value = await listDataSourceConnections();
+        } finally {
+            isLoading.value.dataSourceConnections = false;
+        }
     };
 
     const retreiveDataSourceOptions = async () => {
@@ -51,20 +55,22 @@ export const useDataSourceStore = defineStore('dataSource', () => {
             await retreiveConnections();
         }
 
-        dataSourceOptions.value = await listDataSourceOptions();
-        dataSourceOptions.value.forEach((option) => {
-            option.userConnectedDataSourceId = connections.value.find(
-                (dataSource) => dataSource.dataSourceName === option.name,
-            )?.id;
+        try {
+            dataSourceOptions.value = await listDataSourceOptions();
+            dataSourceOptions.value.forEach((option) => {
+                option.userConnectedDataSourceId = connections.value.find(
+                    (dataSource) => dataSource.dataSourceName === option.name,
+                )?.id;
 
-            if (dataSourceCategoryToOptionsMap.value[option.category]) {
-                dataSourceCategoryToOptionsMap.value[option.category].push(option.name);
-            } else {
-                dataSourceCategoryToOptionsMap.value[option.category] = [option.name];
-            }
-        });
-
-        isLoading.value.dataSourceOptions = false;
+                if (dataSourceCategoryToOptionsMap.value[option.category]) {
+                    dataSourceCategoryToOptionsMap.value[option.category].push(option.name);
+                } else {
+                    dataSourceCategoryToOptionsMap.value[option.category] = [option.name];
+                }
+            });
+        } finally {
+            isLoading.value.dataSourceOptions = false;
+        }
     };
 
     const testDataSourceCredential = async (
@@ -74,10 +80,22 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         secret: string,
     ): Promise<TestDataSourceConnectionResponse> => {
         isLoading.value.connectionTest = true;
-        const encryptedSecret = await encrypt(secret);
-        const res = await testConnection(dataSourceTypeId, ownerEntityId, userType, encryptedSecret);
-        isLoading.value.connectionTest = false;
-        return res;
+
+        let result: TestDataSourceConnectionResponse;
+
+        try {
+            const encryptedSecret = await encrypt(secret);
+            result = await testConnection(dataSourceTypeId, ownerEntityId, userType, encryptedSecret);
+        } catch (e) {
+            result = {
+                isValid: false,
+                message: 'An error occured. Contact support if issue continues',
+            };
+        } finally {
+            isLoading.value.connectionTest = false;
+        }
+
+        return result;
     };
 
     const commitDataSourceConnectionUpdate = async (syncInterval: DataSyncInterval): Promise<boolean> => {

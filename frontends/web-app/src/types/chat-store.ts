@@ -1,3 +1,7 @@
+export enum ChatType {
+    SYSTEM = 'SYSTEM',
+}
+
 export enum ChatResponseTone {
     CASUAL = 'CASUAL',
     DEFAULT = 'DEFAULT',

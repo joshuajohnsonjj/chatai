@@ -62,14 +62,16 @@ export const useSearchStore = defineStore('search', () => {
             }
         });
 
-        const res = await executeQuery(searchParams, entityId, paginationStartIndex.value);
+        try {
+            const res = await executeQuery(searchParams, entityId, paginationStartIndex.value);
 
-        hasMoreResults.value = res.nextStartNdx < res.numResults;
-        totalResultCount.value = res.numResults;
-        paginationStartIndex.value = res.nextStartNdx;
-        searchResults.value.push(...res.results);
-
-        isLoading.value.searchResults = false;
+            hasMoreResults.value = res.nextStartNdx < res.numResults;
+            totalResultCount.value = res.numResults;
+            paginationStartIndex.value = res.nextStartNdx;
+            searchResults.value.push(...res.results);
+        } finally {
+            isLoading.value.searchResults = false;
+        }
     };
 
     const resetSearchResults = () => {
@@ -80,10 +82,12 @@ export const useSearchStore = defineStore('search', () => {
     const getFilterTopicOptions = async (entityId: string, input?: string) => {
         isLoading.value.topicSuggestions = true;
 
-        const topicRes = await getTopicSuggestions(entityId, input);
-        topicFilterOptions.value = topicRes.results.map((result) => result.value);
-
-        isLoading.value.topicSuggestions = false;
+        try {
+            const topicRes = await getTopicSuggestions(entityId, input);
+            topicFilterOptions.value = topicRes.results.map((result) => result.value);
+        } finally {
+            isLoading.value.topicSuggestions = false;
+        }
     };
 
     const getFilterAuthorOptions = async () => {};
@@ -95,19 +99,21 @@ export const useSearchStore = defineStore('search', () => {
     ) => {
         isLoading.value.allSearchSuggestions = true;
 
-        const topicRes = await getTopicSuggestions(entityId, input);
-        // TODO:  ===> const suthorRes = await getAuthorSuggestions(input, entityId);
-        const sourcesRes = autocompleteSearch(
-            input,
-            dataSourceOptions.map((opt) => opt.name),
-        );
+        try {
+            const topicRes = await getTopicSuggestions(entityId, input);
+            // TODO:  ===> const suthorRes = await getAuthorSuggestions(input, entityId);
+            const sourcesRes = autocompleteSearch(
+                input,
+                dataSourceOptions.map((opt) => opt.name),
+            );
 
-        searchSuggestions.value = [
-            ...topicRes.results,
-            ...sourcesRes.map((source) => ({ type: SearchQueryParamType.SOURCE, value: source })),
-        ];
-
-        isLoading.value.allSearchSuggestions = false;
+            searchSuggestions.value = [
+                ...topicRes.results,
+                ...sourcesRes.map((source) => ({ type: SearchQueryParamType.SOURCE, value: source })),
+            ];
+        } finally {
+            isLoading.value.allSearchSuggestions = false;
+        }
     };
 
     const selectSearchResult = (id: string) => {

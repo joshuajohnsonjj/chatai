@@ -21,7 +21,7 @@
                 style="height: 40px"
             ></v-btn>
         </div>
-        <div class="d-flex justify-start px-4 rounded mt-2 button-hover">
+        <div class="d-flex justify-start px-4 rounded mt-2 button-hover" @click="onStartCreateChat">
             <v-icon
                 icon="mdi-plus-circle"
                 color="secondary"
@@ -48,10 +48,13 @@
     const chatStore = useChatStore();
     const { chats: chatOptions, selectedChat } = storeToRefs(chatStore);
 
-    async function onChatSelected(chatId: string) {
+    const onChatSelected = async (chatId: string) => {
+        chatStore.unsetChat();
         await chatStore.setChatHistory(chatId);
         router.push({ name: RouteName.MESSAGES, params: { chatId } });
-    }
+    };
+
+    const onStartCreateChat = () => {};
 </script>
 
 <style scoped>

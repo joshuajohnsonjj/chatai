@@ -10,7 +10,9 @@
                 <div class="d-flex justify-center">
                     <v-avatar :image="`${BASE_S3_DATASOURCE_LOGO_URL}${informer.sourceName}.png`" size="40"></v-avatar>
                 </div>
-                <p class="text-body-2 text-primary text-center mt-2">{{ maxStrLenToElipse(informer.name, 22) }}</p>
+                <p class="text-body-2 text-primary text-center mt-2">
+                    {{ informerDisplayTitle(informer.name, informer.sourceName) }}
+                </p>
             </div>
         </div>
     </div>
@@ -66,7 +68,7 @@
     import { ChatMessageInformer } from '../../types/responses';
     import { ref } from 'vue';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../../constants';
-    import { maxStrLenToElipse } from '../../utility';
+    import { formatStringStartCase, maxStrLenToElipse } from '../../utility';
     import { storeToRefs } from 'pinia';
 
     const props = defineProps<{
@@ -111,6 +113,13 @@
 
     const openSource = (url: string) => {
         window.open(url, '_blank')!.focus();
+    };
+
+    const informerDisplayTitle = (title: string, dataSourceName: string): string => {
+        if (title && title.length) {
+            return maxStrLenToElipse(title, 22);
+        }
+        return `${formatStringStartCase(dataSourceName)} Data`;
     };
 </script>
 

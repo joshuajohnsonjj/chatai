@@ -17,7 +17,7 @@ import type {
 import { type DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { AccessDeniedError, InternalError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
-import { omit, reverse } from 'lodash';
+import { omit } from 'lodash';
 import * as moment from 'moment';
 import { PrismaError } from 'src/types';
 import { ChatMessage } from '@prisma/client';
@@ -232,10 +232,23 @@ export class ChatService {
 
         this.logger.log(`Creating chat ${params.title} for user ${user.idUser}`, LoggerContext.CHAT);
 
+        let title = params.title;
+        const defaultTitle = 'My new chat #';
+        if (!title) {
+            const untitledChatCount = await this.prisma.chat.count({
+                where: {
+                    userId: user.idUser,
+                    title: { startsWith: defaultTitle },
+                },
+            });
+
+            title = `${defaultTitle}${untitledChatCount + 1}`;
+        }
+
         return await this.prisma.chat.create({
             data: {
                 userId: user.idUser,
-                title: params.title,
+                title,
                 chatType: params.chatType,
                 associatedEntityId: params.associatedEntityId,
             },
@@ -286,7 +299,7 @@ export class ChatService {
 
         // Retrieves 20 threads with oldest 2 messages per thread as well
         // as message count per thread. If message count is greater than 2,
-        // we'll later grab the last 2 messages to include in the thread
+        // we'll later grab the newest 2 messages to include in the thread
         // messages array
         const chat = await this.prisma.chat.findUnique({
             where: { id: chatId },
@@ -349,7 +362,7 @@ export class ChatService {
             page,
             pageSize,
             responseSize: threads.length,
-            threads: reverse(threads),
+            threads: threads,
         };
     }
 
