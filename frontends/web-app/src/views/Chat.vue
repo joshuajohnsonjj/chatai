@@ -72,6 +72,16 @@
                     ref="chatScrollContainer"
                     :class="{ 'reply-mode-chat-scroll': !!replyingInThreadId }"
                 >
+                    <div style="width: 80px; margin: auto">
+                        <v-progress-circular
+                            v-if="isLoading.chatHistory"
+                            class="mt-8"
+                            color="secondary"
+                            :size="80"
+                            indeterminate
+                        ></v-progress-circular>
+                    </div>
+
                     <div id="bottom-of-chat-scroll" style="height: 1px"></div>
 
                     <MessageThreadDisplay />
@@ -235,13 +245,15 @@
         overflow-y: scroll;
         -ms-overflow-style: none;
         scrollbar-width: none;
-        height: 85vh;
+        height: 75vh;
+        margin-top: 5rem;
         display: flex;
         flex-direction: column-reverse;
     }
 
     .reply-mode-chat-scroll {
-        top: -1rem !important;
+        height: 85vh !important;
+        margin-top: 0 !important;
     }
 
     #chat-scroll::-webkit-scrollbar {
