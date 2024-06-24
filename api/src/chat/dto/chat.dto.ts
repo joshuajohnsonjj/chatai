@@ -30,6 +30,10 @@ export class UpdateChatDetailRequestDto {
     @IsOptional()
     isArchived?: boolean;
 
+    @IsBoolean()
+    @IsOptional()
+    isFavorited?: boolean;
+
     @IsString()
     @IsOptional()
     @MaxLength(40)
@@ -73,6 +77,7 @@ export class ChatResponseDto {
     chatTone: ChatTone | null;
     baseInstructions: string | null;
     isArchived: boolean;
+    isFavorited: boolean;
     lastMessage?: {
         timestamp: Date;
         text: string;

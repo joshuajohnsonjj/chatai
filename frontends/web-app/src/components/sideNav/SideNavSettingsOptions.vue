@@ -2,7 +2,7 @@
     <div v-if="$route.meta.type === RouteType.SETTINGS">
         <div
             v-for="page in settingsPages"
-            :key="page.name"
+            :key="page.title"
             class="d-flex justify-space-between px-4 rounded mt-2 button-hover"
             :class="{ 'selected-chat': $route.name === page.routeName }"
             @click="$router.push({ name: page.routeName })"
@@ -45,11 +45,10 @@
 
 <style scoped>
     .selected-chat {
-        background: linear-gradient(
-            90deg,
-            rgba(var(--v-theme-gradient-purple), 1) 0%,
-            rgba(var(--v-theme-surface-bright), 1)
-        );
+        background-color: rgba(var(--v-theme-surface-bright), 0.5);
+        border-radius: 4px 0 0 4px;
+        border: none;
+        border-right: 4px solid rgb(var(--v-theme-gray));
     }
 
     .chat-square {

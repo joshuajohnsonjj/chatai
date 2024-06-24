@@ -46,7 +46,13 @@
                 </div>
 
                 <div class="pr-6 pt-4 d-flex justify-end">
-                    <v-btn variant="plain" icon="mdi-star-outline" color="secondary"></v-btn>
+                    <v-btn
+                        variant="plain"
+                        :icon="selectedChat?.isFavorited ? 'mdi-star' : 'mdi-star-outline'"
+                        :color="selectedChat?.isFavorited ? 'gold' : 'secondary'"
+                        @click="onToggleFavorite"
+                    ></v-btn>
+
                     <VDropdown v-if="!isChatSettingsOpen" :distance="-12" class="mt-4">
                         <button><v-icon icon="mdi-dots-horizontal" color="secondary"></v-icon></button>
 
@@ -191,6 +197,10 @@
 
     const onArchiveConfirmed = async () => {
         await chatStore.updateChat(selectedChat.value!.id, { isArchived: true });
+    };
+
+    const onToggleFavorite = async () => {
+        await chatStore.updateChat(selectedChat.value!.id, { isFavorited: !selectedChat.value!.isFavorited });
     };
 
     const onExitReplyMode = () => {

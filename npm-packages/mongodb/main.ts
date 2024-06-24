@@ -48,8 +48,11 @@ export class MongoDBService {
      * Retrieves data element by element id. Verified owner entity id always required for
      * any query for security.
      */
-    public async getDataElementById(id: string, ownerEntityId: string): Promise<MongoDataElementCollectionDoc | null> {
-        return await this.elementCollConnection.findOne({ _id: id, ownerEntityId });
+    public async getDataElementById(
+        id: string,
+        ownerEntityId: string,
+    ): Promise<Omit<MongoDataElementCollectionDoc, 'embedding'> | null> {
+        return await this.elementCollConnection.findOne({ _id: id, ownerEntityId }, { projection: { embedding: 0 } });
     }
 
     public async queryDataElements(
@@ -59,7 +62,7 @@ export class MongoDBService {
     ): Promise<{
         numResults: number;
         nextStartNdx: number;
-        results: MongoDataElementCollectionDoc[];
+        results: Omit<MongoDataElementCollectionDoc, 'embedding'>[];
     }> {
         const filters: QueryFilter = {
             ownerEntityId: query.entityId,
@@ -84,7 +87,7 @@ export class MongoDBService {
             }
         }
 
-        const cursor = this.elementCollConnection.find(filters).limit(limit).skip(skip);
+        const cursor = this.elementCollConnection.find(filters).limit(limit).skip(skip).project({ embedding: 0 });
 
         const [numResults, results] = await Promise.all([
             this.elementCollConnection.countDocuments(filters),
@@ -94,7 +97,7 @@ export class MongoDBService {
         return {
             numResults,
             nextStartNdx: skip + limit + 1,
-            results,
+            results: results as Omit<MongoDataElementCollectionDoc, 'embedding'>[],
         };
     }
 
@@ -159,14 +162,7 @@ export class MongoDBService {
             },
             {
                 $project: {
-                    ownerEntityId: 1,
-                    text: 1,
-                    title: 1,
-                    createdAt: 1,
-                    url: 1,
-                    authorName: 1,
-                    annotations: 1,
-                    dataSourceType: 1,
+                    embedding: 0,
                     score: { $meta: 'vectorSearchScore' },
                 },
             },
@@ -203,7 +199,7 @@ export class MongoDBService {
 
         if (originalDoc) {
             return {
-                lengthDiff: data.text.length - originalDoc.text.length,
+                lengthDiff: data.text.length - originalDoc.text!.length,
                 isNew: false,
             };
         }

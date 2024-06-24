@@ -24,6 +24,7 @@ export interface ChatResponse {
     chatTone: ChatResponseTone | null;
     baseInstructions: string | null;
     isArchived: boolean;
+    isFavorited: boolean;
     lastMessage?: {
         timestamp: string;
         text: string;

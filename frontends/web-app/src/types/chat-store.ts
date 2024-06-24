@@ -10,6 +10,7 @@ export enum ChatResponseTone {
 
 export interface UpdateChatParams {
     isArchived?: boolean;
+    isFavorited?: boolean;
     title?: string;
     chatCreativity?: number;
     chatMinConfidence?: number;

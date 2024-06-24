@@ -131,6 +131,7 @@ model Chat {
   chatTone           ChatTone?
   baseInstructions   String?
   isArchived         Boolean             @default(false)
+  isFavorited        Boolean             @default(false)
   chatType           ChatType
   associatedEntityId String
   user               User                @relation(fields: [userId], references: [id])

@@ -414,6 +414,7 @@ export class ChatService {
                 chatTone: true,
                 baseInstructions: true,
                 isArchived: true,
+                isFavorited: true,
                 updatedAt: true,
                 chatType: true,
                 messages: {

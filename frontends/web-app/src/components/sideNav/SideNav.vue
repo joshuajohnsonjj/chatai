@@ -26,7 +26,7 @@
                 }"
                 :style="`border-color: rgb(var(--v-theme-${option.color}))`"
                 @click="
-                    navigate(option.connectionsRequired && !connections.length, option.routeName, option.externalLink)
+                    navigate(!!option.connectionsRequired && !connections.length, option.routeName, option.externalLink)
                 "
             >
                 <v-icon

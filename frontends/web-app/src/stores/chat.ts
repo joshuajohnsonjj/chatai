@@ -13,6 +13,7 @@ import {
 } from '../requests/chat';
 import find from 'lodash/find';
 import remove from 'lodash/remove';
+import orderBy from 'lodash/orderBy';
 import { useToast } from 'vue-toastification';
 import { v4 } from 'uuid';
 import { ChatResponseTone, UpdateChatParams } from '../types/chat-store';
@@ -56,7 +57,7 @@ export const useChatStore = defineStore('chat', () => {
 
         try {
             const chatData = await listChats();
-            chats.value = chatData.chats;
+            chats.value = orderBy(chatData.chats, (chat) => !chat.isFavorited);
         } finally {
             isLoading.value.chatList = false;
         }
@@ -81,6 +82,10 @@ export const useChatStore = defineStore('chat', () => {
 
             if (selectedChat.value?.id === response.id) {
                 selectedChat.value = response;
+            }
+
+            if ('isFavorited' in updates) {
+                chats.value = orderBy(chats.value, (chat) => !chat.isFavorited);
             }
         } finally {
             isLoading.value.chatUpdate = false;

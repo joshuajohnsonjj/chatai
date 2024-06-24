@@ -3,12 +3,19 @@
         <div
             v-for="option in chatOptions"
             :key="option.id"
-            class="d-flex justify-space-between px-4 rounded mt-2 button-hover"
-            :class="{ 'selected-chat': selectedChat?.id === option.id }"
+            class="d-flex justify-space-between px-4 mt-2 button-hover"
+            :class="{
+                'selected-chat': selectedChat?.id === option.id,
+                'border-gray': !option.isFavorited,
+                'border-gold': option.isFavorited,
+            }"
             @click="onChatSelected(option.id)"
         >
             <div class="d-flex justify-start w-100">
-                <div class="chat-square my-3 bg-info" :class="{ 'mx-auto': miniMode }"></div>
+                <div
+                    class="chat-square my-3"
+                    :class="{ 'mx-auto': miniMode, 'bg-gray': !option.isFavorited, 'bg-gold': option.isFavorited }"
+                ></div>
                 <p v-if="!miniMode" class="pl-4 text-body-1 text-primary" style="line-height: 40px">
                     {{ option.title }}
                 </p>
@@ -109,11 +116,18 @@
 
 <style scoped>
     .selected-chat {
-        background: linear-gradient(
-            90deg,
-            rgba(var(--v-theme-gradient-purple), 1) 0%,
-            rgba(var(--v-theme-surface-bright), 1)
-        );
+        background-color: rgba(var(--v-theme-surface-bright), 0.5);
+        border-radius: 4px 0 0 4px;
+        border: none;
+        border-right: 4px solid;
+    }
+
+    .border-gray {
+        border-color: rgb(var(--v-theme-gray));
+    }
+
+    .border-gold {
+        border-color: rgb(var(--v-theme-gold));
     }
 
     .chat-square {
