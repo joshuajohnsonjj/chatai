@@ -10,9 +10,7 @@ export const executeQuery = async (
 ): Promise<SearchQueryResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.POST,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: APIEndpoints.SEARCH,
         data: {
@@ -28,9 +26,7 @@ export const getTopicSuggestions = async (entityId: string, text?: string): Prom
     const query = new URLSearchParams({ text: text ?? '', entityId }).toString();
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: `${APIEndpoints.TOPIC_SUGGESTIONS}?${query}`,
     });
@@ -40,11 +36,19 @@ export const getTopicSuggestions = async (entityId: string, text?: string): Prom
 export const getSearchResultById = async (resultId: string): Promise<SearchResult | null> => {
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
         url: APIEndpoints.SEARCH_RESULT.replace(':resultId', resultId),
     });
     return resp as SearchResult | null;
+};
+
+export const deleteSearchResultById = async (resultId: string): Promise<{ deletedCount: number }> => {
+    const resp = await sendAPIRequest({
+        method: APIMethods.DELETE,
+        headers: { 'Content-Type': 'application/json' },
+        baseURL: (import.meta as any).env.VITE_API_BASE_URL,
+        url: APIEndpoints.SEARCH_RESULT.replace(':resultId', resultId),
+    });
+    return resp as { deletedCount: number };
 };

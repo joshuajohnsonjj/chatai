@@ -7,7 +7,7 @@ export const SEARCH_FILTER_TYPE_TO_ICON = {
     [SearchQueryParamType.SOURCE]: 'mdi-cloud-outline',
     [SearchQueryParamType.CATEGORY]: 'mdi-shape-outline',
     [SearchQueryParamType.AUTHOR]: 'mdi-account-group-outline',
-    [SearchQueryParamType.TOPIC]: 'mdi-pound',
-    [SearchQueryParamType.DATE_LOWER]: 'mdi-calendar-range',
-    [SearchQueryParamType.DATE_UPPER]: 'mdi-calendar-range',
+    [SearchQueryParamType.TOPIC]: 'mdi-tag',
+    [SearchQueryParamType.DATE_LOWER]: 'mdi-sort-calendar-descending',
+    [SearchQueryParamType.DATE_UPPER]: 'mdi-sort-calendar-ascending',
 };

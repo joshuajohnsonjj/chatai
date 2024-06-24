@@ -1,22 +1,25 @@
 <template>
     <div class="d-flex justify-center dialog-container">
         <div
-            class="align-self-center bg-surface rounded dialog-modal shadow pa-8"
+            class="align-self-center bg-surface rounded dialog-modal shadow"
             :style="maxWidth ? `max-width: ${maxWidth}px` : ''"
         >
-            <v-btn
-                variant="plain"
-                icon="mdi-close"
-                style="position: absolute; top: 5px; right: -2px"
-                @click="$emit('closeModal')"
-            ></v-btn>
+            <div class="bg-background">
+                <v-btn
+                    variant="plain"
+                    icon="mdi-close"
+                    style="position: absolute; top: 5px; right: -2px"
+                    @click="$emit('closeModal')"
+                ></v-btn>
 
-            <div class="text-primary text-center text-h5 mb-2 mt-2">{{ title }}</div>
-            <div class="text-primary text-center text-body-2 mb-4">
+                <div class="text-primary text-h5 px-8 pt-6 pb-4">{{ title }}</div>
+            </div>
+
+            <div class="text-primary text-body-2 px-8 pt-4 pb-2">
                 {{ subTitle }}
             </div>
 
-            <div class="d-flex justify-end mt-14">
+            <div class="d-flex justify-end mt-6 px-4 pb-4">
                 <v-btn color="secondary" variant="tonal" @click="$emit('closeModal')">cancel</v-btn>
                 <v-btn
                     class="ml-4"

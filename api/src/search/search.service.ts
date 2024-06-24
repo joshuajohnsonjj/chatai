@@ -21,6 +21,7 @@ export class SearchService {
         private readonly mongo: MongoDBService,
     ) {}
 
+    // TODO: remove embedding from response
     async executeQuery(params: SearchQueryRequestDto, user: DecodedUserTokenDto): Promise<SearchQueryResponseDto> {
         this.validateUserAccess(params.entityId, user.idUser, user.organization);
 
@@ -50,6 +51,16 @@ export class SearchService {
         const entityId = user.organization || user.idUser;
         this.logger.log(`Retrieving result ${resultId} for entity ${entityId}`, LoggerContext.SEARCH);
         return await this.mongo.getDataElementById(resultId, entityId);
+    }
+
+    async deleteDataItemById(resultId: string, user: DecodedUserTokenDto): Promise<{ deletedCount: number }> {
+        const ownerEntityId = user.organization || user.idUser;
+        this.logger.log(`Deleting result ${resultId} for entity ${ownerEntityId}`, LoggerContext.SEARCH);
+        const result = await this.mongo.elementCollConnection.deleteOne({
+            ownerEntityId,
+            _id: resultId,
+        });
+        return { deletedCount: result.deletedCount };
     }
 
     async getPeopleSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {

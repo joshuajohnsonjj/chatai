@@ -20,7 +20,7 @@
                     <div class="text-secondary text-caption mr-1">Authored by: Joshua Johnson</div>
                     <v-icon icon="mdi-circle-small" color="secondary" style="font-size: 19px"></v-icon>
                     <div class="text-secondary text-caption ml-1">
-                        Added: {{ moment(timestamp).format('M/D/YYYY HH:MM a') }}
+                        Authored on: {{ moment(timestamp).format('M/D/YYYY HH:MM a') }}
                     </div>
                 </div>
             </div>

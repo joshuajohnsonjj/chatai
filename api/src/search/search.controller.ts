@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Post, Query, Req, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Body, Post, Query, Req, UseGuards, Param, Delete } from '@nestjs/common';
 import { SearchService } from './search.service';
 import { AuthGuard } from '@nestjs/passport';
 import { SearchQueryRequestDto, SearchQueryResponseDto, SearchResultResponseDto } from './dto/search.dto';
@@ -18,10 +18,18 @@ export class SearchController {
 
     @Get('/:resultId/data')
     async getDataItemById(
-        @Param() { resultId }: { resultId: string },
+        @Param('resultId') resultId: string,
         @Req() req: Request,
     ): Promise<SearchResultResponseDto | null> {
         return await this.service.getDataItemById(resultId, req.user as DecodedUserTokenDto);
+    }
+
+    @Delete('/:resultId/data')
+    async deleteDataItemById(
+        @Param('resultId') resultId: string,
+        @Req() req: Request,
+    ): Promise<{ deletedCount: number }> {
+        return await this.service.deleteDataItemById(resultId, req.user as DecodedUserTokenDto);
     }
 
     @Get('/suggestions/people')

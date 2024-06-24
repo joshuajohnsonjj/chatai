@@ -12,8 +12,8 @@ export interface MongoDataElementCollectionDoc {
     text: string;
     title: string;
     embedding: number[];
-    createdAt: number; // Unix timestamp
-    modifiedAt: number; // Unix timestamp
+    createdAt: number; // Unix timestamp (when the original content was created in datasource)
+    modifiedAt: number; // Unix timestamp (when written/rewrittern to our platform)
     url?: string;
     author?: {
         name: string;

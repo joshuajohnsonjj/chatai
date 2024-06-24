@@ -10,7 +10,7 @@ import type {
     DataSourceConnectionDto,
     TestCredentialsQueryDto,
 } from './dto/dataSource.dto';
-import { DataSource, DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
+import { DataSyncInterval, EntityType, InternalAPIKeyScope, UserType } from '@prisma/client';
 import {
     AccessDeniedError,
     BadCredentialsError,

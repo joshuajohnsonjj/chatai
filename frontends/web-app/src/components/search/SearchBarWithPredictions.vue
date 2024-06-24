@@ -67,7 +67,7 @@
                     }"
                 >
                     <div class="bg-surface-bright" style="border-radius: 50%">
-                        <v-icon icon="mdi-pound" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
+                        <v-icon icon="mdi-tag" style="font-size: 11px; margin: 0 6px 0 6px"></v-icon>
                     </div>
                     <div class="text-primary text-caption ml-2 me-auto" style="line-height: 23px">
                         {{ prettyPrintTopicValue(topic.value) }}

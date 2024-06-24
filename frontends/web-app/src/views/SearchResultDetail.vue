@@ -21,7 +21,7 @@
                     <div class="d-flex justify-start">
                         <p class="text-caption text-secondary sub-info-line-height">
                             <v-icon icon="mdi-calendar-outline" color="secondary"></v-icon>
-                            Linked since: {{ moment(selectedSearchResult?.createdAt).format('M/D/YYYY H:MM A') }}
+                            Authored on: {{ moment(selectedSearchResult?.createdAt).format('M/D/YYYY H:MM A') }}
                         </p>
                     </div>
                     <div class="d-flex justify-start">
@@ -44,14 +44,34 @@
                 >
                     View in {{ formatStringStartCase(selectedSearchResult?.dataSourceType ?? '') }}
                 </v-btn>
-                <!-- TODO: handle content deletion -->
-                <v-btn class="w-100" color="warning" prepend-icon="mdi-trash-can" variant="tonal">
+
+                <v-btn
+                    class="w-100"
+                    color="warning"
+                    prepend-icon="mdi-trash-can"
+                    variant="tonal"
+                    :loading="isLoading.deleteResult"
+                    @click="isConfirmDelete = true"
+                >
                     Remove content
                 </v-btn>
             </div>
         </div>
 
-        <div style="height: 60vh; overflow-y: scroll">
+        <v-row class="d-flex justify-start mb-3">
+            <div
+                v-for="topic in uniq(selectedSearchResult?.annotations)"
+                :key="topic"
+                class="d-flex justify-start rounded bg-background py-2 pl-2 pr-5 ml-2 relative"
+            >
+                <v-icon icon="mdi-tag" size="x-small"></v-icon>
+                <div class="text-primary text-caption ml-1">
+                    {{ maxStrLenToElipse(prettyPrintTopicValue(topic), 55) }}
+                </div>
+            </div>
+        </v-row>
+
+        <div style="height: 57vh; overflow-y: scroll">
             <div class="bg-background pa-6 rounded">
                 <div class="bg-surface-bright py-2 px-4 rounded d-flex justify-space-between">
                     <div class="font-weight-medium text-h6 text-primary pt-1">Content excerpt</div>
@@ -65,6 +85,16 @@
             </div>
         </div>
     </div>
+
+    <ConfirmModal
+        v-if="isConfirmDelete"
+        :max-width="400"
+        title="Confrim content deletion"
+        sub-title="Unless your integration settings are updated to exclude this content, it may be re-indexed in the future"
+        button-theme="warning"
+        @close-modal="isConfirmDelete = false"
+        @confirmed="onDeleteConfirmed"
+    />
 </template>
 
 <script lang="ts" setup>
@@ -74,17 +104,20 @@
     import { useSearchStore } from '../stores/search';
     import { storeToRefs } from 'pinia';
     import { markdown } from '../utility/markdown';
-    import { onBeforeMount } from 'vue';
+    import { onBeforeMount, ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
     import { RouteName } from '../types/router';
-    import { formatStringStartCase } from '../utility';
+    import { formatStringStartCase, prettyPrintTopicValue, maxStrLenToElipse } from '../utility';
+    import uniq from 'lodash/uniq';
 
     const searchStore = useSearchStore();
-    const { selectedSearchResult } = storeToRefs(searchStore);
+    const { selectedSearchResult, isLoading } = storeToRefs(searchStore);
 
     const toast = useToast();
     const route = useRoute();
     const router = useRouter();
+
+    const isConfirmDelete = ref(false);
 
     onBeforeMount(async () => {
         if (!selectedSearchResult.value) {
@@ -96,15 +129,21 @@
         }
     });
 
-    function openSource() {
+    const openSource = () => {
         window.open(selectedSearchResult.value?.url, '_blank')!.focus();
-    }
+    };
 
-    function copyToClipboard() {
+    const copyToClipboard = () => {
         const copyText = document.getElementById('content-preview')!.innerText;
         navigator.clipboard.writeText(copyText);
         toast.success('Content coppied to clipboard!');
-    }
+    };
+
+    const onDeleteConfirmed = async () => {
+        await searchStore.deleteSearchResult(route.params.resultId as string);
+        toast.success('Content deleted');
+        router.push({ name: RouteName.SEARCH });
+    };
 </script>
 
 <!-- Unscoped for v-html message rendering -->

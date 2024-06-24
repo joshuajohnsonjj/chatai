@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import remove from 'lodash/remove';
-import { executeQuery, getSearchResultById, getTopicSuggestions } from '../requests/search';
+import { deleteSearchResultById, executeQuery, getSearchResultById, getTopicSuggestions } from '../requests/search';
 import { SearchQueryParamType } from '../types/search-store';
 import type { CurrentSearchSuggestions, QueryParam, SearchQueryParams } from '../types/search-store';
 import type { DataSourceTypesResponse, SearchResult } from '../types/responses';
@@ -27,6 +27,7 @@ export const useSearchStore = defineStore('search', () => {
         allSearchSuggestions: false,
         topicSuggestions: false,
         authorSuggestions: false,
+        deleteResult: false,
     });
 
     const executeSearchQuery = async (entityId: string) => {
@@ -54,10 +55,10 @@ export const useSearchStore = defineStore('search', () => {
                     ];
                     break;
                 case SearchQueryParamType.DATE_LOWER:
-                    searchParams.dateRangeLower = value as number;
+                    searchParams.dateRangeLower = new Date(value).getTime();
                     break;
                 case SearchQueryParamType.DATE_UPPER:
-                    searchParams.dateRangeUpper = value as number;
+                    searchParams.dateRangeUpper = new Date(value).getTime();
                     break;
             }
         });
@@ -148,6 +149,27 @@ export const useSearchStore = defineStore('search', () => {
         resetSearchResults();
     };
 
+    const deleteSearchResult = async (resultId: string): Promise<boolean> => {
+        let deleted = false;
+        isLoading.value.deleteResult = true;
+
+        try {
+            const { deletedCount } = await deleteSearchResultById(resultId);
+
+            if (deletedCount !== 0) {
+                searchResults.value.splice(
+                    searchResults.value.findIndex((res) => res._id === resultId),
+                    1,
+                );
+                deleted = true;
+            }
+        } finally {
+            isLoading.value.deleteResult = false;
+        }
+
+        return deleted;
+    };
+
     return {
         activeQueryParams,
         selectedSearchResult,
@@ -169,5 +191,6 @@ export const useSearchStore = defineStore('search', () => {
         getFilterTopicOptions,
         getFilterAuthorOptions,
         clearQueryParams,
+        deleteSearchResult,
     };
 });

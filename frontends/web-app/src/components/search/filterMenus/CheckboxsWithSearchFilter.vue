@@ -21,7 +21,9 @@
             ></v-checkbox>
         </div>
 
-        <v-btn variant="tonal" color="blue" class="w-100 mt-4 mb-2" @click="onApply">apply</v-btn>
+        <v-btn variant="tonal" color="blue" class="w-100 mt-4 mb-2" :disabled="!selectedOptions.length" @click="onApply"
+            >apply</v-btn
+        >
 
         <div class="d-flex justify-space-between">
             <div class="text-primary text-caption">Selected: {{ selectedOptions.length }}</div>
@@ -75,6 +77,11 @@
     });
 
     const onApply = () => {
+        if (!selectedOptions.value.length) {
+            hideAllPoppers();
+            return;
+        }
+
         selectedOptions.value.forEach((option) => searchStore.addQueryParam(props.type, option));
         searchStore.executeSearchQuery(userEntityId.value);
         hideAllPoppers();

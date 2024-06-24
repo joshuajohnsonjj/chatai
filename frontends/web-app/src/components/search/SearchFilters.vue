@@ -47,12 +47,12 @@
                 color="secondary"
                 class="border-primary text-caption ml-2"
             >
-                Person
+                Author
             </v-btn>
 
             <template #popper>
                 <CheckboxsWithSearchFilter
-                    search-placeholder="Search people..."
+                    search-placeholder="Search authors..."
                     :is-local-search="false"
                     :options="[]"
                     :type="SearchQueryParamType.AUTHOR"
@@ -61,12 +61,7 @@
         </VDropdown>
 
         <VDropdown :distance="12">
-            <v-btn
-                prepend-icon="mdi-pound"
-                variant="outlined"
-                color="secondary"
-                class="border-primary text-caption ml-2"
-            >
+            <v-btn prepend-icon="mdi-tag" variant="outlined" color="secondary" class="border-primary text-caption ml-2">
                 Topic
             </v-btn>
 
@@ -87,7 +82,7 @@
                 color="secondary"
                 class="border-primary text-caption ml-2"
             >
-                Date Range
+                Dates
             </v-btn>
 
             <template #popper>
