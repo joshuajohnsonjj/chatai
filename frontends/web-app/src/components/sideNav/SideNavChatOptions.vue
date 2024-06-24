@@ -1,20 +1,43 @@
 <template>
     <div v-if="$route.meta.type === RouteType.CHAT">
+        <div v-if="isViewingArchived">
+            <v-btn
+                variant="plain"
+                density="compact"
+                class="text-caption"
+                color="primary"
+                prepend-icon="mdi-arrow-left"
+                @click="onBackToUnarchived"
+                >Unarchived chats</v-btn
+            >
+        </div>
+
+        <div v-if="isLoading.chatList" style="width: 30px; margin: auto">
+            <v-progress-circular class="mt-8" color="secondary" :size="30" indeterminate></v-progress-circular>
+        </div>
+
         <div
+            v-if="!isLoading.chatList"
             v-for="option in chatOptions"
             :key="option.id"
             class="d-flex justify-space-between px-4 mt-2 button-hover"
             :class="{
                 'selected-chat': selectedChat?.id === option.id,
-                'border-gray': !option.isFavorited,
-                'border-gold': option.isFavorited,
+                'border-gray': !option.isFavorited && !option.isArchived,
+                'border-gold': option.isFavorited && !option.isArchived,
+                'border-red': option.isArchived,
             }"
             @click="onChatSelected(option.id)"
         >
             <div class="d-flex justify-start w-100">
                 <div
                     class="chat-square my-3"
-                    :class="{ 'mx-auto': miniMode, 'bg-gray': !option.isFavorited, 'bg-gold': option.isFavorited }"
+                    :class="{
+                        'mx-auto': miniMode,
+                        'bg-gray': !option.isFavorited && !option.isArchived,
+                        'bg-gold': option.isFavorited && !option.isArchived,
+                        'bg-warning': option.isArchived,
+                    }"
                 ></div>
                 <p v-if="!miniMode" class="pl-4 text-body-1 text-primary" style="line-height: 40px">
                     {{ option.title }}
@@ -28,8 +51,9 @@
                 style="height: 40px"
             ></v-btn>
         </div>
+
         <div
-            v-if="!isNamingNewChat"
+            v-if="!isNamingNewChat && !isViewingArchived"
             class="d-flex justify-start px-4 rounded mt-2 button-hover"
             @click="isNamingNewChat = true"
         >
@@ -42,7 +66,7 @@
             ></v-icon>
             <p v-if="!miniMode" class="pl-4 text-body-1 text-primary" style="line-height: 40px">New chat</p>
         </div>
-        <div v-else class="mt-2 mr-2">
+        <div v-else-if="!isViewingArchived" class="mt-2 mr-2">
             <v-text-field
                 variant="underlined"
                 label="New chat name"
@@ -62,6 +86,12 @@
                     >create</v-btn
                 >
             </div>
+        </div>
+
+        <div v-if="!isNamingNewChat && !isViewingArchived">
+            <v-btn variant="plain" density="compact" class="text-caption" color="warning" @click="onViewArchived"
+                >View archived</v-btn
+            >
         </div>
     </div>
 </template>
@@ -87,6 +117,7 @@
 
     const isNamingNewChat = ref(false);
     const newChatName = ref('');
+    const isViewingArchived = ref(false);
 
     const onChatSelected = async (chatId: string) => {
         chatStore.unsetChat();
@@ -112,6 +143,16 @@
             query: { create: 'true' },
         });
     };
+
+    const onViewArchived = async () => {
+        await chatStore.getChatList(true);
+        isViewingArchived.value = true;
+    };
+
+    const onBackToUnarchived = async () => {
+        await chatStore.getChatList();
+        isViewingArchived.value = false;
+    };
 </script>
 
 <style scoped>
@@ -128,6 +169,10 @@
 
     .border-gold {
         border-color: rgb(var(--v-theme-gold));
+    }
+
+    .border-red {
+        border-color: rgb(var(--v-theme-warning));
     }
 
     .chat-square {

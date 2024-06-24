@@ -32,8 +32,8 @@ export class ChatController {
     }
 
     @Get()
-    async listChats(@Query() { page }: ListChatMessagesQueryDto, @Req() req: Request): Promise<ListChatResponseDto> {
-        return await this.service.listChats(page, req.user as DecodedUserTokenDto);
+    async listChats(@Query() query: ListChatMessagesQueryDto, @Req() req: Request): Promise<ListChatResponseDto> {
+        return await this.service.listChats(query.page, req.user as DecodedUserTokenDto, query.getArchived === '1');
     }
 
     @Patch(':chatId')

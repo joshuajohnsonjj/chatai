@@ -26,12 +26,12 @@ export const createChat = async (associatedEntityId: string, title?: string): Pr
 };
 
 // TODO: implement pagination
-export const listChats = async (): Promise<ListChatsResponse> => {
+export const listChats = async (getArchived: boolean): Promise<ListChatsResponse> => {
     const resp = await sendAPIRequest({
         method: APIMethods.GET,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
-        url: `${APIEndpoints.CHATS}?${new URLSearchParams({ page: '0' })}`,
+        url: `${APIEndpoints.CHATS}?${new URLSearchParams({ page: '0', getArchived: getArchived ? '1' : '0' })}`,
     });
     return resp as ListChatsResponse;
 };

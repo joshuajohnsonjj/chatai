@@ -392,7 +392,7 @@ export class ChatService {
         return omit(query, ['thread']);
     }
 
-    async listChats(page: number, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
+    async listChats(page: number, user: DecodedUserTokenDto, getArchived = false): Promise<ListChatResponseDto> {
         const associatedEntityId = user.organization || user.idUser;
 
         const pageSize = 20;
@@ -400,6 +400,7 @@ export class ChatService {
             where: {
                 associatedEntityId,
                 userId: user.idUser,
+                isArchived: getArchived,
             },
             orderBy: {
                 updatedAt: 'desc',

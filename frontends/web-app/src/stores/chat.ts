@@ -52,11 +52,11 @@ export const useChatStore = defineStore('chat', () => {
         };
     });
 
-    const getChatList = async () => {
+    const getChatList = async (getArchived = false) => {
         isLoading.value.chatList = true;
 
         try {
-            const chatData = await listChats();
+            const chatData = await listChats(getArchived);
             chats.value = orderBy(chatData.chats, (chat) => !chat.isFavorited);
         } finally {
             isLoading.value.chatList = false;

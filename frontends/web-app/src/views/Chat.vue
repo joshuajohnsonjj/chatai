@@ -78,9 +78,8 @@
                     ref="chatScrollContainer"
                     :class="{ 'reply-mode-chat-scroll': !!replyingInThreadId }"
                 >
-                    <div style="width: 80px; margin: auto">
+                    <div v-if="isLoading.chatHistory" style="width: 80px; margin: auto">
                         <v-progress-circular
-                            v-if="isLoading.chatHistory"
                             class="mt-8"
                             color="secondary"
                             :size="80"
@@ -121,6 +120,7 @@
         :max-width="500"
         title="Confrim chat archival"
         sub-title="Archived chats will be automatially removed after 7 days"
+        button-theme="warning"
         @close-modal="isConfirmArchive = false"
         @confirmed="onArchiveConfirmed"
     />
