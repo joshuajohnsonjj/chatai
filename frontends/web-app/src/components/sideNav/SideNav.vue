@@ -20,9 +20,14 @@
                 v-for="option in menuOptions"
                 :key="option.title"
                 class="d-flex justify-start px-4 mb-3 button-hover"
-                :class="{ selected: $route.meta.type === option.metaType }"
+                :class="{
+                    selected: $route.meta.type === option.metaType,
+                    disabled: option.connectionsRequired && !connections.length,
+                }"
                 :style="`border-color: rgb(var(--v-theme-${option.color}))`"
-                @click="navigate(option.routeName, option.externalLink)"
+                @click="
+                    navigate(option.connectionsRequired && !connections.length, option.routeName, option.externalLink)
+                "
             >
                 <v-icon
                     v-if="option.icon !== 'mdi-hub-outline'"
@@ -58,17 +63,24 @@
 <script lang="ts" setup>
     import { RouteName, RouteType } from '../../types/router';
     import { menuOptions } from '../../constants/sideNav';
-    import { computed, ref } from 'vue';
+    import { computed, onBeforeMount, ref } from 'vue';
     import { useRoute, useRouter } from 'vue-router';
     import { useChatStore } from '../../stores/chat';
     import { storeToRefs } from 'pinia';
     import { SETTINGS_STORAGE_KEY } from '../../constants/localStorageKeys';
+    import { useDataSourceStore } from '../../stores/dataSource';
+    import { useToast } from 'vue-toastification';
 
     const router = useRouter();
     const route = useRoute();
 
+    const toast = useToast();
+
     const chatStore = useChatStore();
     const { selectedChat } = storeToRefs(chatStore);
+
+    const dataSourceStore = useDataSourceStore();
+    const { connections } = storeToRefs(dataSourceStore);
 
     const isMenuStaticExpanded = ref(
         JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}')?.sideNavExpanded !== '0',
@@ -77,6 +89,16 @@
     const navContainer = ref<HTMLElement | null>(null);
 
     const isMenuExpanded = computed(() => isMenuStaticExpanded.value || isMenuHoverExpanded.value);
+
+    onBeforeMount(async () => {
+        if (!connections.value.length) {
+            await dataSourceStore.retreiveConnections();
+        }
+
+        if (!connections.value.length) {
+            router.push({ name: RouteName.DATA_SOURCES });
+        }
+    });
 
     const toggleMenu = () => {
         isMenuStaticExpanded.value = !isMenuStaticExpanded.value;
@@ -98,9 +120,13 @@
         }
     };
 
-    const navigate = (routeName?: RouteName, externalLink?: string) => {
+    const navigate = (isDisabled: boolean, routeName?: RouteName, externalLink?: string) => {
+        if (isDisabled) {
+            toast.warning('Add your first integration to begin using this feature');
+            return;
+        }
+
         if (externalLink) {
-            console.log(window);
             window.open(externalLink, '_blank')!.focus();
         } else if (routeName === RouteName.CHAT && selectedChat.value && route.meta.type !== RouteType.CHAT) {
             router.push({ name: RouteName.MESSAGES, params: { chatId: selectedChat.value.id } });
@@ -154,5 +180,10 @@
         .nav-item-text {
             display: none;
         }
+    }
+
+    .disabled {
+        filter: brightness(70%) !important;
+        cursor: not-allowed !important;
     }
 </style>

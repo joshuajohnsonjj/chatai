@@ -134,7 +134,7 @@
 </template>
 
 <script lang="ts" setup>
-    import { computed, onBeforeMount } from 'vue';
+    import { computed } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useDataSourceStore } from '../stores/dataSource';
     import { BASE_S3_DATASOURCE_LOGO_URL } from '../constants';
@@ -148,12 +148,6 @@
 
     const userStore = useUserStore();
     const { planData, userData } = storeToRefs(userStore);
-
-    onBeforeMount(async () => {
-        if (!dataSources.value.length) {
-            await dataSourceStore.retreiveConnections();
-        }
-    });
 
     const dataSourceConnectionCountPercentage = computed(() =>
         planData.value?.maxDataSources ? (dataSources.value.length / planData.value.maxDataSources) * 100 : null,

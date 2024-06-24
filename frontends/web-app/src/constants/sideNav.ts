@@ -7,6 +7,7 @@ export const menuOptions = [
         color: 'blue',
         metaType: RouteType.CHAT,
         routeName: RouteName.CHAT,
+        connectionsRequired: true,
     },
     {
         title: 'Search',
@@ -14,6 +15,7 @@ export const menuOptions = [
         color: 'success',
         metaType: RouteType.SEARCH,
         routeName: RouteName.SEARCH,
+        connectionsRequired: true,
     },
     {
         title: 'Integrations',
