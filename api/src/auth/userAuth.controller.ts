@@ -7,14 +7,12 @@ import type { RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
 import type { RegisterRequestDto } from './dto/register.request.dto';
 import type { ChangeRequestDto, ResetRequestDto } from './dto/reset.request.dto';
 import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
-import { BadRequestError } from 'src/exceptions';
 
-@Controller('v1/userAuth')
+@Controller('v1/auth/user')
 export class UserAuthController {
     constructor(private readonly authService: UserAuthService) {}
 
     // TODO: fix validation pipe for other routes.. not working bc auth guard??
-
     @Post('register')
     @UsePipes(ValidationPipe)
     async register(@Body() registerRequest: RegisterRequestDto): Promise<RegisterResponseDto> {

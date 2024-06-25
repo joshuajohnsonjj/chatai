@@ -4,12 +4,12 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ChatModule } from './chat/chat.module';
 import { DataSourceModule } from './dataSource/dataSource.module';
 import { OrganizationModule } from './organization/organization.module';
-import { UserAuthModule } from './userAuth/userAuth.module';
+import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { Logger, Module } from '@nestjs/common';
 import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
-import { GoogleAuthModule } from './googleAuth/googleAuth.module';
+// import { GoogleAuthModule } from './auth/googleAuth.module';
 
 @Module({
     imports: [
@@ -17,8 +17,8 @@ import { GoogleAuthModule } from './googleAuth/googleAuth.module';
         ChatModule,
         DataSourceModule,
         OrganizationModule,
-        UserAuthModule,
-        GoogleAuthModule,
+        AuthModule,
+        // GoogleAuthModule,
         SearchModule,
         UserModule,
         ConfigModule.forRoot({

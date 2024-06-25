@@ -14,7 +14,7 @@ import type {
     UpdateChatDetailRequestDto,
     ChatResponseDto,
 } from './dto/chat.dto';
-import { type DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { type DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { AccessDeniedError, InternalError, ResourceNotFoundError } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
 import { omit } from 'lodash';

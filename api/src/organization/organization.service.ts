@@ -10,11 +10,11 @@ import { STRIPE_PRODUCTS } from 'src/constants/stripe';
 import { UserType } from '@prisma/client';
 import { AccessDeniedError, BadRequestError, ResourceNotFoundError } from 'src/exceptions';
 import { EmailSubject, Mailer, OrganizationInvite, TemplateIds } from '@joshuajohnsonjj38/mailer';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
-import { UserAuthService } from 'src/userAuth/userAuth.service';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { ConfigService } from '@nestjs/config';
 import { DataSourceService } from 'src/dataSource/dataSource.service';
+import { UserAuthService } from 'src/auth/userAuth.service';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 
 @Injectable()
 export class OrganizationService {

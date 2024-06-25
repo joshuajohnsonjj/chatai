@@ -8,13 +8,13 @@ import {
     UpdateUserInfoRequestDto,
     UpdateUserSettingsRequestDto,
 } from './dto/userInfo.dto';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Buffer } from 'buffer';
 import { LoggerContext } from 'src/constants';
 import { InternalError } from 'src/exceptions';
-import { UserAuthService } from 'src/userAuth/userAuth.service';
 import { omit } from 'lodash';
+import { UserAuthService } from 'src/auth/userAuth.service';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 
 @Injectable()
 export class UserService {

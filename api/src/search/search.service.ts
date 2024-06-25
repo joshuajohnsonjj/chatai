@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { ConfigService } from '@nestjs/config';
 import { SearchQueryRequestDto, SearchQueryResponseDto, SearchResultResponseDto } from './dto/search.dto';
 import { AccessDeniedError } from 'src/exceptions';

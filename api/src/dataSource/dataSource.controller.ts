@@ -13,7 +13,7 @@ import type {
     UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
 import { Request } from 'express';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 
 @Controller('v1/dataSource')
 export class DataSourceController {

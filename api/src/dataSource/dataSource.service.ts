@@ -19,7 +19,7 @@ import {
     ResourceNotFoundError,
 } from 'src/exceptions';
 import { ConfigService } from '@nestjs/config';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { type APIGatewayInitiateImportParams, CognitoAttribute, OganizationUserRole, PrismaError } from 'src/types';
 import { omit } from 'lodash';
 import { initiateDataSourceImport, testDataSourceConnection } from 'src/services/apiGateway';

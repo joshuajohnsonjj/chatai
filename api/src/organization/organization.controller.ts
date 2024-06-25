@@ -8,7 +8,7 @@ import {
     OrganizationResponseDto,
 } from './dto/organization.dto';
 import { Request } from 'express';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 
 @Controller('v1/organization')
 @UseGuards(AuthGuard('jwt'))

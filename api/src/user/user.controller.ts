@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Req, UseGuards, Patch, Post } from '@nestjs/common';
 import { UserService } from './user.service';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { Request } from 'express';
 import {
     GetUserInfoRequestDto,
