@@ -31,7 +31,7 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         dataSourceConnections: false,
         dataSourceOptions: false,
         connectionTest: false,
-        indexingIntervalUpdate: false,
+        connectionUpdate: false,
         indexNowInvocation: false,
         createDataSource: false,
     });
@@ -113,23 +113,34 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         return result;
     };
 
-    const commitDataSourceConnectionUpdate = async (syncInterval: DataSyncInterval): Promise<boolean> => {
+    const commitDataSourceConnectionUpdate = async (updates: {
+        syncInterval?: DataSyncInterval;
+        additionalConfig?: any;
+    }): Promise<boolean> => {
         if (!currentConfiguring.value) {
             return false;
         }
 
         let success = true;
         try {
-            isLoading.value.indexingIntervalUpdate = true;
-            await updateDataSourceConnection(currentConfiguring.value.id, { syncInterval });
+            isLoading.value.connectionUpdate = true;
+            await updateDataSourceConnection(currentConfiguring.value.id, updates);
             const ndx = connections.value.findIndex((conn) => conn.id === currentConfiguring.value!.id);
-            connections.value[ndx].selectedSyncInterval = syncInterval;
-            currentConfiguring.value.selectedSyncInterval = syncInterval;
+
+            if ('syncInterval' in updates) {
+                connections.value[ndx].selectedSyncInterval = updates.syncInterval!;
+                currentConfiguring.value.selectedSyncInterval = updates.syncInterval!;
+            }
+
+            if ('additionalConfig' in updates) {
+                connections.value[ndx].additionalConfig = updates.additionalConfig!;
+                currentConfiguring.value.additionalConfig = updates.additionalConfig!;
+            }
         } catch (e) {
             console.error(e);
             success = false;
         } finally {
-            isLoading.value.indexingIntervalUpdate = false;
+            isLoading.value.connectionUpdate = false;
         }
         return success;
     };

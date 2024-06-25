@@ -6,7 +6,6 @@ import type {
     TestDataSourceConnectionResponse,
 } from '../types/responses';
 import { sendAPIRequest } from './service';
-import { UserType } from '../types/user-store';
 import { CreateDataSourceRequest } from '../types/data-source-store';
 
 export const updateDataSourceConnection = async (
@@ -15,6 +14,7 @@ export const updateDataSourceConnection = async (
         syncInterval?: DataSyncInterval;
         secret?: string;
         refreshToken?: string;
+        additionalConfig?: any;
     },
 ): Promise<void> => {
     await sendAPIRequest({

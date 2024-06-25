@@ -6,14 +6,18 @@
     />
 
     <div class="bg-surface w-100 h-100 rounded-xl pa-6">
-        <v-btn
-            icon="mdi-arrow-left"
-            class="rounded"
-            variant="tonal"
-            style="width: 40px; height: 40px"
-            @click="$router.push({ name: RouteName.DATA_SOURCES })"
-        ></v-btn>
-        <p class="text-h5 text-primary my-5 font-weight-medium">Add Data Source Integration</p>
+        <div class="d-flex">
+            <v-btn
+                icon="mdi-arrow-left"
+                class="rounded"
+                variant="tonal"
+                density="compact"
+                @click="$router.push({ name: RouteName.DATA_SOURCES })"
+            ></v-btn>
+
+            <p class="text-h5 text-primary mb-5 ml-4 font-weight-medium">Add Data Source Integration</p>
+        </div>
+
         <div class="d-flex justify-space-between">
             <v-text-field
                 clearable

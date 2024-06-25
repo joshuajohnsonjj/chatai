@@ -69,14 +69,14 @@
                     </div>
                 </div>
 
-                <HorizontalLine with-text="or" />
+                <!-- <HorizontalLine with-text="or" />
 
                 <div class="w-100 mt-12 pa-1 rounded login-button button-hover">
                     <div class="bg-background w-100 d-flex justify-start rounded px-5">
                         <v-icon class="line-height-60" style="height: 60px" icon="mdi-google"></v-icon>
                         <p class="pl-4 line-height-60">Sign up with Google</p>
                     </div>
-                </div>
+                </div> -->
             </v-col>
             <v-col cols="6" class="pa-12">
                 <div class="text-h3 font-weight-thin text-primary mb-6 w-100 text-center">Apoio</div>

@@ -1,15 +1,15 @@
 <template>
-    <div class="bg-surface w-100 h-100 rounded-xl pa-6">
-        <v-btn
-            icon="mdi-arrow-left"
-            class="rounded"
-            variant="tonal"
-            style="width: 40px; height: 40px"
-            @click="$router.push({ name: RouteName.DATA_SOURCES })"
-        ></v-btn>
+    <div class="bg-surface w-100 rounded-xl pa-6 scroll-container">
+        <div class="bg-background w-100 pa-6 rounded mb-6 mt-4 d-flex">
+            <v-btn
+                icon="mdi-arrow-left"
+                class="rounded"
+                density="compact"
+                variant="tonal"
+                @click="$router.push({ name: RouteName.DATA_SOURCES })"
+            ></v-btn>
 
-        <div class="bg-background w-100 pa-6 rounded mb-6 mt-4 d-flex justify-space-between">
-            <div class="d-flex justify-start">
+            <div class="d-flex justify-start ml-4">
                 <v-avatar
                     :image="`${BASE_S3_DATASOURCE_LOGO_URL}${currentConfiguring?.dataSourceName}.png`"
                     size="80"
@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <div style="width: 250px">
+            <div style="width: 250px" class="ml-auto">
                 <v-btn
                     class="w-100 mb-2"
                     color="info"
@@ -88,33 +88,68 @@
         <v-row>
             <v-col cols="12">
                 <v-sheet class="border-primary rounded pa-6">
-                    <p class="text-h6 text-primary font-weight-medium">Other Configurations</p>
+                    <div class="d-flex flex-column">
+                        <p class="text-h6 text-primary font-weight-medium">Additional configurations</p>
 
-                    <v-btn
-                        class="body-action-btn"
-                        color="warning"
-                        prepend-icon="mdi-trash-can"
-                        variant="tonal"
-                        @click="showCofirmRemovalModal = true"
-                        >Remove integration</v-btn
-                    >
+                        <div
+                            v-for="[optionName, configOption] in Object.entries(
+                                dataSourceTypeConfigurationTemplate ?? {},
+                            )"
+                        >
+                            <div class="text-body-1 text-primary font-weight-bold mt-6">
+                                {{ configOption.displayName }}
+                            </div>
+                            <div class="text-body-2 text-secondary" style="max-width: 400px">
+                                {{ configOption.description }}
+                            </div>
 
-                    <ConfirmModal
-                        v-if="showCofirmRemovalModal"
-                        title="Permanently delete integration?"
-                        sub-title="All data associated will be erased. This action is irreversible."
-                        button-theme="warning"
-                        @confirmed="() => {}"
-                        @close-modal="showCofirmRemovalModal = false"
-                    />
+                            <div v-if="configOption.type === 'BOOLEAN'">
+                                <v-switch
+                                    v-model="additionalConfiguration[optionName]"
+                                    color="info"
+                                    :label="additionalConfiguration[optionName] ? 'Enabled' : 'Disabled'"
+                                ></v-switch>
+                            </div>
+                        </div>
+
+                        <div class="mt-auto d-flex justify-end">
+                            <v-btn
+                                class="body-action-btn"
+                                color="blue"
+                                variant="tonal"
+                                :disabled="!isChangedConfig"
+                                :loading="isLoading.connectionUpdate"
+                                @click="onUpdateConfig"
+                                >Update Config</v-btn
+                            >
+                        </div>
+                    </div>
                 </v-sheet>
+
+                <v-btn
+                    class="text-caption mt-4"
+                    color="warning"
+                    prepend-icon="mdi-trash-can"
+                    variant="plain"
+                    @click="showCofirmRemovalModal = true"
+                    >Remove integration</v-btn
+                >
             </v-col>
         </v-row>
     </div>
+
+    <ConfirmModal
+        v-if="showCofirmRemovalModal"
+        title="Permanently delete integration?"
+        sub-title="All data associated will be erased. This action is irreversible."
+        button-theme="warning"
+        @confirmed="() => {}"
+        @close-modal="showCofirmRemovalModal = false"
+    />
 </template>
 
 <script lang="ts" setup>
-    import { onBeforeMount, ref } from 'vue';
+    import { onBeforeMount, ref, computed } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useDataSourceStore } from '../stores/dataSource';
     import { useUserStore } from '../stores/user';
@@ -134,7 +169,7 @@
     const toast = useToast();
 
     const dataSourceStore = useDataSourceStore();
-    const { connections, isLoading, currentConfiguring } = storeToRefs(dataSourceStore);
+    const { connections, isLoading, currentConfiguring, dataSourceOptions } = storeToRefs(dataSourceStore);
 
     const userStore = useUserStore();
     const { userEntityId } = storeToRefs(userStore);
@@ -142,10 +177,12 @@
     const searchStore = useSearchStore();
 
     const showCofirmRemovalModal = ref(false);
+    const additionalConfiguration = ref({});
+    const dataSourceTypeConfigurationTemplate = ref();
 
     onBeforeMount(async () => {
-        if (!connections.value.length) {
-            await dataSourceStore.retreiveConnections();
+        if (!connections.value.length || !dataSourceOptions.value.length) {
+            await dataSourceStore.retreiveDataSourceOptions();
         }
 
         dataSourceStore.setCurrentConfiguring(route.params.dataSourceId as string);
@@ -154,7 +191,26 @@
             await dataSourceStore.updateOAuthCredentials(route.query.a as string, route.query.r as string);
             router.replace({ query: {} });
         }
+
+        dataSourceTypeConfigurationTemplate.value = dataSourceOptions.value.find(
+            (opt) => opt.id === currentConfiguring.value.dataSourceTypeId,
+        ).additionalConfigTemplate;
+
+        additionalConfiguration.value = Object.fromEntries(
+            Object.entries(dataSourceTypeConfigurationTemplate.value).map(([property, data]: any) => [
+                property,
+                currentConfiguring.value.additionalConfig[property],
+            ]),
+        );
     });
+
+    const isChangedConfig = computed(() =>
+        Object.entries(additionalConfiguration.value).some(
+            ([property, value]) =>
+                currentConfiguring.value?.additionalConfig &&
+                currentConfiguring.value.additionalConfig[property] !== value,
+        ),
+    );
 
     const indexNow = async () => {
         switch (currentConfiguring.value?.dataSourceName) {
@@ -175,10 +231,25 @@
 
     const openDocs = () =>
         window.open(KnowledgeBaseMap[currentConfiguring.value?.dataSourceName as string].root, '_blank')!.focus();
+
+    const onUpdateConfig = async () => {
+        const success = await dataSourceStore.commitDataSourceConnectionUpdate({
+            additionalConfig: additionalConfiguration.value!,
+        });
+
+        if (success) {
+            toast.success('Configuration updated!');
+        }
+    };
 </script>
 
 <style scoped>
     .body-action-btn {
         width: 200px;
+    }
+
+    .scroll-container {
+        overflow-y: scroll;
+        height: 96vh;
     }
 </style>

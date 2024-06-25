@@ -33,7 +33,7 @@
                 variant="tonal"
                 class="body-action-btn"
                 @click="commitIndexingSelection"
-                :loading="isLoading.indexingIntervalUpdate"
+                :loading="isLoading.connectionUpdate"
                 :disabled="!syncPreferenceChanged"
                 >Update Preference</v-btn
             >
@@ -86,7 +86,9 @@
     };
 
     const commitIndexingSelection = async () => {
-        const success = await dataSourceStore.commitDataSourceConnectionUpdate(selectedIndexingOption.value!);
+        const success = await dataSourceStore.commitDataSourceConnectionUpdate({
+            syncInterval: selectedIndexingOption.value!,
+        });
 
         if (success) {
             toast.success('Indexing interval updates!');
