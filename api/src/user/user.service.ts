@@ -8,18 +8,18 @@ import {
     UpdateUserInfoRequestDto,
     UpdateUserSettingsRequestDto,
 } from './dto/userInfo.dto';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { Buffer } from 'buffer';
 import { LoggerContext } from 'src/constants';
 import { InternalError } from 'src/exceptions';
-import { UserAuthService } from 'src/userAuth/userAuth.service';
+import { AuthService } from 'src/auth/auth.service';
 import { omit } from 'lodash';
 
 @Injectable()
 export class UserService {
-    @Inject(UserAuthService)
-    private readonly userAuthService: UserAuthService;
+    @Inject(AuthService)
+    private readonly AuthService: AuthService;
 
     private readonly stripeService = new StripeService(this.configService.get<string>('STRIPE_KEY')!);
 
@@ -58,7 +58,7 @@ export class UserService {
                 });
 
                 if (payload.email) {
-                    await this.userAuthService.updateEmail(payload.accessToken, payload.email);
+                    await this.AuthService.updateEmail(payload.accessToken, payload.email);
                 }
             });
         } catch (e) {

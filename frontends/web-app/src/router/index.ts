@@ -17,7 +17,7 @@ import DataSourceConfigure from '../views/DataSourceConfigure.vue';
 import DataSourceAdd from '../views/DataSourceAdd.vue';
 import { useUserStore } from '../stores/user';
 import { RouteName, RouteType } from '../types/router';
-import { OAUTH_REDIRECT_PATH } from '../constants/localStorageKeys';
+import { OAUTH_REDIRECT_PATH, TOKEN_STORAGE_KEY } from '../constants/localStorageKeys';
 
 const onBeforeEnter = async (
     _to: RouteLocationNormalized,
@@ -218,11 +218,23 @@ const router = createRouter({
             path: '/callback',
             name: RouteName.CALLBACK,
             redirect: (to) => {
-                const path = localStorage.getItem(OAUTH_REDIRECT_PATH) ?? '/';
+                const name = localStorage.getItem(OAUTH_REDIRECT_PATH) ?? '/';
                 localStorage.removeItem(OAUTH_REDIRECT_PATH);
 
-                // redirect to cached path w/ accessToken & refresh token in query params
-                return { path, query: { a: to.query.a, r: to.query.r } };
+                if (name === RouteName.SIGNUP || name === RouteName.LOGIN) {
+                    localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify({
+                        accessToken: to.query.a,
+                        refreshToken: to.query.r,
+                        userId: to.query.u,
+                        email: to.query.e,
+                        name: to.query.n,
+                    }));
+
+                    return { path: '/' };
+                }
+
+                // redirect to cached path w/ token info in query params
+                return { name, query: to.query };
             },
         },
     ],

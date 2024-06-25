@@ -13,14 +13,15 @@ import type {
     UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
 import { Request } from 'express';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
+import { MultiAuthGuard } from 'src/auth/multiAuth.guard';
 
 @Controller('v1/dataSource')
 export class DataSourceController {
     constructor(private readonly service: DataSourceService) {}
 
     @Get()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(MultiAuthGuard)
     async listDataSourceTypes(): Promise<ListDataSourceTypesResponseDto[]> {
         return await this.service.listDataSourceTypes();
     }

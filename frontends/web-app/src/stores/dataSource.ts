@@ -15,8 +15,6 @@ import {
     updateDataSourceConnection,
 } from '../requests';
 import { encrypt } from '../utility/encryption';
-import { APIEndpoints } from '../types/requests';
-import { OAUTH_REDIRECT_PATH } from '../constants/localStorageKeys';
 import { useToast } from 'vue-toastification';
 import { CreateDataSourceRequest } from '../types/data-source-store';
 
@@ -134,12 +132,6 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         return success;
     };
 
-    const authenticateGoogle = async () => {
-        isLoading.value.connectionTest = true;
-        localStorage.setItem(OAUTH_REDIRECT_PATH, window.location.pathname);
-        window.location.href = `${(import.meta as any).env.VITE_API_BASE_URL}${APIEndpoints.GOOGLE_AUTHENTICATE}`;
-    };
-
     const setCurrentConfiguring = (id?: string) => {
         if (id) {
             currentConfiguring.value = find(connections.value, (option) => option.id === id)!;
@@ -175,7 +167,6 @@ export const useDataSourceStore = defineStore('dataSource', () => {
         retreiveDataSourceOptions,
         testDataSourceCredential,
         commitDataSourceConnectionUpdate,
-        authenticateGoogle,
         setCurrentConfiguring,
         updateOAuthCredentials,
         createDataSourceConnection,

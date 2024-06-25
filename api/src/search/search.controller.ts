@@ -3,7 +3,7 @@ import { SearchService } from './search.service';
 import { AuthGuard } from '@nestjs/passport';
 import { SearchQueryRequestDto, SearchQueryResponseDto, SearchResultResponseDto } from './dto/search.dto';
 import { Request } from 'express';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { SuggestionsQueryDto, SuggestionsResponseDto } from './dto/suggestions.dto';
 
 @Controller('v1/search')

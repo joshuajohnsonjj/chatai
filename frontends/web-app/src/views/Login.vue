@@ -43,7 +43,7 @@
 
                 <HorizontalLine with-text="or" />
 
-                <div class="w-100 mt-12 pa-1 rounded login-button button-hover">
+                <div class="w-100 mt-12 pa-1 rounded login-button button-hover" @click="onLoginWithGoogle">
                     <div class="bg-background w-100 d-flex justify-start rounded px-5">
                         <v-icon class="line-height-60" style="height: 60px" icon="mdi-google"></v-icon>
                         <p class="pl-4 line-height-60">Log in with Google</p>
@@ -77,7 +77,7 @@
     const password = ref<string>();
     const rememberMe = ref(!!localStorage.getItem(EMAIL_STORAGE_KEY));
 
-    async function login() {
+    const login = async () => {
         if (isLoading.value.authentication) {
             return;
         }
@@ -104,7 +104,11 @@
         }
 
         router.push({ name: RouteName.CHAT });
-    }
+    };
+
+    const onLoginWithGoogle = async () => {
+        
+    };
 </script>
 
 <style>

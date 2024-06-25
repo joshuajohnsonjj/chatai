@@ -71,7 +71,7 @@
 
                 <HorizontalLine with-text="or" />
 
-                <div class="w-100 mt-12 pa-1 rounded login-button button-hover">
+                <div class="w-100 mt-12 pa-1 rounded login-button button-hover" @click="onSignUpWithGoogle">
                     <div class="bg-background w-100 d-flex justify-start rounded px-5">
                         <v-icon class="line-height-60" style="height: 60px" icon="mdi-google"></v-icon>
                         <p class="pl-4 line-height-60">Sign up with Google</p>
@@ -95,6 +95,8 @@
     import { RouteName } from '../types/router';
     import { useToast } from 'vue-toastification';
     import { useRouter } from 'vue-router';
+    import { authenticateGoogle } from '../utility/googleAuth';
+    import { GoogleAuthEndpoint } from '../types/requests';
 
     const userStore = useUserStore();
     const { isLoading } = storeToRefs(userStore);
@@ -150,6 +152,10 @@
         toast.success('Signup succeeded');
 
         router.push({ name: RouteName.SIGNUP_CONFIRMATION, query: { email: email.value } });
+    };
+
+    const onSignUpWithGoogle = () => {
+        authenticateGoogle(RouteName.SIGNUP, GoogleAuthEndpoint.USER, true);
     };
 </script>
 

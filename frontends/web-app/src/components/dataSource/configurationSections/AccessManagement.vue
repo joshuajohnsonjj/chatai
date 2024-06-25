@@ -77,7 +77,7 @@
     };
 
     const onAuthorizeWithGoogle = async () => {
-        await dataSourceStore.authenticateGoogle();
+
     };
 
     const openAuthDocs = () =>

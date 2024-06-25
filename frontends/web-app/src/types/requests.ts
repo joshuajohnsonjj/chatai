@@ -1,9 +1,9 @@
 export enum APIEndpoints {
-    REGISTER = '/v1/userAuth/register',
-    CONFIRM_SIGNUP = '/v1/userAuth/confirm',
-    LOGIN = '/v1/userAuth/login',
-    REFRESH = '/v1/userAuth/refresh',
-    PASSWORD_CHANGE = '/v1/userAuth/password/change',
+    REGISTER = '/v1/auth/user/register',
+    CONFIRM_SIGNUP = '/v1/auth/user/confirm',
+    LOGIN = '/v1/auth/user/login',
+    REFRESH = '/v1/auth/user/refresh',
+    PASSWORD_CHANGE = '/v1/auth/user/password/change',
     USER = '/v1/user',
     USER_IMAGE = '/v1/user/image',
     USER_SETTINGS = '/v1/user/settings',
@@ -20,7 +20,13 @@ export enum APIEndpoints {
     SEARCH = '/v1/search',
     TOPIC_SUGGESTIONS = '/v1/search/suggestions/topics',
     SEARCH_RESULT = '/v1/search/:resultId/data',
-    GOOGLE_AUTHENTICATE = '/v1/auth/google',
+}
+
+export enum GoogleAuthEndpoint {
+    USER = '/v1/auth/google/authorize/user',
+    GMAIL = '/v1/auth/google/authorize/gmail',
+    DRIVE = '/v1/auth/google/authorize/drive',
+    ALL = '/v1/auth/google/authorize/all',
 }
 
 export enum APIMethods {

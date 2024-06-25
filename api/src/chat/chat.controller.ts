@@ -14,7 +14,7 @@ import type {
     UpdateChatDetailRequestDto,
 } from './dto/chat.dto';
 import { Request, Response } from 'express';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { LoggerContext } from 'src/constants';
 

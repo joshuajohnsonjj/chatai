@@ -10,16 +10,16 @@ import { STRIPE_PRODUCTS } from 'src/constants/stripe';
 import { UserType } from '@prisma/client';
 import { AccessDeniedError, BadRequestError, ResourceNotFoundError } from 'src/exceptions';
 import { EmailSubject, Mailer, OrganizationInvite, TemplateIds } from '@joshuajohnsonjj38/mailer';
-import { DecodedUserTokenDto } from 'src/userAuth/dto/jwt.dto';
-import { UserAuthService } from 'src/userAuth/userAuth.service';
+import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
+import { AuthService } from 'src/auth/auth.service';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { ConfigService } from '@nestjs/config';
 import { DataSourceService } from 'src/dataSource/dataSource.service';
 
 @Injectable()
 export class OrganizationService {
-    @Inject(UserAuthService)
-    private readonly userAuthService: UserAuthService;
+    @Inject(AuthService)
+    private readonly AuthService: AuthService;
 
     @Inject(DataSourceService)
     private readonly dataSourceService: DataSourceService;
@@ -54,7 +54,7 @@ export class OrganizationService {
             select: { email: true },
         });
 
-        this.userAuthService.updateAttributes(user.email, [
+        this.AuthService.updateAttributes(user.email, [
             {
                 Name: CognitoAttribute.ORG_USER_ROLE,
                 Value: OganizationUserRole.ORG_OWNER,
@@ -204,7 +204,7 @@ export class OrganizationService {
                     updatedAt: new Date(),
                 },
             }),
-            this.userAuthService.updateAttributes(userToRemove.email, [
+            this.AuthService.updateAttributes(userToRemove.email, [
                 { Name: CognitoAttribute.ORG_USER_ROLE, Value: '' },
                 { Name: CognitoAttribute.ORG, Value: '' },
             ]),

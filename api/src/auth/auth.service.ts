@@ -20,20 +20,27 @@ import { type RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
 import { type ForgetRequestDto } from './dto/forget.request.dto';
 import { type ResetRequestDto } from './dto/reset.request.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { STRIPE_PRODUCTS } from 'src/constants/stripe';
 import { CognitoAttribute, OganizationUserRole } from 'src/types';
 import { UserInviteType, UserType } from '@prisma/client';
 import { StripeService } from 'src/services/stripe';
 import { type JwtPayload, decode } from 'jsonwebtoken';
 import { LoggerContext } from 'src/constants';
-import { BadRequestError, UserNotConfirmedError } from 'src/exceptions';
+import { AccessDeniedError, BadRequestError, InternalError, UserNotConfirmedError } from 'src/exceptions';
 import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
+import { createUserAndDependencies } from 'src/services/user';
+import { OAuth2Client } from 'google-auth-library';
 
 @Injectable()
-export class UserAuthService {
+export class AuthService {
     private readonly identityClient = new CognitoIdentityProviderClient({
         region: this.configService.get<string>('AWS_REGION')!,
     });
+
+    private readonly googleOAuthClient = new OAuth2Client(
+        this.configService.get<string>('GOOGLE_OAUTH_CLIENT_ID')!,
+        this.configService.get<string>('GOOGLE_OAUTH_SECRET_KEY')!,
+        this.configService.get<string>('GOOGLE_OAUTH_REDIRECT_URL')!,
+    );
 
     private readonly stripeService = new StripeService(this.configService.get<string>('STRIPE_KEY')!);
 
@@ -48,7 +55,7 @@ export class UserAuthService {
 
         this.logger.log(`Creating new user ${email}`, LoggerContext.USER_AUTH);
 
-        const signupInput = {
+        const signupCommand = new SignUpCommand({
             ClientId: this.configService.get<string>('AWS_COGNITO_CLIENT_ID')!,
             Username: email,
             Password: password,
@@ -62,34 +69,20 @@ export class UserAuthService {
                     Value: '',
                 },
             ],
-        };
+        });
 
-        const signupResponse = await this.identityClient.send(new SignUpCommand(signupInput));
+        const signupResponse = await this.identityClient.send(signupCommand);
 
         const userId = signupResponse.UserSub as string;
 
-        const [accountPlan, stripeCustomer] = await Promise.all([
-            this.prisma.accountPlan.findUniqueOrThrow({
-                where: { stripeProductId: STRIPE_PRODUCTS.INDIVIDUAL_STARTER },
-            }),
-            this.stripeService.createCustomer(`${firstName} ${lastName}`, email),
-        ]);
-
-        await this.prisma.user.create({
-            data: {
-                id: userId,
-                firstName,
-                lastName,
-                email,
-                stripeCustomerId: stripeCustomer.id,
-                type: UserType.INDIVIDUAL,
-                planId: accountPlan.id,
-            },
-        });
-
-        await this.prisma.entitySettings.create({
-            data: { associatedUserId: userId },
-        });
+        await createUserAndDependencies(
+            userId,
+            firstName,
+            lastName,
+            email,
+            this.prisma,
+            this.stripeService,
+        );
 
         return {
             uuid: userId,
@@ -351,6 +344,73 @@ export class UserAuthService {
         } catch (error) {
             this.logger.error(error.message, error.stack, LoggerContext.USER_AUTH);
             throw new BadRequestError(error.message);
+        }
+    }
+
+    async handleGoogleCallback(req) {
+        const reqState = JSON.parse(req.query.state ?? '{}');
+        
+        if ('signup' in reqState.reqQuery) {
+            this.logger.log(`Handling signup for google user ${req.user.profile.email}`, LoggerContext.GOOGLE_AUTH);
+
+            await createUserAndDependencies(
+                req.user.profile.sub,
+                req.user.profile.given_name,
+                req.user.profile.family_name,
+                req.user.profile.email,
+                this.prisma,
+                this.stripeService,
+                req.user.profile.picture,
+            );
+        }
+        
+        this.logger.log(`Redirecting with tokens for google user ${req.user.profile.email}`, LoggerContext.GOOGLE_AUTH);
+    }
+
+    async handleGoogleRefreshAccessToken(refreshToken: string): Promise<string> {
+        try {
+            this.logger.log('Attempting to refresh access token', LoggerContext.GOOGLE_AUTH);
+
+            this.googleOAuthClient.setCredentials({ refresh_token: refreshToken });
+            const response = await this.googleOAuthClient.refreshAccessToken();
+            const { credentials } = response;
+            const newAccessToken = credentials.access_token;
+
+            if (!newAccessToken) {
+                throw new InternalError('Accees token undefined');
+            }
+
+            return newAccessToken;
+        } catch (error) {
+            this.logger.error(
+                'Error refreshing access token: ' + error.message,
+                error.stack,
+                LoggerContext.GOOGLE_AUTH,
+            );
+            throw new InternalError(error.message);
+        }
+    }
+
+    async verifyGoogleToken(token: string): Promise<any> {
+        try {
+            const ticket = await this.googleOAuthClient.verifyIdToken({
+                idToken: token,
+                audience: this.configService.get<string>('GOOGLE_OAUTH_CLIENT_ID')!,
+            });
+
+            const payload = ticket.getPayload();
+
+            if (!payload) {
+                throw new Error();
+            }
+            
+            return {
+                userId: payload.sub,
+                email: payload.email,
+                displayName: payload.name,
+            };
+        } catch (error) {
+            throw new AccessDeniedError('Invalid Google token');
         }
     }
 }
