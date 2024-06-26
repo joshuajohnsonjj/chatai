@@ -45,8 +45,8 @@ export const useChatStore = defineStore('chat', () => {
         const userInfo = useUserStore().userData;
 
         return {
-            chatCreativity: selectedChat.value?.chatCreativity ?? userInfo?.settings.chatCreativity ?? 5,
-            chatMinConfidence: selectedChat.value?.chatMinConfidence ?? userInfo?.settings.chatMinConfidence ?? 5,
+            chatCreativity: selectedChat.value?.chatCreativity ?? userInfo?.settings.chatCreativity ?? 7,
+            chatMinConfidence: selectedChat.value?.chatMinConfidence ?? userInfo?.settings.chatMinConfidence ?? 7,
             chatTone: selectedChat.value?.chatTone ?? userInfo?.settings.chatTone ?? ChatResponseTone.DEFAULT,
             baseInstructions: selectedChat.value?.baseInstructions ?? userInfo?.settings.baseInstructions ?? null,
         };
@@ -197,7 +197,7 @@ export const useChatStore = defineStore('chat', () => {
                 timestamp: new Date().toISOString(),
                 messages: [promptMessage],
             };
-            chatHistory.value.push(newOrFoundThread);
+            chatHistory.value.unshift(newOrFoundThread);
         }
 
         pendingThreadResponseId.value = threadId;
@@ -216,9 +216,7 @@ export const useChatStore = defineStore('chat', () => {
                 baseInstructions: chatSettings.value.baseInstructions,
             });
 
-            const threadNdx = chatHistory.value.findIndex(
-                (histThread) => histThread.threadId === newOrFoundThread.threadId,
-            );
+            const threadNdx = 0;
 
             const newThreadLength = chatHistory.value[threadNdx].messages.push({
                 id: systemRsponseId,

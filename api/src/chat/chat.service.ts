@@ -507,13 +507,13 @@ export class ChatService {
 
     /**
      * Converts the 1-9 based chat settings min confidence score
-     * to a 0.75-0.91 based score for filtering mongo results
+     * to a 0.75-0.925 based score for filtering mongo results
      */
     private normalizedConfidenceScore(original: number): number {
         const xMin = 1;
         const xMax = 9;
         const yMin = 0.75;
-        const yMax = 0.91;
+        const yMax = 0.925;
 
         const scaleFactor = (yMax - yMin) / (xMax - xMin);
         const convertedValue = scaleFactor * (original - xMin) + yMin;
