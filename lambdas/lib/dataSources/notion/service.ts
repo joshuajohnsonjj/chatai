@@ -7,9 +7,6 @@ import {
     NotionBlockDetailResponse,
 } from './types';
 
-// TODO:
-// - ensure topics are cleaned
-
 export class NotionWrapper {
     private readonly secret: string;
 

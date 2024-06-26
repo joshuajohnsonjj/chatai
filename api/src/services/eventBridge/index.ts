@@ -11,6 +11,7 @@ import {
     DeleteScheduleCommand,
 } from '@aws-sdk/client-scheduler';
 import { DataSyncInterval } from '@prisma/client';
+import type { ConfigService } from '@nestjs/config';
 
 const schedulerClient = new SchedulerClient({ region: process.env.AWS_REGION! });
 
@@ -36,28 +37,29 @@ export const createEventBridgeScheduledExecution = async (
     interval: DataSyncInterval,
     payload: APIGatewayInitiateImportParams,
     logger: Logger,
+    config: ConfigService,
 ): Promise<void> => {
-    try {
-        const createScheduleCommand = new CreateScheduleCommand({
-            Name: scheduleName(payload.dataSourceId),
-            ScheduleExpression: syncIntervalToSchedulerRate(interval),
-            Target: {
-                Arn: process.env[`INITIATE_${payload.dataSourceType}_LAMBDA_ARN`]!,
-                Input: JSON.stringify(payload),
-                RoleArn: EventBridgeSechulerRole,
-                RetryPolicy: {
-                    MaximumEventAgeInSeconds: 600,
-                    MaximumRetryAttempts: 20,
-                },
+    const createScheduleCommand = new CreateScheduleCommand({
+        Name: scheduleName(payload.dataSourceId),
+        ScheduleExpression: syncIntervalToSchedulerRate(interval),
+        Target: {
+            Arn: config.get<string>(`INITIATE_${payload.dataSourceType}_LAMBDA_ARN`)!,
+            Input: JSON.stringify(payload),
+            RoleArn: EventBridgeSechulerRole,
+            RetryPolicy: {
+                MaximumEventAgeInSeconds: 600,
+                MaximumRetryAttempts: 20,
             },
-            State: ScheduleState.ENABLED,
-            FlexibleTimeWindow: {
-                Mode: FlexibleTimeWindowMode.FLEXIBLE,
-                MaximumWindowInMinutes: 12,
-            },
-            ActionAfterCompletion: ActionAfterCompletion.NONE,
-        });
+        },
+        State: ScheduleState.ENABLED,
+        FlexibleTimeWindow: {
+            Mode: FlexibleTimeWindowMode.FLEXIBLE,
+            MaximumWindowInMinutes: 12,
+        },
+        ActionAfterCompletion: ActionAfterCompletion.NONE,
+    });
 
+    try {
         const ruleResponse = await schedulerClient.send(createScheduleCommand);
 
         logger.log(

@@ -6,6 +6,8 @@ import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-win
 import * as winston from 'winston';
 import * as CloudWatchTransport from 'winston-cloudwatch';
 import * as passport from 'passport';
+import 'reflect-metadata';
+import { BadRequestError } from './exceptions';
 
 const localLogger = WinstonModule.createLogger({
     format: winston.format.uncolorize(),
@@ -42,10 +44,27 @@ async function bootstrap() {
         logger: process.env.NODE_ENV === 'dev' ? localLogger : cloudwatchLogger,
     });
 
-    app.useGlobalFilters(new GlobalExceptionFilter());
+    app.useGlobalPipes(
+        new ValidationPipe({
+            transform: true,
+            whitelist: true,
+            // forbidNonWhitelisted: true,
+            // forbidUnknownValues: true,
+            exceptionFactory: (errors) => {
+                const detailedErrors = errors.map((error) => {
+                    return {
+                        property: error.property,
+                        constraints: error.constraints,
+                        value: error.value,
+                    };
+                });
 
-    // FIXME: figure out why this isnt working!!!
-    app.useGlobalPipes(new ValidationPipe());
+                return new BadRequestError(JSON.stringify(detailedErrors));
+            },
+        }),
+    );
+
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     app.enableCors({
         origin: true,

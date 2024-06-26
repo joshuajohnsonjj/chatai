@@ -21,7 +21,6 @@ export class SearchService {
         private readonly mongo: MongoDBService,
     ) {}
 
-    // TODO: remove embedding from response
     async executeQuery(params: SearchQueryRequestDto, user: DecodedUserTokenDto): Promise<SearchQueryResponseDto> {
         this.validateUserAccess(params.entityId, user.idUser, user.organization);
 

@@ -1,8 +1,9 @@
 import { Transform } from 'class-transformer';
-import { IsNumberString, IsOptional, IsString } from 'class-validator';
+import { IsNumberString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class SuggestionsQueryDto {
     @IsString()
+    @MaxLength(1000)
     @IsOptional()
     text?: string;
 

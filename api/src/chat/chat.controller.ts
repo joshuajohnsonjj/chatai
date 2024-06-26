@@ -1,15 +1,15 @@
 import { Controller, Get, Param, Body, Post, Query, Req, UseGuards, Patch, Res, Logger } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import type {
-    ChatThreadResponseDto,
+import {
+    type ChatThreadResponseDto,
     GetChatResponseQueryDto,
-    GetChatResponseResponseDto,
+    type GetChatResponseResponseDto,
     ListChatMessagesQueryDto,
-    ListChatMessagesResponseDto,
+    type ListChatMessagesResponseDto,
 } from './dto/message.dto';
-import type {
-    ChatResponseDto,
-    ListChatResponseDto,
+import {
+    type ChatResponseDto,
+    type ListChatResponseDto,
     StartNewChatQueryDto,
     UpdateChatDetailRequestDto,
 } from './dto/chat.dto';

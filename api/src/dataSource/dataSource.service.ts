@@ -131,7 +131,7 @@ export class DataSourceService {
         params: UpdateDataSourceQueryDto,
         user: DecodedUserTokenDto,
     ): Promise<void> {
-        this.logger.log(`Updating new data source ${dataSourceId}`, LoggerContext.DATA_SOURCE);
+        this.logger.log(`Applying updates to data source ${dataSourceId}`, LoggerContext.DATA_SOURCE);
 
         const userInfo = await this.prisma.user.findUniqueOrThrow({
             where: { id: user.idUser },
@@ -493,7 +493,7 @@ export class DataSourceService {
             await deleteEventBridgeSchedule(schedulerData.dataSourceId, this.logger);
         }
 
-        await createEventBridgeScheduledExecution(syncInterval, schedulerData, this.logger);
+        await createEventBridgeScheduledExecution(syncInterval, schedulerData, this.logger, this.configService);
     }
 
     private syncIntervalToNextSyncDate(interval: DataSyncInterval, isLiveSyncAvailable: boolean): Date | null {
