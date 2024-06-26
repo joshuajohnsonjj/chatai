@@ -32,12 +32,12 @@ export class SearchController {
         return await this.service.deleteDataItemById(resultId, req.user as DecodedUserTokenDto);
     }
 
-    @Get('/suggestions/people')
-    async getPeopleSuggestions(
+    @Get('/suggestions/authors')
+    async getAuthorSuggestions(
         @Query() query: SuggestionsQueryDto,
         @Req() req: Request,
     ): Promise<SuggestionsResponseDto> {
-        return await this.service.getPeopleSuggestions(query, req.user as DecodedUserTokenDto);
+        return await this.service.getAuthorSuggestions(query, req.user as DecodedUserTokenDto);
     }
 
     @Get('/suggestions/topics')

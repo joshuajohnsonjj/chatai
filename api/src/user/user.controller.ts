@@ -4,7 +4,7 @@ import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
 import { Request } from 'express';
 import {
     GetUserInfoRequestDto,
-    GetUserInfoResponseDto,
+    type GetUserInfoResponseDto,
     SetProfileImageRequestDto,
     UpdateUserInfoRequestDto,
     UpdateUserSettingsRequestDto,

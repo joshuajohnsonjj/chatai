@@ -9,7 +9,6 @@ import { ConfigModule } from '@nestjs/config';
 import { Logger, Module } from '@nestjs/common';
 import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
-// import { GoogleAuthModule } from './auth/googleAuth.module';
 
 @Module({
     imports: [
@@ -18,7 +17,6 @@ import { SearchModule } from './search/search.module';
         DataSourceModule,
         OrganizationModule,
         AuthModule,
-        // GoogleAuthModule,
         SearchModule,
         UserModule,
         ConfigModule.forRoot({

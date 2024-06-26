@@ -197,7 +197,7 @@ export const useChatStore = defineStore('chat', () => {
                 timestamp: new Date().toISOString(),
                 messages: [promptMessage],
             };
-            chatHistory.value.push(newOrFoundThread);
+            chatHistory.value.unshift(newOrFoundThread);
         }
 
         pendingThreadResponseId.value = threadId;
@@ -216,9 +216,7 @@ export const useChatStore = defineStore('chat', () => {
                 baseInstructions: chatSettings.value.baseInstructions,
             });
 
-            const threadNdx = chatHistory.value.findIndex(
-                (histThread) => histThread.threadId === newOrFoundThread.threadId,
-            );
+            const threadNdx = 0;
 
             const newThreadLength = chatHistory.value[threadNdx].messages.push({
                 id: systemRsponseId,

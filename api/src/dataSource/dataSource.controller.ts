@@ -2,14 +2,14 @@ import { Controller, Body, Post, Param, Req, Get, Patch } from '@nestjs/common';
 import { DataSourceService } from './dataSource.service';
 import { AuthGuard } from '@nestjs/passport';
 import { UseGuards } from '@nestjs/common/decorators';
-import type {
+import {
     CompletedImportsRequestDto,
     CreateDataSourceQueryDto,
-    DataSourceConnectionDto,
-    ListDataSourceConnectionsResponseDto,
-    ListDataSourceTypesResponseDto,
+    type DataSourceConnectionDto,
+    type ListDataSourceConnectionsResponseDto,
+    type ListDataSourceTypesResponseDto,
     TestCredentialsQueryDto,
-    TestDataSourceResponseDto,
+    type TestDataSourceResponseDto,
     UpdateDataSourceQueryDto,
 } from './dto/dataSource.dto';
 import { Request } from 'express';

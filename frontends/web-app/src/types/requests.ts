@@ -19,6 +19,7 @@ export enum APIEndpoints {
     TEST_DATA_SOURCE = '/v1/dataSource/connections/test',
     SEARCH = '/v1/search',
     TOPIC_SUGGESTIONS = '/v1/search/suggestions/topics',
+    AUTHOR_SUGGESTIONS = '/v1/search/suggestions/authors',
     SEARCH_RESULT = '/v1/search/:resultId/data',
     GOOGLE_AUTHENTICATE = '/v1/auth/google',
 }

@@ -1,8 +1,8 @@
 import { APIEndpoints, APIMethods } from '../types/requests';
-import { sendAPIRequest } from './service';
+import { sendAxiosRequest } from './service';
 
 export const getGoogleToken = async (): Promise<void> => {
-    await sendAPIRequest(
+    await sendAxiosRequest(
         {
             method: APIMethods.GET,
             baseURL: (import.meta as any).env.VITE_API_BASE_URL,

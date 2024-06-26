@@ -5,7 +5,7 @@ import type {
     DataSyncInterval,
     TestDataSourceConnectionResponse,
 } from '../types/responses';
-import { sendAPIRequest } from './service';
+import { sendAxiosRequest } from './service';
 import { CreateDataSourceRequest } from '../types/data-source-store';
 
 export const updateDataSourceConnection = async (
@@ -17,7 +17,7 @@ export const updateDataSourceConnection = async (
         additionalConfig?: any;
     },
 ): Promise<void> => {
-    await sendAPIRequest({
+    await sendAxiosRequest({
         method: APIMethods.PATCH,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
@@ -27,7 +27,7 @@ export const updateDataSourceConnection = async (
 };
 
 export const listDataSourceConnections = async (): Promise<DataSourceConnectionsResponse[]> => {
-    const resp = await sendAPIRequest({
+    const resp = await sendAxiosRequest({
         method: APIMethods.GET,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
@@ -37,7 +37,7 @@ export const listDataSourceConnections = async (): Promise<DataSourceConnections
 };
 
 export const listDataSourceOptions = async (): Promise<DataSourceTypesResponse[]> => {
-    const resp = await sendAPIRequest({
+    const resp = await sendAxiosRequest({
         method: APIMethods.GET,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
@@ -51,7 +51,7 @@ export const testConnection = async (
     secret: string,
     externalId?: string,
 ): Promise<TestDataSourceConnectionResponse> => {
-    const resp = await sendAPIRequest({
+    const resp = await sendAxiosRequest({
         method: APIMethods.POST,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
@@ -66,7 +66,7 @@ export const testConnection = async (
 };
 
 export const createDataSource = async (data: CreateDataSourceRequest): Promise<DataSourceConnectionsResponse> => {
-    const resp = await sendAPIRequest({
+    const resp = await sendAxiosRequest({
         method: APIMethods.POST,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,
@@ -77,7 +77,7 @@ export const createDataSource = async (data: CreateDataSourceRequest): Promise<D
 };
 
 export const manualSyncDataSource = async (dataSourceId: string, secret: string): Promise<void> => {
-    await sendAPIRequest({
+    await sendAxiosRequest({
         method: APIMethods.POST,
         headers: { 'Content-Type': 'application/json' },
         baseURL: (import.meta as any).env.VITE_API_BASE_URL,

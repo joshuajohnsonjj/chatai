@@ -6,6 +6,9 @@ import { utilities as nestWinstonModuleUtilities, WinstonModule } from 'nest-win
 import * as winston from 'winston';
 import * as CloudWatchTransport from 'winston-cloudwatch';
 import * as passport from 'passport';
+import 'reflect-metadata';
+import { BadRequestError } from './exceptions';
+import { ValidationError } from 'class-validator';
 
 const localLogger = WinstonModule.createLogger({
     format: winston.format.uncolorize(),
@@ -42,10 +45,26 @@ async function bootstrap() {
         logger: process.env.NODE_ENV === 'dev' ? localLogger : cloudwatchLogger,
     });
 
-    app.useGlobalFilters(new GlobalExceptionFilter());
+    app.useGlobalPipes(
+        new ValidationPipe({
+            transform: true,
+            whitelist: true,
+            exceptionFactory: (errors) => {
+                const detailedErrors = errors.map((error: ValidationError) => ({
+                    msg: error.toString(),
+                    value: error.value,
+                }));
 
-    // FIXME: figure out why this isnt working!!!
-    app.useGlobalPipes(new ValidationPipe());
+                if (process.env.NODE_ENV === 'dev')
+                    localLogger.warn(`Req faildation failed: ${JSON.stringify(detailedErrors)}`);
+                else cloudwatchLogger.warn(`Req faildation failed: ${JSON.stringify(detailedErrors)}`);
+
+                return new BadRequestError(errors.map((error) => Object.values(error.constraints ?? {})).join(', '));
+            },
+        }),
+    );
+
+    app.useGlobalFilters(new GlobalExceptionFilter());
 
     app.enableCors({
         origin: true,

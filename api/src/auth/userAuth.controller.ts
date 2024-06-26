@@ -1,20 +1,18 @@
-import { Body, Controller, Param, Patch, Post, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserAuthService } from './userAuth.service';
-import type { AuthenticateRequestDto } from './dto/authenticate.request.dto';
-import type { ConfirmUserRequestDto } from './dto/confirm.request.dto';
-import type { ForgetRequestDto } from './dto/forget.request.dto';
-import type { RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
-import type { RegisterRequestDto } from './dto/register.request.dto';
-import type { ChangeRequestDto, ResetRequestDto } from './dto/reset.request.dto';
-import type { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
+import { AuthenticateRequestDto } from './dto/authenticate.request.dto';
+import { ConfirmUserRequestDto } from './dto/confirm.request.dto';
+import { ForgetRequestDto } from './dto/forget.request.dto';
+import { RefreshUserSessionRequestDto } from './dto/refresh.request.dto';
+import { RegisterRequestDto } from './dto/register.request.dto';
+import { ChangeRequestDto, ResetRequestDto } from './dto/reset.request.dto';
+import { AuthenticateResponseDto, RegisterResponseDto } from './dto/response.dto';
 
 @Controller('v1/auth/user')
 export class UserAuthController {
     constructor(private readonly authService: UserAuthService) {}
 
-    // TODO: fix validation pipe for other routes.. not working bc auth guard??
     @Post('register')
-    @UsePipes(ValidationPipe)
     async register(@Body() registerRequest: RegisterRequestDto): Promise<RegisterResponseDto> {
         return await this.authService.register(registerRequest);
     }

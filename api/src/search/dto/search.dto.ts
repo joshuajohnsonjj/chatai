@@ -1,10 +1,12 @@
-import { IsArray, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength } from 'class-validator';
 
 export class SearchQueryRequestDto {
-    @IsString()
+    @IsUUID()
+    @IsNotEmpty()
     entityId: string;
 
     @IsString()
+    @MaxLength(1000)
     @IsOptional()
     queryText?: string;
 
@@ -32,6 +34,7 @@ export class SearchQueryRequestDto {
     dateRangeUpper?: number; // Unix timestamp
 
     @IsNumber()
+    @Max(100)
     @IsOptional()
     take?: number;
 

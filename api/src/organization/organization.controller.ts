@@ -4,8 +4,8 @@ import { AuthGuard } from '@nestjs/passport';
 import {
     CreateOrganizationQueryDto,
     InvitUserQueryDto,
-    InviteResponseDto,
-    OrganizationResponseDto,
+    type InviteResponseDto,
+    type OrganizationResponseDto,
 } from './dto/organization.dto';
 import { Request } from 'express';
 import { DecodedUserTokenDto } from 'src/auth/dto/jwt.dto';
