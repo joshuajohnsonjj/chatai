@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import remove from 'lodash/remove';
-import { deleteSearchResultById, executeQuery, getSearchResultById, getTopicSuggestions } from '../requests/search';
+import {
+    deleteSearchResultById,
+    executeQuery,
+    getAuthorSuggestions,
+    getSearchResultById,
+    getTopicSuggestions,
+} from '../requests/search';
 import { SearchQueryParamType } from '../types/search-store';
 import type { CurrentSearchSuggestions, QueryParam, SearchQueryParams } from '../types/search-store';
 import type { DataSourceTypesResponse, SearchResult } from '../types/responses';
@@ -91,7 +97,16 @@ export const useSearchStore = defineStore('search', () => {
         }
     };
 
-    const getFilterAuthorOptions = async () => {};
+    const getFilterAuthorOptions = async (entityId: string, input?: string) => {
+        isLoading.value.authorSuggestions = true;
+
+        try {
+            const authorsRes = await getAuthorSuggestions(entityId, input);
+            authorFilterOptions.value = authorsRes.results.map((result) => result.value);
+        } finally {
+            isLoading.value.authorSuggestions = false;
+        }
+    };
 
     const getSearchSuggestions = async (
         input: string,
@@ -102,7 +117,7 @@ export const useSearchStore = defineStore('search', () => {
 
         try {
             const topicRes = await getTopicSuggestions(entityId, input);
-            // TODO:  ===> const suthorRes = await getAuthorSuggestions(input, entityId);
+            const authorsRes = await getAuthorSuggestions(entityId, input);
             const sourcesRes = autocompleteSearch(
                 input,
                 dataSourceOptions.map((opt) => opt.name),
@@ -110,6 +125,7 @@ export const useSearchStore = defineStore('search', () => {
 
             searchSuggestions.value = [
                 ...topicRes.results,
+                ...authorsRes.results,
                 ...sourcesRes.map((source) => ({ type: SearchQueryParamType.SOURCE, value: source })),
             ];
         } finally {

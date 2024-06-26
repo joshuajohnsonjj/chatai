@@ -1,6 +1,6 @@
 import { APIEndpoints, APIMethods } from '../types/requests';
 import { LoginUserResponse } from '../types/responses';
-import { sendAPIRequest } from './service';
+import { sendAxiosRequest } from './service';
 
 export const registerNewUser = async (
     firstName: string,
@@ -8,7 +8,7 @@ export const registerNewUser = async (
     email: string,
     password: string,
 ): Promise<void> => {
-    await sendAPIRequest(
+    await sendAxiosRequest(
         {
             method: APIMethods.POST,
             data: {
@@ -26,7 +26,7 @@ export const registerNewUser = async (
 };
 
 export const confirmNewUser = async (email: string, code: string): Promise<void> => {
-    await sendAPIRequest(
+    await sendAxiosRequest(
         {
             method: APIMethods.POST,
             data: {
@@ -42,7 +42,7 @@ export const confirmNewUser = async (email: string, code: string): Promise<void>
 };
 
 export const resendConfirmationEmail = async (email: string): Promise<void> => {
-    await sendAPIRequest(
+    await sendAxiosRequest(
         {
             method: APIMethods.PATCH,
             data: { email },
@@ -55,7 +55,7 @@ export const resendConfirmationEmail = async (email: string): Promise<void> => {
 };
 
 export const loginUser = async (email: string, password: string): Promise<LoginUserResponse> => {
-    const resp = await sendAPIRequest(
+    const resp = await sendAxiosRequest(
         {
             method: APIMethods.POST,
             data: {
@@ -72,7 +72,7 @@ export const loginUser = async (email: string, password: string): Promise<LoginU
 };
 
 export const updatePassword = async (oldPassword: string, newPassword: string, accessToken: string): Promise<void> => {
-    await sendAPIRequest({
+    await sendAxiosRequest({
         method: APIMethods.POST,
         data: {
             oldPassword,

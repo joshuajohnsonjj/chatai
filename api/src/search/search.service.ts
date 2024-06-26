@@ -28,17 +28,18 @@ export class SearchService {
 
         if (params.queryText) {
             const vectorizedQuery = await this.ai.getTextEmbedding(params.queryText);
-            const results = await this.mongo.queryDataElementsByVector(
+            const queryRes = await this.mongo.queryDataElementsByVector(
                 {
                     ...omit(params, ['queryText']),
                     vectorizedQuery,
                 },
                 20,
             );
+            const results = queryRes.filter((res) => res.score >= 0.8);
 
             return {
                 results,
-                numResults: 20,
+                numResults: results.length,
                 nextStartNdx: 21,
             };
         } else {
@@ -62,34 +63,45 @@ export class SearchService {
         return { deletedCount: result.deletedCount };
     }
 
-    async getPeopleSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {
+    async getAuthorSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {
         this.validateUserAccess(query.entityId, user.idUser, user.organization);
 
-        const results = await this.mongo.searchAuthorOptions(query.text ?? '', query.entityId);
+        if (query.text && query.text.length) {
+            const results = await this.mongo.searchAuthorOptions(query.text, query.entityId);
 
-        return {
-            results: results.map((result) => ({
-                value: result.name,
-                type: SearchQueryParamType.AUTHOR,
-            })),
-        };
+            return {
+                results: results.map((result) => ({
+                    value: result.name,
+                    type: SearchQueryParamType.AUTHOR,
+                })),
+            };
+        } else {
+            const results = await this.mongo.authorCollConnection
+                .find({
+                    entityId: query.entityId,
+                })
+                .limit(25)
+                .toArray();
+            return {
+                results: results.map((result) => ({
+                    value: result.name,
+                    type: SearchQueryParamType.AUTHOR,
+                })),
+            };
+        }
     }
 
     async getTopicSuggestions(query: SuggestionsQueryDto, user: DecodedUserTokenDto): Promise<SuggestionsResponseDto> {
         this.validateUserAccess(query.entityId, user.idUser, user.organization);
 
-        const minConfidence = query.minConfidenceScore ?? 1;
-
         if (query.text && query.text.length) {
             const results = await this.mongo.searchLabelOptions(query.text, query.entityId);
 
             return {
-                results: results
-                    .filter((result) => result.score >= minConfidence)
-                    .map((result) => ({
-                        value: result.label,
-                        type: SearchQueryParamType.TOPIC,
-                    })),
+                results: results.map((result) => ({
+                    value: result.label,
+                    type: SearchQueryParamType.TOPIC,
+                })),
             };
         } else {
             const results = await this.mongo.labelCollConnection

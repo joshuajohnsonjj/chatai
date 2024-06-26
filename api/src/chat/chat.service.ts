@@ -71,11 +71,9 @@ export class ChatService {
             4,
         );
 
-        // TODO: adjust confidence values so they're acturally useful...
-        // convert confidence from 1-9 to 0-1
-        // const normalizedMinConfidence = (params.confidenceSetting - 1) / 8;
+        const normalizedMinConfidence = this.normalizedConfidenceScore(params.confidenceSetting);
         const matchedDataText = matchedDataResult
-            // .filter((data) => data.score >= normalizedMinConfidence)
+            .filter((data) => data.score >= normalizedMinConfidence)
             .map((data) => data.text ?? '')
             .join('. ');
 
@@ -395,7 +393,6 @@ export class ChatService {
     async listChats(page: number, user: DecodedUserTokenDto, getArchived = false): Promise<ListChatResponseDto> {
         const associatedEntityId = user.organization || user.idUser;
 
-        const pageSize = 20;
         const chatsQuery = await this.prisma.chat.findMany({
             where: {
                 associatedEntityId,
@@ -405,8 +402,6 @@ export class ChatService {
             orderBy: {
                 updatedAt: 'desc',
             },
-            take: pageSize,
-            skip: page * pageSize,
             select: {
                 id: true,
                 title: true,
@@ -508,5 +503,21 @@ export class ChatService {
         }
 
         return this.openai.buildGptHistoryFromRawMessages(rawHistory);
+    }
+
+    /**
+     * Converts the 1-9 based chat settings min confidence score
+     * to a 0.75-0.91 based score for filtering mongo results
+     */
+    private normalizedConfidenceScore(original: number): number {
+        const xMin = 1;
+        const xMax = 9;
+        const yMin = 0.75;
+        const yMax = 0.91;
+
+        const scaleFactor = (yMax - yMin) / (xMax - xMin);
+        const convertedValue = scaleFactor * (original - xMin) + yMin;
+
+        return convertedValue;
     }
 }

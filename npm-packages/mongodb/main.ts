@@ -223,7 +223,7 @@ export class MongoDBService {
         name: string,
         entityId: string,
         limit = 5,
-    ): Promise<(Pick<MongoAuthorCollectionDoc, '_id' | 'name'> & { score: number })[]> {
+    ): Promise<(Pick<MongoAuthorCollectionDoc, '_id' | 'name' | 'email'> & { score: number })[]> {
         const pipeline = [
             {
                 $search: {
@@ -255,14 +255,15 @@ export class MongoDBService {
             { $limit: limit },
             {
                 $project: {
-                    label: 1,
+                    name: 1,
+                    email: 1,
                     score: { $meta: 'searchScore' },
                 },
             },
         ];
 
         const cursor = this.authorCollConnection.aggregate(pipeline);
-        return (await cursor.toArray()) as (Pick<MongoAuthorCollectionDoc, '_id' | 'name'> & {
+        return (await cursor.toArray()) as (Pick<MongoAuthorCollectionDoc, '_id' | 'name' | 'email'> & {
             score: number;
         })[];
     }
