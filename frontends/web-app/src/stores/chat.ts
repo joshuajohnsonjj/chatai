@@ -45,8 +45,8 @@ export const useChatStore = defineStore('chat', () => {
         const userInfo = useUserStore().userData;
 
         return {
-            chatCreativity: selectedChat.value?.chatCreativity ?? userInfo?.settings.chatCreativity ?? 7,
-            chatMinConfidence: selectedChat.value?.chatMinConfidence ?? userInfo?.settings.chatMinConfidence ?? 7,
+            chatCreativity: selectedChat.value?.chatCreativity ?? userInfo?.settings.chatCreativity ?? 5,
+            chatMinConfidence: selectedChat.value?.chatMinConfidence ?? userInfo?.settings.chatMinConfidence ?? 5,
             chatTone: selectedChat.value?.chatTone ?? userInfo?.settings.chatTone ?? ChatResponseTone.DEFAULT,
             baseInstructions: selectedChat.value?.baseInstructions ?? userInfo?.settings.baseInstructions ?? null,
         };

@@ -1,14 +1,4 @@
-import {
-    IsBoolean,
-    IsBooleanString,
-    IsEnum,
-    IsInt,
-    IsNumberString,
-    IsOptional,
-    IsString,
-    IsUUID,
-    MaxLength,
-} from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ChatTone } from '@prisma/client';
 
@@ -44,12 +34,13 @@ export class GetChatResponseQueryDto {
 }
 
 export class ListChatMessagesQueryDto {
-    @IsNumberString()
+    @IsNumber()
     @Transform(({ value }) => parseInt(value as string, 10))
     page: number;
 
-    @IsString()
-    getArchived: string;
+    @IsBoolean()
+    @Transform(({ value }) => value === 'true')
+    getArchived: boolean;
 }
 
 export class ChatMessageInformerDto {

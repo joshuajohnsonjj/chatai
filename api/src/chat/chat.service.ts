@@ -390,7 +390,7 @@ export class ChatService {
         return omit(query, ['thread']);
     }
 
-    async listChats(page: number, user: DecodedUserTokenDto, getArchived = false): Promise<ListChatResponseDto> {
+    async listChats(page: number, getArchived: boolean, user: DecodedUserTokenDto): Promise<ListChatResponseDto> {
         const associatedEntityId = user.organization || user.idUser;
 
         const chatsQuery = await this.prisma.chat.findMany({

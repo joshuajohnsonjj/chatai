@@ -92,8 +92,8 @@ model EntitySettings {
   updatedAt                DateTime      @default(now())
   newsletterNotification   Boolean       @default(true)
   usageNotification        Boolean       @default(true)
-  chatCreativity           Int           @default(4)
-  chatMinConfidence        Int           @default(8)
+  chatCreativity           Int           @default(5)
+  chatMinConfidence        Int           @default(5)
   chatTone                 ChatTone      @default(DEFAULT)
   baseInstructions         String?
   associatedUserId         String?       @unique

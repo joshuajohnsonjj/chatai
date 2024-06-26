@@ -1,9 +1,9 @@
-import { IsEmail, IsJWT } from 'class-validator';
+import { IsEmail, IsString } from 'class-validator';
 
 export class RefreshUserSessionRequestDto {
     @IsEmail()
     username: string;
 
-    @IsJWT()
+    @IsString()
     refreshToken: string;
 }

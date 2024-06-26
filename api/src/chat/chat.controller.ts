@@ -1,4 +1,17 @@
-import { Controller, Get, Param, Body, Post, Query, Req, UseGuards, Patch, Res, Logger } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Param,
+    Body,
+    Post,
+    Query,
+    Req,
+    UseGuards,
+    Patch,
+    Res,
+    Logger,
+    ParseIntPipe,
+} from '@nestjs/common';
 import { ChatService } from './chat.service';
 import {
     type ChatThreadResponseDto,
@@ -33,7 +46,7 @@ export class ChatController {
 
     @Get()
     async listChats(@Query() query: ListChatMessagesQueryDto, @Req() req: Request): Promise<ListChatResponseDto> {
-        return await this.service.listChats(query.page, req.user as DecodedUserTokenDto, query.getArchived === '1');
+        return await this.service.listChats(query.page, query.getArchived, req.user as DecodedUserTokenDto);
     }
 
     @Patch(':chatId')
@@ -141,7 +154,7 @@ export class ChatController {
     @Get(':chatId/message')
     async listChatMessages(
         @Param('chatId') chatId: string,
-        @Query() { page }: ListChatMessagesQueryDto,
+        @Query('page', ParseIntPipe) page: number,
         @Req() req: Request,
     ): Promise<ListChatMessagesResponseDto> {
         return await this.service.listChatMessages(chatId, page, req.user as DecodedUserTokenDto);

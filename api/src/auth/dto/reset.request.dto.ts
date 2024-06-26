@@ -1,4 +1,4 @@
-import { IsEmail, IsJWT, IsString, IsStrongPassword } from 'class-validator';
+import { IsEmail, IsString, IsStrongPassword } from 'class-validator';
 
 export class ResetRequestDto {
     @IsStrongPassword({
@@ -33,6 +33,6 @@ export class ChangeRequestDto {
     })
     newPassword: string;
 
-    @IsJWT()
+    @IsString()
     accessToken: string;
 }

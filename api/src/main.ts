@@ -8,6 +8,7 @@ import * as CloudWatchTransport from 'winston-cloudwatch';
 import * as passport from 'passport';
 import 'reflect-metadata';
 import { BadRequestError } from './exceptions';
+import { ValidationError } from 'class-validator';
 
 const localLogger = WinstonModule.createLogger({
     format: winston.format.uncolorize(),
@@ -49,15 +50,16 @@ async function bootstrap() {
             transform: true,
             whitelist: true,
             exceptionFactory: (errors) => {
-                const detailedErrors = errors.map((error) => {
-                    return {
-                        property: error.property,
-                        constraints: error.constraints,
-                        value: error.value,
-                    };
-                });
+                const detailedErrors = errors.map((error: ValidationError) => ({
+                    msg: error.toString(),
+                    value: error.value,
+                }));
 
-                return new BadRequestError(JSON.stringify(detailedErrors));
+                if (process.env.NODE_ENV === 'dev')
+                    localLogger.warn(`Req faildation failed: ${JSON.stringify(detailedErrors)}`);
+                else cloudwatchLogger.warn(`Req faildation failed: ${JSON.stringify(detailedErrors)}`);
+
+                return new BadRequestError(errors.map((error) => Object.values(error.constraints ?? {})).join(', '));
             },
         }),
     );
