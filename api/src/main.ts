@@ -48,8 +48,6 @@ async function bootstrap() {
         new ValidationPipe({
             transform: true,
             whitelist: true,
-            // forbidNonWhitelisted: true,
-            // forbidUnknownValues: true,
             exceptionFactory: (errors) => {
                 const detailedErrors = errors.map((error) => {
                     return {
