@@ -2,17 +2,13 @@ import type { Handler } from 'aws-lambda';
 import * as dotenv from 'dotenv';
 import { type TestCredentialsRequestData } from '../../lib/types';
 import { decryptData } from '../../lib/decryption';
-import { NotionWrapper } from '../../lib/dataSources/notion';
+import { NotionService } from '../../lib/dataSources/notion';
 import { GoogleDriveService } from '../../lib/dataSources/googleDrive';
-import { SlackWrapper } from '../../lib/dataSources/slack';
+import { GmailService } from '../../lib/dataSources/gmail';
+import { GoogleCalService } from '../../lib/dataSources/googleCal';
+import { SlackService } from '../../lib/dataSources/slack';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
-
-enum DataSourceTypes {
-    NOTION = 'NOTION',
-    GOOGLE_DRIVE = 'GOOGLE_DRIVE',
-    SLACK = 'SLACK',
-}
 
 /**
  * API Gateway /test-credentials POST handler
@@ -23,18 +19,26 @@ export const handler: Handler = async (req): Promise<{ isValid: boolean; message
     console.log(`Testing ${data.dataSourceTypeName} data source credential(s)`);
 
     switch (data.dataSourceTypeName) {
-        case DataSourceTypes.NOTION: {
+        case NotionService.DataSourceTypeName: {
             const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
-            const validity = await new NotionWrapper(decryptedSecret).testConnection();
+            const validity = await new NotionService(decryptedSecret).testConnection();
             return { isValid: validity, message: validity ? '' : 'Invalid token' };
         }
-        case DataSourceTypes.GOOGLE_DRIVE: {
+        case GoogleDriveService.DataSourceTypeName: {
             const validity = await new GoogleDriveService(data.secret).testConnection();
             return { isValid: validity, message: validity ? '' : 'Invalid token' };
         }
-        case DataSourceTypes.SLACK: {
+        case GmailService.DataSourceTypeName: {
+            const validity = await new GmailService(data.secret).testConnection();
+            return { isValid: validity, message: validity ? '' : 'Invalid token' };
+        }
+        case GoogleCalService.DataSourceTypeName: {
+            const validity = await new GoogleCalService(data.secret).testConnection();
+            return { isValid: validity, message: validity ? '' : 'Invalid token' };
+        }
+        case SlackService.DataSourceTypeName: {
             const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
-            const validity = await new SlackWrapper(decryptedSecret).testConnection(data.externalId!);
+            const validity = await new SlackService(decryptedSecret).testConnection(data.externalId!);
             return {
                 isValid: validity.appId && validity.token,
                 message:

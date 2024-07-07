@@ -5,7 +5,7 @@ import { v4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
-import { SlackWrapper } from '../../lib/dataSources/slack';
+import { SlackService } from '../../lib/dataSources/slack';
 
 dotenv.config({ path: __dirname + '/../.env' });
 
@@ -27,7 +27,7 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
     });
 
     const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, dataSource.secret);
-    const slackService = new SlackWrapper(decryptedSecret);
+    const slackService = new SlackService(decryptedSecret);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 

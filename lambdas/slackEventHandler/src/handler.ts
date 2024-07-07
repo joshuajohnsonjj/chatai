@@ -1,6 +1,6 @@
 import { APIGatewayEvent, Handler } from 'aws-lambda';
 import { PrismaClient } from '@prisma/client';
-import { SlackEventAPIPayload, SlackWrapper } from '@joshuajohnsonjj38/slack';
+import { SlackEventAPIPayload, SlackService } from '@joshuajohnsonjj38/slack';
 import { GeminiService } from '@joshuajohnsonjj38/openai';
 import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
@@ -41,7 +41,7 @@ export const handler: Handler = async (event: APIGatewayEvent) => {
     }
 
     const slackKey = rsaService.decrypt(dataSource.secret);
-    const slackService = new SlackWrapper(slackKey, redisClient);
+    const slackService = new SlackService(slackKey, redisClient);
 
     const [userInfo, channelInfo] = await Promise.all([
         slackService.getUserInfoById(messageData.event.user),

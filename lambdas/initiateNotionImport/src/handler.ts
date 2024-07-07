@@ -1,4 +1,4 @@
-import { NotionWrapper, getPageTitle } from '../../lib/dataSources/notion';
+import { NotionService, getPageTitle } from '../../lib/dataSources/notion';
 import type { NotionSQSMessageBody } from '../../lib/dataSources/notion';
 import type { Handler } from 'aws-lambda';
 import * as dotenv from 'dotenv';
@@ -20,7 +20,7 @@ export const handler: Handler = async (req): Promise<{ success: boolean }> => {
     console.log(`Retreiving data source ${data.dataSourceId} Notion pages`, 'DataSource');
 
     const decryptedSecret = decryptData(process.env.RSA_PRIVATE_KEY!, data.secret);
-    const notionService = new NotionWrapper(decryptedSecret);
+    const notionService = new NotionService(decryptedSecret);
     const messageGroupId = v4();
     const messageBatchEntries: SendMessageBatchRequestEntry[] = [];
 

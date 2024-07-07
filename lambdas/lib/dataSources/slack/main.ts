@@ -13,7 +13,9 @@ import type {
     SlackUserResponse,
 } from './types';
 
-export class SlackWrapper {
+export class SlackService {
+    public static readonly DataSourceTypeName = 'SLACK';
+
     private readonly accessToken: string;
 
     constructor(secret: string) {

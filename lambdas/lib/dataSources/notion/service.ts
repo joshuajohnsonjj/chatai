@@ -7,7 +7,7 @@ import {
     NotionBlockDetailResponse,
 } from './types';
 
-export class NotionWrapper {
+export class NotionService {
     public static readonly DataSourceTypeName = 'NOTION';
 
     private readonly secret: string;

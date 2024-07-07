@@ -15,7 +15,7 @@ import {
     JoinableBlockTypes,
     NotionBlockType,
     getBlockUrl,
-    NotionWrapper,
+    NotionService,
 } from '../../lib/dataSources/notion';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import type { DataElementInsertSummary, MongoDBService } from '@joshuajohnsonjj38/mongodb';
@@ -90,7 +90,7 @@ export const getTextFromBlock = (block: NotionBlock): string => {
  * child blocks via DFS traversal and returns all children as
  * array of Notion blocks
  */
-export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: NotionWrapper): Promise<NotionBlock[]> => {
+export const collectAllChildren = async (rootBlock: NotionBlock, notionAPI: NotionService): Promise<NotionBlock[]> => {
     const allChildren: NotionBlock[] = [rootBlock];
 
     const collectChildren = async (block: NotionBlock): Promise<void> => {
@@ -171,7 +171,7 @@ export const publishBlockData = async (
             modifiedAt: new Date(parentBlock.last_edited_time).getTime(),
             url: getBlockUrl(pageUrl, parentBlock.id),
             annotations: annotationLabels,
-            dataSourceType: NotionWrapper.DataSourceTypeName,
+            dataSourceType: NotionService.DataSourceTypeName,
             author: author ?? undefined,
         }),
         author

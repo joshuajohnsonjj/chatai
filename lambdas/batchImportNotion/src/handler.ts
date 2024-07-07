@@ -1,4 +1,4 @@
-import { NotionWrapper, ImportableBlockTypes, NotionBlockType } from '../../lib/dataSources/notion';
+import { NotionService, ImportableBlockTypes, NotionBlockType } from '../../lib/dataSources/notion';
 import type {
     NotionBlock,
     NotionBlockDetailResponse,
@@ -29,7 +29,7 @@ let storageUsageMapCache: { [dataSourceId: string]: number };
 const notionAuthors: { [notionUserId: string]: CachedUser } = {};
 
 const getBlockAuthor = async (
-    notionAPI: NotionWrapper,
+    notionAPI: NotionService,
     author?: NotionAuthorAttribution,
 ): Promise<CachedUser | null> => {
     if (!author || author.object !== 'user') {
@@ -64,7 +64,7 @@ const getBlockAuthor = async (
  */
 const processBlockList = async (
     mongo: MongoDBService,
-    notionAPI: NotionWrapper,
+    notionAPI: NotionService,
     blocks: NotionBlock[],
     entityId: string,
     pageUrl: string,
@@ -183,7 +183,7 @@ const processBlockList = async (
 
 const processPage = async (
     mongo: MongoDBService,
-    notionAPI: NotionWrapper,
+    notionAPI: NotionService,
     pageId: string,
     entityId: string,
     pageUrl: string,
@@ -241,7 +241,7 @@ export const handler: Handler = async (event: SQSEvent): Promise<{ success: true
         }
 
         const notionKey = decryptData(process.env.RSA_PRIVATE_KEY!, messageBody.secret);
-        const notionAPI = new NotionWrapper(notionKey);
+        const notionAPI = new NotionService(notionKey);
 
         processingPagePromises.push(
             processPage(

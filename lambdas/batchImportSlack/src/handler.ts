@@ -1,7 +1,7 @@
 import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { Handler, SQSEvent } from 'aws-lambda';
 // import { PrismaClient } from '@prisma/client';
-import { type SlackMessage, SlackWrapper } from '@joshuajohnsonjj38/slack';
+import { type SlackMessage, SlackService } from '@joshuajohnsonjj38/slack';
 import { GeminiService } from '@joshuajohnsonjj38/openai';
 // import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
 // import { createClient } from 'redis';
@@ -19,7 +19,7 @@ const openAI = new GeminiService(process.env.OPENAI_SECRET as string);
 // });
 
 const processMessages = async (
-    slackAPI: SlackWrapper,
+    slackAPI: SlackService,
     messages: SlackMessage[],
     channelId: string,
     channelName: string,
@@ -43,7 +43,7 @@ const processMessages = async (
 };
 
 const processChannel = async (
-    slackAPI: SlackWrapper,
+    slackAPI: SlackService,
     channelId: string,
     channelName: string,
     ownerEntityId: string,
@@ -95,7 +95,7 @@ export const handler: Handler = async (event: SQSEvent) => {
         }
 
         const slackKey = rsaService.decrypt(messageBody.secret);
-        const slackAPI = new SlackWrapper(slackKey, redisClient);
+        const slackAPI = new SlackService(slackKey, redisClient);
 
         processingChannelPromises.push(
             processChannel(slackAPI, messageBody.channelId, messageBody.channelName, messageBody.ownerEntityId),
