@@ -8,7 +8,7 @@ import { SQSClient, SendMessageBatchCommand, SendMessageCommand } from '@aws-sdk
 const MAX_BATCH_SIZE = 10;
 
 const sqsClient = new SQSClient({
-    region: process.env.AWS_REGION as string,
+    region: process.env.AWS_REGION!,
 });
 
 export const sendSqsMessageBatches = async (

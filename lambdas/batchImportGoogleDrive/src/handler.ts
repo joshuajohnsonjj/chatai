@@ -124,8 +124,8 @@ export const handler: Handler = async (event: SQSEvent) => {
     const dataSourceIdToAccessTokenMap: { [id: string]: string } = {};
 
     const mongo = await getMongoClientFromCacheOrInitiateConnection(
-        process.env.MONGO_CONN_STRING as string,
-        process.env.MONGO_DB_NAME as string,
+        process.env.MONGO_CONN_STRING!,
+        process.env.MONGO_DB_NAME!,
     );
 
     console.log(`Processing ${event.Records.length} messages`);

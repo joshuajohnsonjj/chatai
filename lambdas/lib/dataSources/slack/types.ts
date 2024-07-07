@@ -79,11 +79,13 @@ export interface SlackConversationHistoryRequestParams {
     limit?: number;
     cursor?: string;
     include_all_metadata?: boolean;
+    oldest?: number;
+    latest?: number;
     channel: string;
 }
 
 export interface SlackMessage {
-    type: string;
+    type: 'message';
     user: string;
     text: string;
     ts: string;
@@ -119,4 +121,19 @@ export interface SlackMessageEventAPI {
         user: string;
         ts: string;
     };
+}
+
+/**
+ *
+ * SQS types
+ *
+ */
+export interface SlackSQSMessageBody {
+    channelId: string;
+    channelName: string;
+    ownerEntityId: string;
+    secret: string;
+    dataSourceId: string;
+    lowerDateBound?: string;
+    isFinal: boolean;
 }

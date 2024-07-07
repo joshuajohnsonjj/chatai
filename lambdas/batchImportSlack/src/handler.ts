@@ -1,62 +1,96 @@
-import { RsaCipher } from '@joshuajohnsonjj38/secret-mananger';
 import { Handler, SQSEvent } from 'aws-lambda';
-// import { PrismaClient } from '@prisma/client';
-import { type SlackMessage, SlackService } from '@joshuajohnsonjj38/slack';
-import { GeminiService } from '@joshuajohnsonjj38/openai';
-// import { QdrantDataSource, QdrantPayload, QdrantWrapper } from '@joshuajohnsonjj38/qdrant';
-// import { createClient } from 'redis';
+import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
+import * as dotenv from 'dotenv';
+import { GeminiService } from '@joshuajohnsonjj38/gemini';
+import { SlackService, type SlackSQSMessageBody, type SlackMessage } from '../../lib/dataSources/slack';
+import { decryptData } from '../../lib/decryption';
+import { notifyImportsCompleted } from '../../lib/internalAPI';
+import { type MongoDBService } from '@joshuajohnsonjj38/mongodb';
+import { type UserInfo } from './types';
+import { getDocumentSizeEstimate } from '../../lib/helper';
 
-const rsaService = new RsaCipher(process.env.RSA_PRIVATE_KEY);
-// const prisma = new PrismaClient();
-const openAI = new GeminiService(process.env.OPENAI_SECRET as string);
-// const qdrant = new QdrantWrapper(
-//     process.env.QDRANT_HOST as string,
-//     process.env.QDRANT_COLLECTION as string,
-//     process.env.QDRANT_KEY as string,
-// );
-// const redisClient = createClient({
-//     url: process.env.REDIS_URL,
-// });
+dotenv.config({ path: __dirname + '/../../.env' });
+
+const gemini = new GeminiService(process.env.GEMINI_KEY!);
+
+let storageUsageMapCache: { [dataSourceId: string]: number };
+let userIdToInfoCache: { [userId: string]: UserInfo };
+
+const getUserInfo = async (service: SlackService, userId: string): Promise<UserInfo> => {
+    if (userIdToInfoCache[userId]) {
+        return userIdToInfoCache[userId];
+    }
+
+    const res = await service.getUserInfoById(userId);
+    userIdToInfoCache[userId] = {
+        name: res.real_name,
+        email: res.profile.email,
+    };
+
+    return userIdToInfoCache[userId];
+};
 
 const processMessages = async (
-    slackAPI: SlackService,
+    mongo: MongoDBService,
+    service: SlackService,
     messages: SlackMessage[],
-    channelId: string,
-    channelName: string,
-    ownerId: string,
+    sqsMessageBody: SlackSQSMessageBody,
 ): Promise<void> => {
     await Promise.all(
         messages.map(async (message) => {
-            // const payload: QdrantPayload = {
-            //     date: new Date(message.ts).getTime(),
-            //     // text: message.text,
-            //     dataSource: QdrantDataSource.SLACK,
-            //     ownerId,
-            //     // slackChannelId: channelId,
-            //     // slackChannelName: channelName,
-            //     // authorName: (await slackAPI.getUserInfoById(message.user)).real_name,
-            // };
-            // const embedding = await openAI.getTextEmbedding(message.text);
-            // await qdrant.upsert(`${channelId}:${message.ts}`, embedding, payload);
+            const [embedding, annotationsResponse, user, messageLink] = await Promise.all([
+                gemini.getTextEmbedding(`Slack message in channel: ${sqsMessageBody.channelName}. ${message.text}`),
+                gemini.getTextAnnotation(message.text, 0.41, 0.88),
+                getUserInfo(service, message.user),
+                service.getMessageLink(sqsMessageBody.channelId, message.ts),
+            ]);
+
+            const annotations = [...annotationsResponse.categories, ...annotationsResponse.entities];
+
+            const [writeElementsSummary] = await Promise.all([
+                mongo.writeDataElements({
+                    _id: `${sqsMessageBody.channelId}-${message.ts}`,
+                    ownerEntityId: sqsMessageBody.ownerEntityId,
+                    text: message.text,
+                    title: `${sqsMessageBody.channelName} - ${user.name}`,
+                    embedding,
+                    createdAt: new Date().getTime(),
+                    modifiedAt: parseFloat(message.ts) * 1000,
+                    url: messageLink,
+                    author: {
+                        name: user.name,
+                        email: user.email,
+                    },
+                    annotations,
+                    dataSourceType: SlackService.DataSourceTypeName,
+                }),
+                mongo.writeAuthors({
+                    name: user.name,
+                    email: user.email,
+                    entityId: sqsMessageBody.ownerEntityId,
+                }),
+                mongo.writeLabels(annotations, sqsMessageBody.ownerEntityId),
+            ]);
+
+            storageUsageMapCache[sqsMessageBody.dataSourceId] =
+                storageUsageMapCache[sqsMessageBody.dataSourceId] ??
+                0 + getDocumentSizeEstimate(writeElementsSummary.lengthDiff, writeElementsSummary.isNew);
         }),
     );
 };
 
-const processChannel = async (
-    slackAPI: SlackService,
-    channelId: string,
-    channelName: string,
-    ownerEntityId: string,
-) => {
+const processChannel = async (mongo: MongoDBService, service: SlackService, messageBody: SlackSQSMessageBody) => {
     let isComplete = false;
-    let nextCursor: string | null = null;
+    let nextCursor: string | undefined;
     const processingMessagesPromises: Promise<void>[] = [];
 
     while (!isComplete) {
-        const messagesResponse = await slackAPI.getConversationHistory(channelId, nextCursor);
-        processingMessagesPromises.push(
-            processMessages(slackAPI, messagesResponse.messages, channelId, channelName, ownerEntityId),
+        const messagesResponse = await service.getConversationHistory(
+            messageBody.channelId,
+            messageBody.lowerDateBound,
+            nextCursor,
         );
+        processingMessagesPromises.push(processMessages(mongo, service, messagesResponse.messages, messageBody));
         isComplete = !messagesResponse.has_more;
         nextCursor = messagesResponse?.response_metadata?.next_cursor;
     }
@@ -66,53 +100,45 @@ const processChannel = async (
 
 /**
  * Lambda SQS handler
- *
- * Message body expected to have following data
- *      channelId: string,
- *      channelName: string,
- *      ownerEntityId: string,
- *      dataSourceId: string,
- *      secret: string,
- *
- * Or at the end of a data source's sync messages
- *      dataSourceId: string,
- *      isFinal: true,
  */
 export const handler: Handler = async (event: SQSEvent) => {
-    const processingChannelPromises: Promise<void>[] = [];
     const completedDataSources: string[] = [];
 
-    // if (!redisClient.isOpen) {
-    //     await redisClient.connect();
-    // }
+    const mongo = await getMongoClientFromCacheOrInitiateConnection(
+        process.env.MONGO_CONN_STRING!,
+        process.env.MONGO_DB_NAME!,
+    );
 
-    for (const record of event.Records) {
-        const messageBody = JSON.parse(record.body);
+    console.log(`Processing ${event.Records.length} messages`);
 
-        if (messageBody.isFinal) {
-            completedDataSources.push(messageBody.dataSourceId);
-            continue;
-        }
-
-        const slackKey = rsaService.decrypt(messageBody.secret);
-        const slackAPI = new SlackService(slackKey, redisClient);
-
-        processingChannelPromises.push(
-            processChannel(slackAPI, messageBody.channelId, messageBody.channelName, messageBody.ownerEntityId),
-        );
+    if (!storageUsageMapCache) {
+        console.log('Initializing storage map cache');
+        storageUsageMapCache = {};
     }
 
-    await Promise.all(processingChannelPromises);
-    // await prisma.dataSource.updateMany({
-    //     where: {
-    //         id: {
-    //             in: completedDataSources,
-    //         },
-    //     },
-    //     data: {
-    //         lastSync: new Date(),
-    //         isSyncing: false,
-    //         updatedAt: new Date(),
-    //     },
-    // });
+    if (!userIdToInfoCache) {
+        console.log('Initializing user info map cache');
+        userIdToInfoCache = {};
+    }
+
+    await Promise.all(
+        event.Records.map(async (record) => {
+            const messageBody: SlackSQSMessageBody = JSON.parse(record.body);
+
+            if (messageBody.isFinal) {
+                completedDataSources.push(messageBody.dataSourceId);
+            }
+
+            const slackService = new SlackService(decryptData(process.env.RSA_PRIVATE_KEY!, messageBody.secret));
+
+            await processChannel(mongo, slackService, messageBody);
+        }),
+    );
+
+    if (completedDataSources.length) {
+        console.log('Sync completed of data source records:', completedDataSources);
+        await notifyImportsCompleted(completedDataSources, storageUsageMapCache);
+    }
+
+    return { success: true };
 };

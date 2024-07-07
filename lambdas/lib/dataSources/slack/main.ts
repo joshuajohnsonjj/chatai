@@ -24,9 +24,9 @@ export class SlackService {
 
     public async testConnection(appId: string): Promise<{ token: boolean; appId: boolean }> {
         const [conversationResponse, userResponse, appResponse] = await Promise.all([
-            this.listConversations(null, 1),
-            this.listUsers(null, 1),
-            this.getAppActivity(appId, null, 1),
+            this.listConversations(undefined, 1),
+            this.listUsers(undefined, 1),
+            this.getAppActivity(appId, 1),
         ]);
 
         return {
@@ -35,146 +35,167 @@ export class SlackService {
         };
     }
 
-    public async listConversations(cursor: string | null, limit = 100): Promise<SlackConversationListResponse> {
+    public async listConversations(cursor?: string, limit = 100): Promise<SlackConversationListResponse> {
         const data: SlackConversationListRequestParams = { limit };
 
         if (cursor) {
             data.cursor = cursor;
         }
 
-        const response = await this.sendHttpRequest({
-            method: 'get',
-            baseURL: SlackBaseUrl,
-            url: SlackEndpoints.CONVERSATION_LIST,
-            headers: {
-                ...SlackHeaders,
-                Authorization: `Bearer ${this.accessToken}`,
+        const query = new URLSearchParams(data as Record<string, string>).toString();
+
+        const response = await this.sendHttpRequest(
+            {
+                method: 'get',
+                baseURL: SlackBaseUrl,
+                url: `${SlackEndpoints.CONVERSATION_LIST}?${query}`,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
             },
-            data: new URLSearchParams(data as Record<string, string>).toString(),
-        });
+            SlackEndpoints.CONVERSATION_LIST,
+        );
         return response.data;
     }
 
+    // TODO: test methods/ json vs url encoded
+
     public async getConversationHistory(
         channel: string,
-        cursor: string | null,
+        lowerDateBound?: string,
+        cursor?: string,
         limit = 100,
     ): Promise<SlackConversationHistoryResponse> {
         const data: SlackConversationHistoryRequestParams = { limit, channel };
 
-        if (cursor) {
-            data.cursor = cursor;
+        if (lowerDateBound) {
+            data.oldest = new Date(lowerDateBound).getTime();
         }
-
-        const response = await this.sendHttpRequest({
-            method: 'get',
-            baseURL: SlackBaseUrl,
-            url: SlackEndpoints.CONVERSATION_HISTORY,
-            headers: {
-                ...SlackHeaders,
-                Authorization: `Bearer ${this.accessToken}`,
-            },
-            data: new URLSearchParams(data as unknown as Record<string, string>).toString(),
-        });
-        return response.data;
-    }
-
-    public async getAppActivity(
-        app_id: string,
-        cursor: string | null,
-        limit: number,
-    ): Promise<SlackAppActivityResponse> {
-        const data: SlackAppActivityListRequestParams = { app_id, limit };
 
         if (cursor) {
             data.cursor = cursor;
         }
 
-        const response = await this.sendHttpRequest({
-            method: 'get',
-            baseURL: SlackBaseUrl,
-            url: SlackEndpoints.APP_ACTIVITY_LIST,
-            headers: {
-                ...SlackHeaders,
-                Authorization: `Bearer ${this.accessToken}`,
+        const response = await this.sendHttpRequest(
+            {
+                method: 'post',
+                baseURL: SlackBaseUrl,
+                url: SlackEndpoints.CONVERSATION_HISTORY,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
+                data,
             },
-            data: new URLSearchParams(data as unknown as Record<string, string>).toString(),
-        });
+            SlackEndpoints.CONVERSATION_HISTORY,
+        );
         return response.data;
     }
 
-    public async listUsers(cursor: string | null, limit = 100): Promise<SlackUserListResponse> {
+    public async getAppActivity(appId: string, limit: number, cursor?: string): Promise<SlackAppActivityResponse> {
+        const data: SlackAppActivityListRequestParams = { app_id: appId, limit };
+
+        if (cursor) {
+            data.cursor = cursor;
+        }
+
+        const query = new URLSearchParams(data as unknown as Record<string, string>).toString();
+
+        const response = await this.sendHttpRequest(
+            {
+                method: 'get',
+                baseURL: SlackBaseUrl,
+                url: `${SlackEndpoints.APP_ACTIVITY_LIST}?${query}`,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
+            },
+            SlackEndpoints.APP_ACTIVITY_LIST,
+        );
+        return response.data;
+    }
+
+    public async listUsers(cursor?: string, limit = 100): Promise<SlackUserListResponse> {
         const data: SlackUserListRequestParams = { limit };
 
         if (cursor) {
             data.cursor = cursor;
         }
 
-        const response = await this.sendHttpRequest({
-            method: 'get',
-            baseURL: SlackBaseUrl,
-            url: SlackEndpoints.USERS_LIST,
-            headers: {
-                ...SlackHeaders,
-                Authorization: `Bearer ${this.accessToken}`,
+        const query = new URLSearchParams(data as unknown as Record<string, string>).toString();
+
+        const response = await this.sendHttpRequest(
+            {
+                method: 'get',
+                baseURL: SlackBaseUrl,
+                url: `${SlackEndpoints.USERS_LIST}?${query}`,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
             },
-            data: new URLSearchParams(data as unknown as Record<string, string>).toString(),
-        });
+            SlackEndpoints.USERS_LIST,
+        );
         return response.data;
     }
 
     public async getUserInfoById(userId: string): Promise<SlackUserResponse> {
-        // if (this.cacheClientReady) {
-        //     const cachedUser = await this.cache!.get(SlackRedisKey.USER(userId));
-
-        //     if (cachedUser) {
-        //         this.setRedis(SlackRedisKey.USER(userId), cachedUser);
-        //         return JSON.parse(cachedUser);
-        //     }
-        // }
-
-        const response = await this.sendHttpRequest({
-            method: 'get',
-            baseURL: SlackBaseUrl,
-            url: SlackEndpoints.USER_INFO,
-            headers: {
-                ...SlackHeaders,
-                Authorization: `Bearer ${this.accessToken}`,
+        const response = await this.sendHttpRequest(
+            {
+                method: 'get',
+                baseURL: SlackBaseUrl,
+                url: `${SlackEndpoints.USER_INFO}?${new URLSearchParams({ user: userId }).toString()}`,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
             },
-            data: new URLSearchParams({ user: userId }).toString(),
-        });
+            SlackEndpoints.USER_INFO,
+        );
 
         const userData = response.data.user;
-        // this.setRedis(SlackRedisKey.USER(userId), JSON.stringify(userData));
 
         return userData;
     }
 
     public async getChannelInfoById(channelId: string): Promise<SlackChannelInfoResponse> {
-        // if (this.cacheClientReady) {
-        //     const cachedChannel = await this.cache!.get(SlackRedisKey.CHANNEL(channelId));
-
-        //     if (cachedChannel) {
-        //         this.setRedis(SlackRedisKey.CHANNEL(channelId), cachedChannel);
-        //         return JSON.parse(cachedChannel);
-        //     }
-        // }
-
-        const response = await this.sendHttpRequest({
-            method: 'get',
-            baseURL: SlackBaseUrl,
-            url: SlackEndpoints.CONVERSATION_INFO,
-            headers: {
-                ...SlackHeaders,
-                Authorization: `Bearer ${this.accessToken}`,
+        const response = await this.sendHttpRequest(
+            {
+                method: 'get',
+                baseURL: SlackBaseUrl,
+                url: `${SlackEndpoints.CONVERSATION_INFO}?${new URLSearchParams({ channel: channelId }).toString()}`,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
             },
-            data: new URLSearchParams({ channel: channelId }).toString(),
-        });
+            SlackEndpoints.CONVERSATION_INFO,
+        );
 
         const channelData = response.data.user;
-        // this.setRedis(SlackRedisKey.CHANNEL(channelId), JSON.stringify(channelData));
 
         return channelData;
+    }
+
+    public async getMessageLink(channelId: string, messageTs: string): Promise<string> {
+        const query = new URLSearchParams({ channel: channelId, message_ts: messageTs }).toString();
+
+        const response = await this.sendHttpRequest(
+            {
+                method: 'get',
+                baseURL: SlackBaseUrl,
+                url: `${SlackEndpoints.MESSAGE_LINK}?${query}`,
+                headers: {
+                    ...SlackHeaders,
+                    Authorization: `Bearer ${this.accessToken}`,
+                },
+            },
+            SlackEndpoints.MESSAGE_LINK,
+        );
+
+        return response.data.permalink;
     }
 
     /**
@@ -183,18 +204,12 @@ export class SlackService {
      *
      * Applies a one second delay
      */
-    private async sendHttpRequest(req: AxiosRequestConfig, delayMs = 1000): Promise<AxiosResponse> {
+    private async sendHttpRequest(req: AxiosRequestConfig, endpoint: SlackEndpoints): Promise<AxiosResponse> {
         await new Promise<void>((resolve) => {
-            setTimeout(resolve, delayMs);
+            setTimeout(resolve, this.rateLimitDelayByTier(endpoint));
         });
         return axios.request(req);
     }
-
-    // private setRedis(key: string, value: string): void {
-    //     if (this.cacheClientReady) {
-    //         this.cache!.set(key, value, { EX: 259200 }); // 72 hr expiration
-    //     }
-    // }
 
     private checkTokenValidity(
         conversationResponse: SlackConversationListResponse,
@@ -212,7 +227,34 @@ export class SlackService {
         return appResponse.error !== SlackErros.INVALID_APP && appResponse.error !== SlackErros.INVALID_APP_ID;
     }
 
-    // private get cacheClientReady(): boolean {
-    //     return !!this.cache && this.cache.isOpen && this.cache.isReady;
-    // }
+    /**
+     * https://api.slack.com/apis/rate-limits
+     *
+     * Tier 1 => 1/min
+     * Tier 2 => 20/min
+     * Tier 3 => 50/min
+     * Tier 4 => 100/min
+     * Special => see method docs
+     */
+    private rateLimitDelayByTier(endpoint: SlackEndpoints): number {
+        switch (endpoint) {
+            case SlackEndpoints.MESSAGE_LINK:
+                return 200;
+
+            // Tier 4
+            case SlackEndpoints.USER_INFO:
+                return 600;
+
+            // Tier 3
+            case SlackEndpoints.CONVERSATION_HISTORY:
+            case SlackEndpoints.APP_ACTIVITY_LIST:
+            case SlackEndpoints.CONVERSATION_INFO:
+                return 1200;
+
+            // Tier 2
+            case SlackEndpoints.CONVERSATION_LIST:
+            case SlackEndpoints.USERS_LIST:
+                return 3000;
+        }
+    }
 }

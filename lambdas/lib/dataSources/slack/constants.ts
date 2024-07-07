@@ -11,6 +11,7 @@ export enum SlackEndpoints {
     USERS_LIST = '/users.list',
     USER_INFO = '/users.info',
     APP_ACTIVITY_LIST = '/apps.activities.list',
+    MESSAGE_LINK = '/chat.getPermalink',
 }
 
 export enum SlackErros {
