@@ -9,13 +9,17 @@ import type {
     NotionTable,
     NotionTableRow,
     NotionToDo,
+} from '../../lib/dataSources/notion';
+import {
+    ImportableBlockTypes,
+    JoinableBlockTypes,
+    NotionBlockType,
+    getBlockUrl,
     NotionWrapper,
 } from '../../lib/dataSources/notion';
-import { ImportableBlockTypes, JoinableBlockTypes, NotionBlockType, getBlockUrl } from '../../lib/dataSources/notion';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
 import type { DataElementInsertSummary, MongoDBService } from '@joshuajohnsonjj38/mongodb';
 import * as dotenv from 'dotenv';
-import { NOTION_DATA_SOURCE_NAME } from './constants';
 import { cleanExcessWhitespace, getDocumentSizeEstimate, isEmptyContent } from '../../lib/helper';
 import { CachedUser } from './types';
 
@@ -163,10 +167,11 @@ export const publishBlockData = async (
             text: cleanedAggregatedText,
             title: pageTitle,
             embedding,
-            createdAt: new Date(parentBlock.last_edited_time).getTime(),
+            createdAt: new Date().getTime(),
+            modifiedAt: new Date(parentBlock.last_edited_time).getTime(),
             url: getBlockUrl(pageUrl, parentBlock.id),
             annotations: annotationLabels,
-            dataSourceType: NOTION_DATA_SOURCE_NAME,
+            dataSourceType: NotionWrapper.DataSourceTypeName,
             author: author ?? undefined,
         }),
         author

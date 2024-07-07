@@ -8,6 +8,8 @@ import {
 } from './types';
 
 export class NotionWrapper {
+    public static readonly DataSourceTypeName = 'NOTION';
+
     private readonly secret: string;
 
     constructor(secret: string) {

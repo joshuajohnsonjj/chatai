@@ -1,6 +1,7 @@
 import { MongoDBService } from '@joshuajohnsonjj38/mongodb';
 
 let cachedMongo: MongoDBService;
+
 export const getMongoClientFromCacheOrInitiateConnection = async (
     connStr: string,
     dbName: string,
@@ -9,8 +10,9 @@ export const getMongoClientFromCacheOrInitiateConnection = async (
         return cachedMongo;
     }
 
-    const mongo = new MongoDBService(connStr, dbName);
-    await mongo.init();
-    cachedMongo = mongo;
+    cachedMongo = new MongoDBService(connStr, dbName);
+
+    await cachedMongo.init();
+
     return cachedMongo;
 };

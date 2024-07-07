@@ -8,10 +8,13 @@ import type {
     StartDriveWatchResponse,
 } from './types';
 import { v4 } from 'uuid';
+import { refreshGoogleOAuthToken } from '../../internalAPI';
 
 const MAX_TRIES = 3;
 
 export class GoogleDriveService {
+    public static readonly DataSourceTypeName = 'GOOGLE_DRIVE';
+
     private static readonly DocsBaseUrl = 'https://docs.googleapis.com/v1';
 
     private static readonly DriveBaseUrl = 'https://www.googleapis.com/drive/v3';
@@ -131,20 +134,15 @@ export class GoogleDriveService {
             return await axios.request(req);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
-            const code = e.response.data.error.code;
-            if (attempt + 1 < MAX_TRIES && (code === 403 || code === 429)) {
-                await new Promise<void>((resolve) => {
-                    setTimeout(resolve, 3 ** attempt);
-                });
-                return await this.sendHttpRequest(req);
-            } else if (code === 401 && this.refreshToken) {
-                const resp = await axios.request({
-                    method: 'get',
-                    baseURL: 'http://locahost:3001',
-                    url: `/v1/auth/google/refresh?refreshToken=${this.refreshToken}`,
-                });
-                this.accessToken = resp.data.accessToken;
-                await axios.request(req);
+            const code = (e as any).response.data.error.code;
+            if (code === 401 && this.refreshToken && attempt < MAX_TRIES) {
+                const newAccessToke = await refreshGoogleOAuthToken(this.refreshToken);
+                this.accessToken = newAccessToke;
+                const updatedReq = {
+                    ...req,
+                    headers: { Authorization: `Bearer ${newAccessToke}` },
+                };
+                return await this.sendHttpRequest(updatedReq, MAX_TRIES);
             }
             throw e;
         }

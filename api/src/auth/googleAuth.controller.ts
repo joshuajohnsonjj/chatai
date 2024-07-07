@@ -4,6 +4,7 @@ import { BadRequestError } from 'src/exceptions';
 import { GoogleAuthGuard } from './google.guard';
 import { ConfigService } from '@nestjs/config';
 import { GoogleAuthService } from './googleAuth.service';
+import { CAL_SCOPE, DRIVE_SCOPE, GMAIL_SCOPE, GOOGLE_ALL_SCOPES, USER_PROFILE_SCOPES } from './google.scopes';
 
 @Controller('v1/auth/google')
 export class GoogleAuthController {
@@ -13,43 +14,35 @@ export class GoogleAuthController {
     ) {}
 
     @Get('/authorize/user')
-    @UseGuards(
-        new GoogleAuthGuard([
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email',
-        ]),
-    )
+    @UseGuards(new GoogleAuthGuard(USER_PROFILE_SCOPES))
     async googleAuth() {}
 
     @Get('/authorize/gmail')
-    @UseGuards(
-        new GoogleAuthGuard([
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email',
-        ]),
-    )
+    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, GMAIL_SCOPE]))
     async googleGmailAuthorize() {}
 
     @Get('/authorize/drive')
-    @UseGuards(
-        new GoogleAuthGuard([
-            'https://www.googleapis.com/auth/drive.readonly',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email',
-        ]),
-    )
+    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, DRIVE_SCOPE]))
     async googleDriveAuthorize() {}
 
+    @Get('/authorize/cal')
+    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, CAL_SCOPE]))
+    async googleCalAuthorize() {}
+
+    @Get('/authorize/gmail_drive')
+    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, GMAIL_SCOPE, DRIVE_SCOPE]))
+    async googleGmailDriveAuthorize() {}
+
+    @Get('/authorize/gmail_cal')
+    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, GMAIL_SCOPE, CAL_SCOPE]))
+    async googleGmailCalAuthorize() {}
+
+    @Get('/authorize/drive_cal')
+    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, DRIVE_SCOPE, CAL_SCOPE]))
+    async googleDriveCalAuthorize() {}
+
     @Get('/authorize/all')
-    @UseGuards(
-        new GoogleAuthGuard([
-            'https://www.googleapis.com/auth/drive.readonly',
-            'https://www.googleapis.com/auth/gmail.readonly',
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email',
-        ]),
-    )
+    @UseGuards(new GoogleAuthGuard(GOOGLE_ALL_SCOPES))
     async googleAuthorizeAll() {}
 
     @Get('callback')

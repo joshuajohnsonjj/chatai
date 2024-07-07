@@ -35,7 +35,7 @@ export const notifyImportsCompleted = async (
 export const refreshGoogleOAuthToken = async (refreshToken: string): Promise<string> => {
     const res = await axios({
         method: 'get',
-        baseURL: 'http://localhost:3001', // process.env.INTERNAL_BASE_API_HOST!,
+        baseURL: process.env.INTERNAL_BASE_API_HOST!,
         url: `${InternalAPIEndpoints.GOOGLE_AUTH_REFRESH}?r=${refreshToken}`,
     });
     return res.data.accessToken;

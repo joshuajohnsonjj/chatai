@@ -53,7 +53,6 @@ export const handler: Handler = async (event): Promise<{ success: boolean }> => 
                         modifiedDate: file.modifiedTime,
                         authorName: file.lastModifyingUser?.displayName,
                         authorEmail: file.lastModifyingUser?.emailAddress,
-                        userId: messageData.userId,
                     } as GoogleDriveSQSMessageBody),
                     MessageGroupId: messageGroupId,
                 });

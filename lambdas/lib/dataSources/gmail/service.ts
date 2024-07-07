@@ -7,6 +7,8 @@ import { refreshGoogleOAuthToken } from '../../internalAPI';
 const MAX_TRIES = 3;
 
 export class GmailService {
+    public static readonly DataSourceTypeName = 'GMAIL';
+
     private static readonly GmailBaseUrl = 'https://gmail.googleapis.com/gmail/v1/users';
 
     private accessToken: string;

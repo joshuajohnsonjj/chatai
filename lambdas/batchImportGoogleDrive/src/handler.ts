@@ -79,7 +79,7 @@ const processFile = async (
                     text: chunk,
                     title: data.fileName,
                     embedding,
-                    createdAt: new Date(data.modifiedDate).getTime(),
+                    createdAt: new Date().getTime(),
                     modifiedAt: new Date(data.modifiedDate).getTime(),
                     url: data.fileUrl,
                     author:
@@ -90,7 +90,7 @@ const processFile = async (
                               }
                             : undefined,
                     annotations,
-                    dataSourceType: 'GOOGLE_DRIVE',
+                    dataSourceType: GoogleDriveService.DataSourceTypeName,
                     fileId: data.fileId,
                     filePartIndex: ndx,
                 }),

@@ -8,7 +8,7 @@ import { getDocumentSizeEstimate } from '../../lib/helper';
 import { notifyImportsCompleted, refreshGoogleOAuthToken } from '../../lib/internalAPI';
 import { MimeType } from '../../lib/dataSources/gmail/constants';
 import { getEmailMetadata, sanitizePlainTextMessageToMessageChunks } from './utility';
-import { BaseGmailMessageLink, DataSourceName } from './constants';
+import { BaseGmailMessageLink } from './constants';
 
 dotenv.config({ path: __dirname + '/../../.env' });
 
@@ -62,7 +62,7 @@ const processGmailMessageThread = async (
                             text: textChunk,
                             title: emailMeta.subject,
                             embedding,
-                            createdAt: emailMeta.date,
+                            createdAt: new Date().getTime(),
                             modifiedAt: emailMeta.date,
                             url: `${BaseGmailMessageLink}${message.id}`,
                             author:
@@ -73,7 +73,7 @@ const processGmailMessageThread = async (
                                       }
                                     : undefined,
                             annotations,
-                            dataSourceType: DataSourceName,
+                            dataSourceType: GmailService.DataSourceTypeName,
                             threadId: threadData.id,
                         }),
                         emailMeta.senderName && emailMeta.senderEmail

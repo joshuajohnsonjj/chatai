@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 export interface DataElementInsertSummary {
     isNew: boolean;
     lengthDiff: number;
@@ -12,8 +11,8 @@ export interface MongoDataElementCollectionDoc {
     text: string;
     title: string;
     embedding: number[];
-    createdAt: number; // Unix timestamp (when the original content was created in datasource)
-    modifiedAt: number; // Unix timestamp (when written/rewrittern to our platform)
+    createdAt: number; // Unix timestamp (when the content was originally written to mongo)
+    modifiedAt: number; // Unix timestamp (the last updated timestamp on to data itself (via the datasource))
     url?: string;
     author?: {
         name: string;
