@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
 import { UserAuthService } from './userAuth.service';
 import { AuthenticateRequestDto } from './dto/authenticate.request.dto';
 import { ConfirmUserRequestDto } from './dto/confirm.request.dto';

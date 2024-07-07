@@ -70,8 +70,8 @@ export const useUserStore = defineStore('user', () => {
             success = true;
         } finally {
             isLoading.value.authentication = false;
-            return success;
         }
+        return success;
     };
 
     const login = async (email: string, password: string): Promise<{ success: boolean; unconfirmed: boolean }> => {

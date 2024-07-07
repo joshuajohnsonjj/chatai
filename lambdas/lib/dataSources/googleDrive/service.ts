@@ -132,8 +132,8 @@ export class GoogleDriveService {
     private sendHttpRequest = async (req: AxiosRequestConfig, attempt = 0): Promise<AxiosResponse> => {
         try {
             return await axios.request(req);
+        } catch (e) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
             const code = (e as any).response.data.error.code;
             if (code === 401 && this.refreshToken && attempt < MAX_TRIES) {
                 const newAccessToke = await refreshGoogleOAuthToken(this.refreshToken);

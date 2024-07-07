@@ -1,6 +1,5 @@
 import type { Handler } from 'aws-lambda';
 import { v4 } from 'uuid';
-import moment from 'moment';
 import { type SendMessageBatchRequestEntry } from '@aws-sdk/client-sqs';
 import { sendSqsMessageBatches } from '../../lib/sqs';
 import { type InitiateImportWithOAuthRequestData } from '../../lib/types';

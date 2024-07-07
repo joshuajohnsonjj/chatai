@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client } from 'google-auth-library';
@@ -18,8 +19,6 @@ export class GoogleAuthService {
     ) {}
 
     async handleGoogleCallback(req) {
-        const reqState = JSON.parse(req.query.state ?? '{}');
-
         this.logger.log(`Redirecting with tokens for google user ${req.user.profile.email}`, LoggerContext.GOOGLE_AUTH);
     }
 

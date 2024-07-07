@@ -162,6 +162,7 @@ export class DataSourceService {
             throw new AccessDeniedError('User unauthorized to modify this data source');
         }
 
+        // eslint-disable-next-line
         const updates: any = {};
 
         if (params.syncInterval) {

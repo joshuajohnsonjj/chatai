@@ -120,6 +120,7 @@ export class GoogleCalService {
             });
             return await axios.request(req);
         } catch (e) {
+            // eslint-disable-next-line
             const code = (e as any).response.data.error.code;
             if (code === 401 && this.refreshToken && attempt < MAX_TRIES) {
                 const newAccessToke = await refreshGoogleOAuthToken(this.refreshToken);

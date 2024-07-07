@@ -9,7 +9,6 @@ import { type InitiateImportRequestData } from '../../lib/types';
 import { v4 } from 'uuid';
 import { decryptData } from '../../lib/decryption';
 import { notifyImportStarted } from '../../lib/internalAPI';
-import axios from 'axios';
 
 dotenv.config({ path: __dirname + '/../../../../.env' });
 
