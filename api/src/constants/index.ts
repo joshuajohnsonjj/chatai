@@ -8,4 +8,5 @@ export enum LoggerContext {
     USER = 'UserInfo',
     USER_AUTH = 'UserAuth',
     GOOGLE_AUTH = 'GoogleAuth',
+    EVENT = 'Event',
 }

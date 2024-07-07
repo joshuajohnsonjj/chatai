@@ -9,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { Logger, Module } from '@nestjs/common';
 import { UserModule } from './user/user.module';
 import { SearchModule } from './search/search.module';
+import { EventModule } from './event/event.module';
 
 @Module({
     imports: [
@@ -19,6 +20,7 @@ import { SearchModule } from './search/search.module';
         AuthModule,
         SearchModule,
         UserModule,
+        EventModule,
         ConfigModule.forRoot({
             envFilePath: ['.env.test', '.env.prod'],
             isGlobal: true,

@@ -101,26 +101,9 @@ export interface SlackConversationHistoryResponse {
     };
 }
 
-export interface SlackEventAPIPayload {
-    type: 'event_callback';
-    token: string;
-    team_id: string;
-    api_app_id: string;
-    event: SlackMessageEventAPI;
-    event_id: string;
-    event_time: number;
-}
-
-export interface SlackMessageEventAPI {
-    type: 'message';
-    channel: string; // channel id
-    user: string; // user id
-    text: string;
-    ts: string;
-    edited?: {
-        user: string;
-        ts: string;
-    };
+export interface UserInfo {
+    name: string;
+    email: string;
 }
 
 /**
@@ -136,4 +119,19 @@ export interface SlackSQSMessageBody {
     dataSourceId: string;
     lowerDateBound?: string;
     isFinal: boolean;
+}
+
+export interface SlackEventSQSMessageBody {
+    ownerEntityId: string;
+    secret: string;
+    dataSourceId: string;
+    isDeletion: boolean;
+    channelId: string;
+    userId: string;
+    text: string;
+    ts: string;
+    edited?: {
+        user: string;
+        ts: string;
+    };
 }

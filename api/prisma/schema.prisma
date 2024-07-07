@@ -18,7 +18,7 @@ model DataSource {
   ownerEntityType      EntityType
   secret               String
   refreshToken         String?
-  externalId           String?
+  externalId           String?          @unique
   isSyncing            Boolean          @default(false)
   lastSync             DateTime?
   nextScheduledSync    DateTime?

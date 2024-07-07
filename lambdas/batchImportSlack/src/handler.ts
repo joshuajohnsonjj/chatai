@@ -1,12 +1,11 @@
-import { Handler, SQSEvent } from 'aws-lambda';
+import type { Handler, SQSEvent } from 'aws-lambda';
 import { getMongoClientFromCacheOrInitiateConnection } from '../../lib/mongoCache';
 import * as dotenv from 'dotenv';
 import { GeminiService } from '@joshuajohnsonjj38/gemini';
-import { SlackService, type SlackSQSMessageBody, type SlackMessage } from '../../lib/dataSources/slack';
+import { SlackService, type SlackSQSMessageBody, type SlackMessage, type UserInfo } from '../../lib/dataSources/slack';
 import { decryptData } from '../../lib/decryption';
 import { notifyImportsCompleted } from '../../lib/internalAPI';
 import { type MongoDBService } from '@joshuajohnsonjj38/mongodb';
-import { type UserInfo } from './types';
 import { getDocumentSizeEstimate } from '../../lib/helper';
 
 dotenv.config({ path: __dirname + '/../../.env' });
