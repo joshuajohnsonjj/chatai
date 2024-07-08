@@ -4,7 +4,8 @@ import { BadRequestError } from 'src/exceptions';
 import { GoogleAuthGuard } from './google.guard';
 import { ConfigService } from '@nestjs/config';
 import { GoogleAuthService } from './googleAuth.service';
-import { CAL_SCOPE, DRIVE_SCOPE, GMAIL_SCOPE, GOOGLE_ALL_SCOPES, USER_PROFILE_SCOPES } from './google.scopes';
+import { CAL_SCOPE, DRIVE_SCOPE, GMAIL_SCOPE, MEET_SCOPE, USER_PROFILE_SCOPES } from './google.scopes';
+import { DataSourceTypeName } from '@prisma/client';
 
 @Controller('v1/auth/google')
 export class GoogleAuthController {
@@ -13,37 +14,30 @@ export class GoogleAuthController {
         private readonly authService: GoogleAuthService,
     ) {}
 
-    @Get('/authorize/user')
-    @UseGuards(new GoogleAuthGuard(USER_PROFILE_SCOPES))
-    async googleAuth() {}
+    @Get('/authorize')
+    async googleAuth(@Query('scopes') scopes: string) {
+        const googleScopes = USER_PROFILE_SCOPES;
 
-    @Get('/authorize/gmail')
-    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, GMAIL_SCOPE]))
-    async googleGmailAuthorize() {}
+        scopes.split(',').forEach((scope) => {
+            switch (scope) {
+                case DataSourceTypeName.GMAIL:
+                    googleScopes.push(GMAIL_SCOPE);
+                    return;
+                case DataSourceTypeName.GOOGLE_CALENDAR:
+                    googleScopes.push(CAL_SCOPE);
+                    return;
+                case DataSourceTypeName.GOOGLE_DRIVE:
+                    googleScopes.push(DRIVE_SCOPE);
+                    return;
+                case DataSourceTypeName.GOOGLE_MEET:
+                    googleScopes.push(MEET_SCOPE);
+                    return;
+                default:
+            }
+        });
 
-    @Get('/authorize/drive')
-    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, DRIVE_SCOPE]))
-    async googleDriveAuthorize() {}
-
-    @Get('/authorize/cal')
-    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, CAL_SCOPE]))
-    async googleCalAuthorize() {}
-
-    @Get('/authorize/gmail_drive')
-    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, GMAIL_SCOPE, DRIVE_SCOPE]))
-    async googleGmailDriveAuthorize() {}
-
-    @Get('/authorize/gmail_cal')
-    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, GMAIL_SCOPE, CAL_SCOPE]))
-    async googleGmailCalAuthorize() {}
-
-    @Get('/authorize/drive_cal')
-    @UseGuards(new GoogleAuthGuard([...USER_PROFILE_SCOPES, DRIVE_SCOPE, CAL_SCOPE]))
-    async googleDriveCalAuthorize() {}
-
-    @Get('/authorize/all')
-    @UseGuards(new GoogleAuthGuard(GOOGLE_ALL_SCOPES))
-    async googleAuthorizeAll() {}
+        return new GoogleAuthGuard(googleScopes);
+    }
 
     @Get('callback')
     @UseGuards(new GoogleAuthGuard([]))
