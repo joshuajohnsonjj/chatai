@@ -29,6 +29,9 @@ export interface ListEventsQueryParams {
     timeMin?: string;
     timeMax?: string;
     updatedMin?: string;
+
+    // free text search
+    q?: string;
 }
 
 export interface CalParticipant {

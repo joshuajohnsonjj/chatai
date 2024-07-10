@@ -29,6 +29,9 @@ export interface MongoDataElementCollectionDoc {
     fileId?: string;
     filePartIndex?: number;
 
+    // google meet specific fields
+    transcriptId?: string;
+
     // gmail specifc fields
     threadId?: string;
 }

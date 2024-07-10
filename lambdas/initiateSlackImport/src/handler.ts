@@ -65,7 +65,7 @@ export const handler: Handler = async (event) => {
         isFinal: true,
     });
 
-    await sendSqsMessageBatches(messageBatchEntries, process.env.GMAIL_QUEUE_URL!);
+    await sendSqsMessageBatches(messageBatchEntries, process.env.SLACK_QUEUE_URL!);
 
     return { success: true };
 };

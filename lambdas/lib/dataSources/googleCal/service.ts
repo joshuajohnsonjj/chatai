@@ -87,6 +87,23 @@ export class GoogleCalService {
         return response.data;
     }
 
+    public async getEventByMeetingId(calId: string, meetingId: string): Promise<ListEventsResponse> {
+        const params: ListEventsQueryParams = {
+            q: meetingId,
+            maxResults: 1,
+        };
+
+        const query = new URLSearchParams(params as unknown as Record<string, string>).toString();
+        const response = await this.sendHttpRequest({
+            method: 'get',
+            baseURL: GoogleCalService.GoogleCalBaseUrl,
+            url: `${GoogleCalEndpoints.EVENTS.replace(':calendarId', calId)}?${query}`,
+            headers: { Authorization: `Bearer ${this.accessToken}` },
+        });
+
+        return response.data;
+    }
+
     public buildTextBodyFromEvent(
         title: string,
         description: string,
